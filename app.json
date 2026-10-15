@@ -68,8 +68,7 @@
       "expo-sharing"
     ],
     "experiments": {
-      "typedRoutes": true,
-      "baseUrl": "/kbh-records"
+      "typedRoutes": true
     },
     "extra": {
       "eas": {}

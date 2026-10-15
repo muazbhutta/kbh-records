@@ -54,11 +54,13 @@ console.log(`Publishing as ${owner}`);
 if (!fs.existsSync('dist/index.html')) die('No dist. Build it first:  npm run build:web');
 if (!fs.existsSync('dist/.nojekyll')) die('dist looks unfinished. Run:  npm run build:web');
 
-const base = JSON.parse(fs.readFileSync('app.json', 'utf8')).expo?.experiments?.baseUrl ?? '';
+// The built index.html says which folder it expects to be served from.
+const html = fs.readFileSync('dist/index.html', 'utf8');
+const base = (html.match(/<script src="([^"]*)\/_expo\//) ?? ['', ''])[1];
 if (base.replace(/\//g, '') !== REPO) {
   die(
-    `The build is made for "${base}" but the repository is "${REPO}".`,
-    `Set experiments.baseUrl in app.json to "/${REPO}", then: npm run build:web`,
+    `This build is made for "${base || '/'}" but Pages will serve it from "/${REPO}".`,
+    'Build the right one first:  npm run build:pages',
   );
 }
 

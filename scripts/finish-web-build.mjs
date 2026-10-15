@@ -16,8 +16,7 @@ if (!fs.existsSync(FILE)) {
 
 // Where the site will live. "" means the root of a domain; "/kbh-records"
 // means a folder under one, which is how GitHub Pages serves a project.
-const BASE = (JSON.parse(fs.readFileSync('app.json', 'utf8')).expo?.experiments?.baseUrl ?? '')
-  .replace(/\/$/, '');
+const BASE = (process.env.KBH_BASE_URL ?? '').replace(/\/$/, '');
 const at = (p) => `${BASE}${p}`;
 
 // ------------------------------------------------- the manifest and worker

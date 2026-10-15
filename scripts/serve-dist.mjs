@@ -16,10 +16,14 @@ import path from 'node:path';
 const ROOT = path.resolve(process.cwd(), 'dist');
 const PORT = Number(process.env.PORT ?? 5050);
 
-// The build is made for the folder it will be hosted in, so serve it from
-// that same folder here; otherwise nothing it asks for is where it looks.
-const BASE = (JSON.parse(fs.readFileSync('app.json', 'utf8')).expo?.experiments?.baseUrl ?? '')
-  .replace(/\/$/, '');
+// The build says in its own index.html which folder it was made for, so
+// serve it from that same folder; otherwise nothing it asks for is where
+// it looks.
+const BASE = (() => {
+  const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+  const m = html.match(/<script src="([^"]*)\/_expo\//);
+  return m ? m[1] : '';
+})();
 
 const TYPES = {
   '.html': 'text/html; charset=utf-8',
