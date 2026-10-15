@@ -51,34 +51,32 @@ It prints the address, something like `http://192.168.8.62:5050/kbh-records/`.
   offer *Install* from a plain `http` address. For that it needs https,
   which is the next part.
 
-### On the internet, so it installs everywhere
+### On the internet — live now
 
-The site is already built and staged. One command puts it on GitHub Pages,
-which is free and gives an https address:
+**https://muazbhutta.github.io/kbh-records/**
 
-```bash
-gh auth login                                    # pick the account to publish under
-node scripts/publish-to-github.mjs MananBhutta   # creates the repo, pushes, switches Pages on
-```
-
-It ends up at `https://mananbhutta.github.io/kbh-records/`. From there:
+Open that on any phone or computer, anywhere, and:
 
 * **iPhone, Safari** — Share → *Add to Home Screen*
 * **Android, Chrome** — menu → *Install app*
 * **Desktop Chrome / Edge** — the install icon at the right of the address bar
 
-The repository has to be **public**, because Pages is only free that way.
-Nothing secret goes into it: `.env` is ignored, and the Supabase key that
-does ship is the publishable one that every web app carries. The money, the
-people and the bill photos live in Supabase, behind the PIN login.
+The repository is public, because GitHub Pages is only free that way.
+Nothing secret is in it: `.env` is ignored, and the Supabase key that does
+ship is the publishable one every web app carries. The money, the people
+and the bill photos live in Supabase, behind the PIN login.
+
+Repository: https://github.com/muazbhutta/kbh-records
 
 ### After any change
 
 ```bash
-npm run build:web     # rebuild
-npm run pages         # stage the built site
-npm run publish:github MananBhutta
+npm run build:pages                  # rebuild for the website and stage it
+npm run publish:github muazbhutta    # push it live
 ```
+
+A minute or two later the website has the change. Anyone who installed it
+gets the new version the next time they open it.
 
 ## Still open
 
