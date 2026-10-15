@@ -1,0 +1,9 @@
+{
+  "imports": {
+    "@supabase/supabase-js": "npm:@supabase/supabase-js@2.117.3",
+    "bcryptjs": "npm:bcryptjs@3.0.3"
+  },
+  "compilerOptions": {
+    "lib": ["deno.window", "dom"]
+  }
+}

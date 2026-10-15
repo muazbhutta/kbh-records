@@ -1,0 +1,567 @@
+<title>KBH Records Walkthrough</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  /* Layout: a single reading column; every screen is a captioned plate,
+     grouped by who is looking at it. */
+  :root {
+    --paper: #F2F5F9;
+    --card: #FFFFFF;
+    --ink: #0E2340;
+    --ink-soft: #55657A;
+    --ink-faint: #8A99AB;
+    --rule: #DDE4ED;
+    --navy: #0E2340;
+    --amber: #C98B00;
+    --steel: #0B6493;
+    --green: #1E7A47;
+    --shadow: 0 1px 2px rgba(14, 35, 64, .05), 0 8px 24px rgba(14, 35, 64, .07);
+    --display: 'Archivo', 'Segoe UI', system-ui, sans-serif;
+    --body: 'Inter', 'Segoe UI', system-ui, sans-serif;
+    --mono: 'IBM Plex Mono', ui-monospace, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #0B1422;
+      --card: #141F31;
+      --ink: #EEF3F9;
+      --ink-soft: #A3B3C7;
+      --ink-faint: #70819A;
+      --rule: #23334A;
+      --navy: #EEF3F9;
+      --amber: #F2B01E;
+      --steel: #56B0E0;
+      --green: #4FC27E;
+      --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 10px 28px rgba(0, 0, 0, .4);
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #0B1422;
+    --card: #141F31;
+    --ink: #EEF3F9;
+    --ink-soft: #A3B3C7;
+    --ink-faint: #70819A;
+    --rule: #23334A;
+    --navy: #EEF3F9;
+    --amber: #F2B01E;
+    --steel: #56B0E0;
+    --green: #4FC27E;
+    --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 10px 28px rgba(0, 0, 0, .4);
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--body);
+    font-size: 16px;
+    line-height: 1.6;
+    margin: 0;
+    padding-inline: 20px;
+    padding-block: 0 72px;
+  }
+  .wrap { max-width: 880px; margin: 0 auto; }
+
+  /* ----------------------------------------------------------- masthead */
+  header.top {
+    padding-block: 56px 28px;
+    border-bottom: 3px solid var(--navy);
+  }
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--steel);
+    margin: 0 0 14px;
+  }
+  h1 {
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: clamp(32px, 6vw, 52px);
+    line-height: 1.04;
+    letter-spacing: -.022em;
+    margin: 0 0 14px;
+    text-wrap: balance;
+  }
+  .standfirst {
+    font-size: clamp(16px, 2.2vw, 19px);
+    color: var(--ink-soft);
+    max-width: 62ch;
+    margin: 0;
+  }
+
+  /* -------------------------------------------------------------- counts */
+  .counts {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1px;
+    background: var(--rule);
+    border: 1px solid var(--rule);
+    margin-block: 28px 8px;
+  }
+  .count { background: var(--card); padding: 16px 18px; min-width: 0; }
+  .count b {
+    display: block;
+    font-family: var(--display);
+    font-size: 30px;
+    font-weight: 700;
+    letter-spacing: -.02em;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.1;
+  }
+  .count span {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+  }
+  .count.pass b { color: var(--green); }
+
+  .meta {
+    font-family: var(--mono);
+    font-size: 12.5px;
+    color: var(--ink-faint);
+    margin: 0 0 40px;
+  }
+
+  /* ------------------------------------------------------------- section */
+  section { margin-block: 48px; }
+  .sec-head { border-top: 1px solid var(--rule); padding-top: 18px; margin-bottom: 6px; }
+  h2 {
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: clamp(21px, 3.4vw, 27px);
+    letter-spacing: -.015em;
+    margin: 0 0 4px;
+    text-wrap: balance;
+  }
+  .who {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--amber);
+    margin: 0 0 2px;
+  }
+  .sec-note { color: var(--ink-soft); margin: 0 0 22px; max-width: 62ch; }
+
+  /* --------------------------------------------------------------- plate */
+  figure {
+    margin: 0 0 30px;
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: var(--shadow);
+  }
+  figure img { display: block; width: 100%; height: auto; }
+  figcaption {
+    border-top: 1px solid var(--rule);
+    padding: 13px 16px 15px;
+  }
+  figcaption b {
+    display: block;
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: 15.5px;
+    letter-spacing: -.005em;
+    margin-bottom: 2px;
+  }
+  figcaption span { color: var(--ink-soft); font-size: 14.5px; }
+  .tag {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--steel);
+    border: 1px solid var(--rule);
+    border-radius: 999px;
+    padding: 2px 8px;
+    margin-left: 8px;
+    vertical-align: 2px;
+  }
+
+  /* --------------------------------------------------------------- lists */
+  ul.checks { list-style: none; padding: 0; margin: 0 0 8px; }
+  ul.checks li {
+    display: flex;
+    gap: 11px;
+    align-items: flex-start;
+    padding: 9px 0;
+    border-bottom: 1px solid var(--rule);
+  }
+  ul.checks li:last-child { border-bottom: 0; }
+  ul.checks .mark { color: var(--green); font-weight: 600; flex: none; }
+  ul.checks .mark.no { color: var(--amber); }
+  ul.checks p { margin: 0; min-width: 0; }
+
+  table { width: 100%; border-collapse: collapse; margin-block: 8px 10px; }
+  th, td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  th {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: .09em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    font-weight: 500;
+  }
+  td.num { font-family: var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .scroll { overflow-x: auto; }
+
+  footer {
+    border-top: 3px solid var(--navy);
+    margin-top: 56px;
+    padding-top: 20px;
+    color: var(--ink-soft);
+    font-size: 14.5px;
+  }
+  footer p { max-width: 62ch; }
+  code {
+    font-family: var(--mono);
+    font-size: .92em;
+    background: color-mix(in srgb, var(--steel) 10%, transparent);
+    padding: 1px 5px;
+    border-radius: 4px;
+  }
+</style>
+
+<div class="wrap">
+
+<header class="top">
+  <p class="eyebrow">KBH Construction &middot; Jeddah</p>
+  <h1>KBH Records, screen by screen</h1>
+  <p class="standfirst">
+    Every screen in the cash book, photographed from the finished app running against the
+    live database — as the Owner sees it, as a head of employees sees it, and as a worker
+    on site sees it.
+  </p>
+</header>
+
+<div class="counts">
+  <div class="count pass"><b>285</b><span>Checks passed</span></div>
+  <div class="count"><b>0</b><span>Failed</span></div>
+  <div class="count"><b>22</b><span>Screens shown</span></div>
+  <div class="count"><b>5</b><span>Test suites</span></div>
+</div>
+<p class="meta">Recorded 15 Oct 2026 &middot; web build 1.0.0 &middot; Asia/Riyadh</p>
+
+<!-- ========================================================== signing in -->
+<section>
+  <div class="sec-head">
+    <p class="who">Everyone</p>
+    <h2>Getting in</h2>
+  </div>
+  <p class="sec-note">
+    A Saudi mobile number and a four-digit PIN. The PIN is checked on the server, never on
+    the phone, and five wrong tries lock the number for fifteen minutes.
+  </p>
+
+  <figure>
+    <img src="screens/01-login-number.jpg" alt="The log in screen asking for a mobile number">
+    <figcaption>
+      <b>Log in</b>
+      <span>The number first, so a person who mistypes it finds out before the PIN.</span>
+    </figcaption>
+  </figure>
+</section>
+
+<!-- ============================================================== the owner -->
+<section>
+  <div class="sec-head">
+    <p class="who">Owner &amp; Admin &middot; Saleem</p>
+    <h2>The whole company at a glance</h2>
+  </div>
+  <p class="sec-note">
+    An Admin and a Sub-admin see exactly the same thing. The Owner account carries one extra
+    rule: nobody but the Owner can change it, turn it off, or take it off Admin — and that
+    rule lives in the database, not just on the screen.
+  </p>
+
+  <figure>
+    <img src="screens/03-admin-dashboard.jpg" alt="The admin dashboard showing cash with people">
+    <figcaption>
+      <b>Home<span class="tag">Dashboard</span></b>
+      <span>SAR 3,192.00 out with five of eight people, and a red line when the company owes staff money back.</span>
+    </figcaption>
+  </figure>
+
+  <figure>
+    <img src="screens/04-dashboard-charts.jpg" alt="Expenses per month and by category">
+    <figcaption>
+      <b>Spending over time</b>
+      <span>Every section folds away; whatever an Admin keeps open stays open next time.</span>
+    </figcaption>
+  </figure>
+
+  <figure>
+    <img src="screens/05-dashboard-activity.jpg" alt="Recent activity list with cash and bank tags">
+    <figcaption>
+      <b>Recent activity</b>
+      <span>Each handover says how it moved — <b style="display:inline">Cash</b> or <b style="display:inline">Bank</b> — and who entered it.</span>
+    </figcaption>
+  </figure>
+
+  <figure>
+    <img src="screens/06-people-list.jpg" alt="The people list with balances">
+    <figcaption>
+      <b>People</b>
+      <span>Who is holding what. A minus reads "Company owes", never a figure to go and count.</span>
+    </figcaption>
+  </figure>
+
+  <figure>
+    <img src="screens/07-person-khata.jpg" alt="One person's khata with their balance">
+    <figcaption>
+      <b>One person's khata</b>
+      <span>What they should be holding, what was given, paid out and returned.</span>
+    </figcaption>
+  </figure>
+
+  <figure>
+    <img src="screens/09-khata-money-split-and-filters.jpg" alt="Cash and bank split with the filter rows">
+    <figcaption>
+      <b>How the money reached them</b>
+      <span>Cash in hand, bank transfer and spending, then four rows of filters: period, kind of entry, category, and Petty or Invoice.</span>
+    </figcaption>
+  </figure>
+
+  <figure>
+    <img src="screens/08-khata-entries.jpg" alt="Entries in the khata with type badges">
+    <figcaption>
+      <b>Every entry</b>
+      <span>Bills carry Petty or Invoice; handovers carry Cash or Bank.</span>
+    </figcaption>
+  </figure>
+
+  <figure>
+    <img src="screens/17-money-given-cash-or-bank.jpg" alt="The money given screen with the cash or bank choice">
+    <figcaption>
+      <b>Giving someone cash<span class="tag">Admin only</span></b>
+      <span>Two big buttons answer the question the books always get asked afterwards: how was it given?</span>
+    </figcaption>
+  </figure>
+</section>
+
+<!-- ============================================================== reports -->
+<section>
+  <div class="sec-head">
+    <p class="who">Owner &amp; Admin</p>
+    <h2>What goes to the auditor</h2>
+  </div>
+  <p class="sec-note">
+    One filter at the top drives everything below it — the figures, the three PDFs and the
+    photo ZIP. If the totals ever disagree with the app's own figure, no report is made at all.
+  </p>
+
+  <figure>
+    <img src="screens/10-reports-filters.jpg" alt="The reports screen with period, person, category and bill type filters">
+    <figcaption>
+      <b>Reports</b>
+      <span>Period, person, category, and Petty or Invoice. Pick Fuel and every button below becomes a Fuel report.</span>
+    </figcaption>
+  </figure>
+
+  <figure>
+    <img src="screens/11-reports-downloads.jpg" alt="Download buttons and the before-you-file checks">
+    <figcaption>
+      <b>Downloads</b>
+      <span>Three PDFs and the bill photos. Underneath, the two things worth settling before filing.</span>
+    </figcaption>
+  </figure>
+
+  <figure>
+    <img src="screens/12-pdf-report-top.jpg" alt="The top of a generated PDF report">
+    <figcaption>
+      <b>The report itself<span class="tag">A4 portrait</span></b>
+      <span>Who prepared it, which period, which person, which category — and the Petty and Invoice split.</span>
+    </figcaption>
+  </figure>
+
+  <figure>
+    <img src="screens/13-pdf-report-table.jpg" alt="The expense table inside the PDF">
+    <figcaption>
+      <b>Every expense, with its ID</b>
+      <span>Each line carries a System ID like <code>EXP-2026-000008</code> that nothing else in the books can reuse.</span>
+    </figcaption>
+  </figure>
+</section>
+
+<!-- =========================================================== back office -->
+<section>
+  <div class="sec-head">
+    <p class="who">Owner &amp; Admin</p>
+    <h2>Checking and history</h2>
+  </div>
+  <p class="sec-note">
+    Nothing in KBH Records is ever really deleted. A removed entry is hidden and can be put
+    back; a cancelled one leaves the balances but stays in the record.
+  </p>
+
+  <figure>
+    <img src="screens/14-check-bill-type.jpg" alt="The check bill type screen with nothing to check">
+    <figcaption>
+      <b>Check bill type</b>
+      <span>Bills the app could not read wait here. Pressing "Looks right" counts as the check and clears the row.</span>
+    </figcaption>
+  </figure>
+
+  <figure>
+    <img src="screens/15-change-history.jpg" alt="The change history showing field by field changes">
+    <figcaption>
+      <b>Change history</b>
+      <span>Every create, edit and delete, in plain words: "Cancelled: no &rarr; yes", not machine field names. No one can edit or erase a line of it.</span>
+    </figcaption>
+  </figure>
+
+  <figure>
+    <img src="screens/16-settings-admin.jpg" alt="The settings screen for an admin">
+    <figcaption>
+      <b>Settings</b>
+      <span>Company, then checks and history, then reports.</span>
+    </figcaption>
+  </figure>
+</section>
+
+<!-- ================================================================= head -->
+<section>
+  <div class="sec-head">
+    <p class="who">Head of employees &middot; Kamran</p>
+    <h2>A head and his own team</h2>
+  </div>
+  <p class="sec-note">
+    A head is an employee with two extra powers: he can pass his own cash down to the people
+    under him, and he can see what they spent. He cannot see anybody else's team, cannot hand
+    himself company money, and cannot reach the back office.
+  </p>
+
+  <figure>
+    <img src="screens/18-head-home-with-team.jpg" alt="A head's home screen with his team listed">
+    <figcaption>
+      <b>His home</b>
+      <span>His own cash and bank split, then "My team" with each man's balance and spending.</span>
+    </figcaption>
+  </figure>
+
+  <figure>
+    <img src="screens/20-head-give-to-team.jpg" alt="The give to my team screen">
+    <figcaption>
+      <b>Give to my team</b>
+      <span>The list offers only the people under him — "Only the people under you" — and the money comes out of his own balance.</span>
+    </figcaption>
+  </figure>
+
+  <figure>
+    <img src="screens/19-head-sees-team-member.jpg" alt="A head looking at one of his team members">
+    <figcaption>
+      <b>One of his men</b>
+      <span>A window, not a desk: he can read everything, change nothing, and the page says why he can see it.</span>
+    </figcaption>
+  </figure>
+</section>
+
+<!-- ============================================================= employee -->
+<section>
+  <div class="sec-head">
+    <p class="who">Employee &middot; Waqas</p>
+    <h2>The man on site</h2>
+  </div>
+  <p class="sec-note">
+    One job: record what he spent, with the bill. He cannot hand money to anyone, cannot edit
+    or delete, and sees nothing of any colleague.
+  </p>
+
+  <figure>
+    <img src="screens/21-employee-home.jpg" alt="An employee's home screen">
+    <figcaption>
+      <b>His home</b>
+      <span>What he is holding, how it reached him — cash or bank — and what he has spent.</span>
+    </figcaption>
+  </figure>
+
+  <figure>
+    <img src="screens/22-employee-add-expense.jpg" alt="The add expense screen for an employee">
+    <figcaption>
+      <b>Add expense</b>
+      <span>"For" is locked to himself: "This comes out of your own cash". Big category buttons, then the bill photo.</span>
+    </figcaption>
+  </figure>
+
+  <figure>
+    <img src="screens/23-employee-settings.jpg" alt="An employee's settings screen">
+    <figcaption>
+      <b>His settings</b>
+      <span>His own card, the app's details, and a way out. Nothing else is his business.</span>
+    </figcaption>
+  </figure>
+</section>
+
+<!-- ================================================================ tests -->
+<section>
+  <div class="sec-head">
+    <p class="who">Proof</p>
+    <h2>What was tested, and how</h2>
+  </div>
+  <p class="sec-note">
+    Five programs sign in as real people with their real PINs and talk to the live database
+    exactly as the app does. They clean up after themselves. Run them again any time from the
+    project folder.
+  </p>
+
+  <div class="scroll">
+    <table>
+      <thead>
+        <tr><th>Suite</th><th>Checks</th><th>What it proves</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>role-test</code></td><td class="num">108</td>
+          <td>What each kind of person may and may not do — owner, admin, sub-admin, head, employee, and a turned-off account.</td>
+        </tr>
+        <tr>
+          <td><code>team-test</code></td><td class="num">38</td>
+          <td>Cash in hand against bank transfer, and what a head may do with his own team.</td>
+        </tr>
+        <tr>
+          <td><code>category-filter-test</code></td><td class="num">43</td>
+          <td>Narrowing to one category and to Petty or Invoice: rows, money, photos and the download log all follow the same filter.</td>
+        </tr>
+        <tr>
+          <td><code>joined-up-test</code></td><td class="num">68</td>
+          <td>The dashboard, the People list, each khata, the teams and the reports all land on the same figures.</td>
+        </tr>
+        <tr>
+          <td><code>reports-test</code></td><td class="num">28</td>
+          <td>The three PDFs and the photo ZIP: who may take them, that the totals agree, and that the download log cannot be rubbed out.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2 style="font-size:19px;margin-top:30px">The rules that hold</h2>
+  <ul class="checks">
+    <li><span class="mark">&check;</span><p>An employee records spending only in his own khata. The database refuses anything else, not just the screen.</p></li>
+    <li><span class="mark">&check;</span><p>Only the Owner can change the Owner's account — including the mobile number, which would otherwise lock him out.</p></li>
+    <li><span class="mark">&check;</span><p>A head sees his own team and nobody else's. Employees never see each other.</p></li>
+    <li><span class="mark">&check;</span><p>Nobody can read a PIN. Nobody, not even the Owner, can edit or delete a line of the change history or the download log.</p></li>
+    <li><span class="mark">&check;</span><p>A bill photo has no public link and cannot be opened without signing in.</p></li>
+    <li><span class="mark">&check;</span><p>The same bill photographed twice is caught, and an invoice already claimed by its QR code is blocked outright.</p></li>
+    <li><span class="mark">&check;</span><p>Every balance equals what was given, less what was spent, sent on and returned — checked person by person.</p></li>
+    <li><span class="mark no">!</span><p>Bills are not read automatically yet: that waits on the Google Vision key. Until then a bill says "Petty (not checked)" instead of pretending.</p></li>
+  </ul>
+</section>
+
+<footer>
+  <p>
+    Screens photographed from the production web build running against the live database on
+    15 October 2026. Figures shown are practice entries made during testing; they are cleared
+    before the company starts keeping its real books.
+  </p>
+</footer>
+
+</div>

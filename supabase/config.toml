@@ -1,0 +1,15 @@
+# Supabase CLI config for the KBH Records project.
+# Change project_id to your own project ref before running `supabase link`.
+project_id = "kbh-rms"
+
+[functions.pin-auth]
+# Login happens before there is a session, so this one is public.
+verify_jwt = false
+
+[functions.manage-users]
+verify_jwt = true
+
+[functions.scan-bill]
+# Called by the app right after an expense is saved, with that
+# person's session, so the normal JWT check applies.
+verify_jwt = true
