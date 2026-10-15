@@ -49,3 +49,6 @@ supabase/.temp
 
 # Built screenshots and the zipped site are rebuilt on demand.
 kbh-records-web.zip
+
+# The built site, staged for GitHub Pages. Rebuilt with: npm run pages
+.tmp-pages/

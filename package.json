@@ -12,7 +12,9 @@
     "build:web": "expo export --platform web && node scripts/finish-web-build.mjs",
     "functions:deploy": "npx supabase functions deploy pin-auth --no-verify-jwt && npx supabase functions deploy manage-users && npx supabase functions deploy scan-bill",
     "icons": "node scripts/make-icons.mjs",
-    "serve": "node scripts/serve-dist.mjs"
+    "serve": "node scripts/serve-dist.mjs",
+    "pages": "node scripts/stage-pages.mjs",
+    "publish:github": "node scripts/publish-to-github.mjs"
   },
   "dependencies": {
     "@expo-google-fonts/inter": "^0.4.2",

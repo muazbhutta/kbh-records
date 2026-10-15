@@ -31,27 +31,54 @@ Add the company's real people yourself: **Settings → Add Person**.
 5. **Hand out cash.** Home → Money Given, choosing Cash in hand or Bank
    transfer each time.
 
-## Opening it on a phone
+## Installing it on a phone or a desktop
 
-While this computer is on and on the same Wi-Fi:
+The app installs like a real app — its own icon, no browser bar around it.
 
-```bash
-node scripts/serve-dist.mjs
-```
+### Over the office Wi-Fi, right now
 
-It prints the address to type into the phone, something like
-`http://192.168.8.62:5050`. The files never leave this computer; the phone
-fetches them over the Wi-Fi.
-
-To rebuild after a change:
+While this computer is awake and on the same Wi-Fi:
 
 ```bash
-npx expo export --platform web
+npm run serve
 ```
 
-For a link that works anywhere, away from this Wi-Fi, the built `dist`
-folder needs a host (Vercel, Netlify, Cloudflare Pages or Expo's own
-hosting). That is one upload; nothing in the app has to change.
+It prints the address, something like `http://192.168.8.62:5050/kbh-records/`.
+
+* **iPhone, Safari** — open it, then Share → *Add to Home Screen*. It
+  installs and opens without the browser bar.
+* **Android and desktop Chrome** — it opens and works, but Chrome will not
+  offer *Install* from a plain `http` address. For that it needs https,
+  which is the next part.
+
+### On the internet, so it installs everywhere
+
+The site is already built and staged. One command puts it on GitHub Pages,
+which is free and gives an https address:
+
+```bash
+gh auth login                                    # pick the account to publish under
+node scripts/publish-to-github.mjs MananBhutta   # creates the repo, pushes, switches Pages on
+```
+
+It ends up at `https://mananbhutta.github.io/kbh-records/`. From there:
+
+* **iPhone, Safari** — Share → *Add to Home Screen*
+* **Android, Chrome** — menu → *Install app*
+* **Desktop Chrome / Edge** — the install icon at the right of the address bar
+
+The repository has to be **public**, because Pages is only free that way.
+Nothing secret goes into it: `.env` is ignored, and the Supabase key that
+does ship is the publishable one that every web app carries. The money, the
+people and the bill photos live in Supabase, behind the PIN login.
+
+### After any change
+
+```bash
+npm run build:web     # rebuild
+npm run pages         # stage the built site
+npm run publish:github MananBhutta
+```
 
 ## Still open
 
