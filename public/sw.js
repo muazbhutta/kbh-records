@@ -8,7 +8,7 @@
  * balance that was true an hour ago.
  */
 
-const VERSION = 'kbh-v1';
+const VERSION = 'kbh-v2';
 const SHELL = `${VERSION}-shell`;
 
 // Enough to open the app with nothing else available.
@@ -47,19 +47,25 @@ self.addEventListener('fetch', (event) => {
   // Never come between the app and its database.
   if (url.origin !== self.location.origin) return;
 
-  // A page request: try the network, fall back to the one page this app
-  // is made of, so every address still opens with no signal.
+  // A page request: hand over the page already kept, at once, and fetch
+  // a fresh copy behind it for next time. The app opens the moment it is
+  // tapped, on a weak site connection or none at all. The page names its
+  // code by hash, so an opening one version behind still runs, and the
+  // next opening is the new one.
   if (request.mode === 'navigate') {
     event.respondWith(
-      fetch(request)
-        .then((response) => {
-          const copy = response.clone();
-          caches.open(SHELL).then((cache) => cache.put('/index.html', copy)).catch(() => {});
-          return response;
-        })
-        .catch(() =>
-          caches.match('/index.html').then((hit) => hit ?? caches.match('/')),
-        ),
+      caches.match('/index.html').then((hit) => {
+        const fresh = fetch(request)
+          .then((response) => {
+            if (response.ok) {
+              const copy = response.clone();
+              caches.open(SHELL).then((cache) => cache.put('/index.html', copy)).catch(() => {});
+            }
+            return response;
+          })
+          .catch(() => hit ?? caches.match('/'));
+        return hit ?? fresh;
+      }),
     );
     return;
   }

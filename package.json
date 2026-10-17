@@ -15,7 +15,8 @@
     "serve": "node scripts/serve-dist.mjs",
     "pages": "node scripts/stage-pages.mjs",
     "publish:github": "node scripts/publish-to-github.mjs",
-    "build:pages": "node scripts/build-pages.mjs"
+    "build:pages": "node scripts/build-pages.mjs",
+    "fonts": "node scripts/subset-fonts.mjs"
   },
   "dependencies": {
     "@expo-google-fonts/inter": "^0.4.2",

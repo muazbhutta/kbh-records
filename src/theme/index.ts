@@ -48,11 +48,22 @@ export const radius = {
 
 export const spacing = (n: number) => n * 4;
 
+/**
+ * On a phone the fonts are inside the app and are there the moment it
+ * opens. On the web they come down the wire, so every name carries the
+ * system font behind it: the screen is readable from the first frame and
+ * Inter slides in when it lands.
+ */
+const withFallback = (name: string) =>
+  Platform.OS === 'web'
+    ? `${name}, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif`
+    : name;
+
 export const fonts = {
-  regular: 'Inter_400Regular',
-  medium: 'Inter_500Medium',
-  semibold: 'Inter_600SemiBold',
-  bold: 'Inter_700Bold',
+  regular: withFallback('Inter_400Regular'),
+  medium: withFallback('Inter_500Medium'),
+  semibold: withFallback('Inter_600SemiBold'),
+  bold: withFallback('Inter_700Bold'),
 } as const;
 
 /** Soft, premium card shadow that behaves on all three platforms. */
