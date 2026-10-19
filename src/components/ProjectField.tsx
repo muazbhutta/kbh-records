@@ -4,6 +4,7 @@ import { ActivityIndicator, Pressable, StyleSheet, TextInput, View } from 'react
 
 import { Txt } from '@/components/Txt';
 import { useCreateProject, useProjects } from '@/api/projects';
+import type { Project } from '@/types';
 import { fonts, colors, radius } from '@/theme';
 
 /**
@@ -29,29 +30,9 @@ export function ProjectField({
   label?: string;
 }) {
   const { data, isLoading } = useProjects();
-  const create = useCreateProject();
   const [adding, setAdding] = useState(false);
-  const [name, setName] = useState('');
-  const [error, setError] = useState<string | null>(null);
 
   const projects = data ?? [];
-
-  const start = async () => {
-    const trimmed = name.trim();
-    if (trimmed.length < 2) {
-      setError('Give the project a name of at least 2 letters.');
-      return;
-    }
-    setError(null);
-    try {
-      const project = await create.mutateAsync(trimmed);
-      onChange(project.id);
-      setName('');
-      setAdding(false);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'That did not save.');
-    }
-  };
 
   return (
     <View style={styles.group}>
@@ -89,52 +70,99 @@ export function ProjectField({
       )}
 
       {adding ? (
-        <View style={styles.newBox}>
-          <TextInput
-            value={name}
-            onChangeText={(text) => {
-              setName(text);
-              setError(null);
-            }}
-            placeholder="Name of the site or job"
-            placeholderTextColor={colors.textFaint}
-            style={styles.input}
-            autoFocus
-            maxLength={80}
-            returnKeyType="done"
-            onSubmitEditing={start}
-            accessibilityLabel="Name of the new project"
-          />
-          <Pressable
-            onPress={start}
-            disabled={create.isPending}
-            accessibilityRole="button"
-            style={({ pressed }) => [styles.save, pressed && styles.savePressed]}
-          >
-            {create.isPending ? (
-              <ActivityIndicator color={colors.white} size="small" />
-            ) : (
-              <Txt variant="caption" weight="semibold" color={colors.white}>
-                Add
-              </Txt>
-            )}
-          </Pressable>
-          <Pressable
-            onPress={() => {
-              setAdding(false);
-              setName('');
-              setError(null);
-            }}
-            accessibilityRole="button"
-            accessibilityLabel="Cancel"
-            hitSlop={8}
-            style={styles.cancel}
-          >
-            <Ionicons name="close" size={18} color={colors.textMuted} />
-          </Pressable>
-        </View>
+        <NewProjectBox
+          onDone={(project) => {
+            onChange(project.id);
+            setAdding(false);
+          }}
+          onCancel={() => setAdding(false)}
+        />
       ) : null}
 
+    </View>
+  );
+}
+
+/**
+ * Write down a project by name. Used both while recording an expense and
+ * on the Projects screen, where a site can be set up before anybody has
+ * spent a riyal on it.
+ */
+export function NewProjectBox({
+  onDone,
+  onCancel,
+  placeholder = 'Name of the site or job',
+}: {
+  onDone: (project: Project) => void;
+  onCancel: () => void;
+  placeholder?: string;
+}) {
+  const create = useCreateProject();
+  const [name, setName] = useState('');
+  const [error, setError] = useState<string | null>(null);
+
+  const save = async () => {
+    const trimmed = name.trim();
+    if (trimmed.length < 2) {
+      setError('Give the project a name of at least 2 letters.');
+      return;
+    }
+    setError(null);
+    try {
+      const project = await create.mutateAsync(trimmed);
+      setName('');
+      onDone(project);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'That did not save.');
+    }
+  };
+
+  return (
+    <View style={styles.group}>
+      <View style={styles.newBox}>
+        <TextInput
+          value={name}
+          onChangeText={(text) => {
+            setName(text);
+            setError(null);
+          }}
+          placeholder={placeholder}
+          placeholderTextColor={colors.textFaint}
+          style={styles.input}
+          autoFocus
+          maxLength={80}
+          returnKeyType="done"
+          onSubmitEditing={save}
+          accessibilityLabel="Name of the new project"
+        />
+        <Pressable
+          onPress={save}
+          disabled={create.isPending}
+          accessibilityRole="button"
+          style={({ pressed }) => [styles.save, pressed && styles.savePressed]}
+        >
+          {create.isPending ? (
+            <ActivityIndicator color={colors.white} size="small" />
+          ) : (
+            <Txt variant="caption" weight="semibold" color={colors.white}>
+              Add
+            </Txt>
+          )}
+        </Pressable>
+        <Pressable
+          onPress={() => {
+            setName('');
+            setError(null);
+            onCancel();
+          }}
+          accessibilityRole="button"
+          accessibilityLabel="Cancel"
+          hitSlop={8}
+          style={styles.cancel}
+        >
+          <Ionicons name="close" size={18} color={colors.textMuted} />
+        </Pressable>
+      </View>
       {error ? (
         <Txt variant="caption" color={colors.red}>
           {error}

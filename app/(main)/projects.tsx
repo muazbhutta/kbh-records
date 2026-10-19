@@ -9,6 +9,7 @@ import { Header, Screen } from '@/components/Screen';
 import { Txt } from '@/components/Txt';
 import { useProjectByPerson, useProjectTotals, useUnfiledExpenses } from '@/api/projects';
 import { useRecentEntries } from '@/api/entries';
+import { NewProjectBox } from '@/components/ProjectField';
 import { EntryRow } from '@/components/EntryRow';
 import { signedUrls } from '@/lib/photos';
 import { useAuth } from '@/auth/AuthProvider';
@@ -46,6 +47,7 @@ export default function ProjectsScreen() {
   }>();
 
   const [period, setPeriod] = useState<Period>('all');
+  const [adding, setAdding] = useState(false);
   const range = useMemo(() => periodRange(period), [period]);
 
   const canSee = canManage || !!me?.is_head;
@@ -87,7 +89,33 @@ export default function ProjectsScreen() {
       <Header
         title="Projects"
         subtitle={canManage ? 'What the money was spent on' : 'What your people spent it on'}
+        right={
+          !adding ? (
+            <Pressable
+              onPress={() => setAdding(true)}
+              accessibilityRole="button"
+              accessibilityLabel="Add a project"
+              style={({ pressed }) => [styles.addBtn, pressed && styles.addPressed]}
+            >
+              <Ionicons name="add" size={18} color={colors.navy} />
+              <Txt variant="caption" weight="semibold" color={colors.navy}>
+                Add project
+              </Txt>
+            </Pressable>
+          ) : null
+        }
       />
+
+      {adding ? (
+        <View style={styles.addBox}>
+          <NewProjectBox
+            onDone={() => setAdding(false)}
+            onCancel={() => setAdding(false)}
+            placeholder="Name of the site or job"
+          />
+        </View>
+      ) : null}
+
       <View style={styles.periodRow}>
         {PERIODS.map((p) => (
           <Pressable
@@ -150,7 +178,7 @@ function ProjectList({
       <EmptyState
         icon="business-outline"
         title="No projects yet"
-        message="Start one while recording an expense, and what is spent on it will gather here."
+        message="Add one above, or start one while recording an expense. What is spent on it gathers here."
       />
     );
   }
@@ -386,6 +414,20 @@ function OnePersonOnOneProject({
 }
 
 const styles = StyleSheet.create({
+  addBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 13,
+    height: 38,
+    borderRadius: radius.pill,
+    borderWidth: 1.5,
+    borderStyle: 'dashed',
+    borderColor: colors.line,
+    backgroundColor: colors.card,
+  },
+  addPressed: { backgroundColor: colors.navyTint },
+  addBox: { marginBottom: 14 },
   periodRow: { flexDirection: 'row', gap: 8, marginBottom: 14, flexWrap: 'wrap' },
   chip: {
     paddingHorizontal: 15,
