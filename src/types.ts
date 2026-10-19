@@ -517,3 +517,34 @@ export type DownloadLogRow = {
   total: number | null;
   note: string | null;
 };
+
+// --------------------------------------- opening up a dashboard figure
+
+/** The three figures on the dashboard that can be opened up. */
+export type FigureKind = 'money_given' | 'expense' | 'returned';
+
+/** One person's share of a figure. */
+export type PersonShare = {
+  person_id: string;
+  full_name: string;
+  job_title: string | null;
+  is_active: boolean;
+  total: number;
+  entry_count: number;
+};
+
+/** One day's share of one person's part of a figure. */
+export type DayShare = {
+  bill_date: string;
+  total: number;
+  entry_count: number;
+};
+
+export const FIGURE_META: Record<
+  FigureKind,
+  { label: string; icon: string; question: string }
+> = {
+  money_given: { label: 'Money Given', icon: 'cash-outline',       question: 'Who was given it' },
+  expense:     { label: 'Expenses',    icon: 'receipt-outline',    question: 'Who spent it' },
+  returned:    { label: 'Returned',    icon: 'arrow-undo-outline', question: 'Who gave it back' },
+};

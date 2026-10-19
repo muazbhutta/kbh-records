@@ -1,6 +1,6 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import React from 'react';
-import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { Txt } from '@/components/Txt';
 import { amountOnly, money } from '@/lib/format';
@@ -178,26 +178,47 @@ export function Figure({
   value,
   tone = colors.text,
   icon,
+  onPress,
 }: {
   label: string;
   value: number;
   tone?: string;
   icon?: keyof typeof Ionicons.glyphMap;
+  /** Given one, the figure opens up into who it belongs to. */
+  onPress?: () => void;
 }) {
-  return (
-    <View style={[styles.figure, shadow.card]}>
-      {icon ? (
-        <View style={[styles.figureIcon, { backgroundColor: `${tone}14` }]}>
-          <Ionicons name={icon} size={16} color={tone} />
-        </View>
-      ) : null}
+  const body = (
+    <>
+      <View style={styles.figureTop}>
+        {icon ? (
+          <View style={[styles.figureIcon, { backgroundColor: `${tone}14` }]}>
+            <Ionicons name={icon} size={16} color={tone} />
+          </View>
+        ) : null}
+        {onPress ? (
+          <Ionicons name="chevron-forward" size={15} color={colors.textFaint} />
+        ) : null}
+      </View>
       <Txt variant="caption" color={colors.textMuted}>
         {label}
       </Txt>
       <Txt weight="bold" color={tone} style={styles.figureValue} numberOfLines={1}>
         {money(value)}
       </Txt>
-    </View>
+    </>
+  );
+
+  if (!onPress) return <View style={[styles.figure, shadow.card]}>{body}</View>;
+
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={`${label}, ${money(value)}. Open to see whose it is.`}
+      style={({ pressed }) => [styles.figure, shadow.card, pressed && styles.figurePressed]}
+    >
+      {body}
+    </Pressable>
   );
 }
 
@@ -232,6 +253,12 @@ const styles = StyleSheet.create({
     borderColor: colors.line,
     padding: 14,
     gap: 2,
+  },
+  figurePressed: { backgroundColor: colors.navyTint, borderColor: colors.navyTint },
+  figureTop: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
   },
   figureIcon: {
     width: 30,

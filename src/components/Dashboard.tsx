@@ -25,7 +25,7 @@ import { periodRange, type Period } from '@/components/KhataList';
 import { formatDate, money, todayInRiyadh } from '@/lib/format';
 import { signedUrls } from '@/lib/photos';
 import { colors, radius } from '@/theme';
-import type { FeedEntry } from '@/types';
+import type { FeedEntry, FigureKind } from '@/types';
 
 /** Every foldable block on the dashboard, in the order they appear. */
 const SECTION_IDS = [
@@ -65,6 +65,8 @@ export function Dashboard() {
     return periodRange(period);
   }, [period, customFrom, customTo]);
 
+  const periodLabel = PERIODS.find((p) => p.key === period)?.label ?? 'This month';
+
   const summary = useDashboardSummary(range);
   const months = useExpensesByMonth(12);
   const categories = useExpensesByCategory(range);
@@ -74,6 +76,18 @@ export function Dashboard() {
   const recent = useRecentEntries({}, 10);
 
   const s = summary.data;
+
+  /**
+   * Open one of the three figures up. The period goes with it, by name
+   * as well as by date, so the screen that opens is counting exactly
+   * what the card on this screen was counting.
+   */
+  const openFigure = (kind: FigureKind) => {
+    const query = new URLSearchParams({ period: periodLabel });
+    if (range.from) query.set('from', range.from);
+    if (range.to) query.set('to', range.to);
+    router.push(`/breakdown/${kind}?${query.toString()}`);
+  };
 
   return (
     <>
@@ -146,9 +160,27 @@ export function Dashboard() {
 
       {s ? (
         <View style={styles.figures}>
-          <Figure label="Money Given" value={Number(s.money_given)} tone={colors.green} icon="cash-outline" />
-          <Figure label="Expenses" value={Number(s.expenses)} tone={colors.red} icon="receipt-outline" />
-          <Figure label="Returned" value={Number(s.returned)} tone={colors.amberDark} icon="arrow-undo-outline" />
+          <Figure
+            label="Money Given"
+            value={Number(s.money_given)}
+            tone={colors.green}
+            icon="cash-outline"
+            onPress={() => openFigure('money_given')}
+          />
+          <Figure
+            label="Expenses"
+            value={Number(s.expenses)}
+            tone={colors.red}
+            icon="receipt-outline"
+            onPress={() => openFigure('expense')}
+          />
+          <Figure
+            label="Returned"
+            value={Number(s.returned)}
+            tone={colors.amberDark}
+            icon="arrow-undo-outline"
+            onPress={() => openFigure('returned')}
+          />
         </View>
       ) : null}
 

@@ -2309,6 +2309,30 @@ export type Database = {
         Returns: Json
       }
       backfill_expense_ids: { Args: never; Returns: number }
+      breakdown_by_date: {
+        Args: {
+          p_from?: string
+          p_person_id: string
+          p_to?: string
+          p_type: string
+        }
+        Returns: {
+          bill_date: string
+          entry_count: number
+          total: number
+        }[]
+      }
+      breakdown_by_person: {
+        Args: { p_from?: string; p_to?: string; p_type: string }
+        Returns: {
+          entry_count: number
+          full_name: string
+          is_active: boolean
+          job_title: string
+          person_id: string
+          total: number
+        }[]
+      }
       cancel_entry: {
         Args: { p_id: string; p_reason?: string }
         Returns: string
@@ -2473,32 +2497,19 @@ export type Database = {
           updated_at: string
         }[]
       }
-      log_report_download:
-        | {
-            Args: {
-              p_from?: string
-              p_kind: string
-              p_note?: string
-              p_person_id?: string
-              p_rows?: number
-              p_to?: string
-              p_total?: number
-            }
-            Returns: undefined
-          }
-        | {
-            Args: {
-              p_category_id?: string
-              p_from?: string
-              p_kind: string
-              p_note?: string
-              p_person_id?: string
-              p_rows?: number
-              p_to?: string
-              p_total?: number
-            }
-            Returns: undefined
-          }
+      log_report_download: {
+        Args: {
+          p_category_id?: string
+          p_from?: string
+          p_kind: string
+          p_note?: string
+          p_person_id?: string
+          p_rows?: number
+          p_to?: string
+          p_total?: number
+        }
+        Returns: undefined
+      }
       my_team_ids: { Args: never; Returns: string[] }
       next_expense_id: { Args: { p_year: number }; Returns: string }
       people_needing_check: {
