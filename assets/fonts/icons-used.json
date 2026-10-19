@@ -1,4 +1,5 @@
 [
+  "add",
   "add-circle",
   "alert-circle",
   "arrow-down-circle",
@@ -9,6 +10,8 @@
   "arrow-up-circle",
   "backspace-outline",
   "briefcase-outline",
+  "business",
+  "business-outline",
   "calendar-outline",
   "call-outline",
   "camera",
@@ -33,6 +36,7 @@
   "document-text-outline",
   "documents-outline",
   "help-circle-outline",
+  "help-outline",
   "home",
   "home-outline",
   "image-outline",

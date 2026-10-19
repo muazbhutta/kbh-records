@@ -45,6 +45,14 @@ const KHATA: NavItem = {
   match: (p) => p.startsWith('/khata'),
 };
 
+const PROJECTS: NavItem = {
+  href: '/projects',
+  label: 'Projects',
+  icon: 'business-outline',
+  iconActive: 'business',
+  match: (p) => p.startsWith('/projects'),
+};
+
 const REPORTS: NavItem = {
   href: '/reports',
   label: 'Reports',
@@ -62,13 +70,17 @@ const SETTINGS: NavItem = {
 };
 
 export default function MainLayout() {
-  const { canManage } = useAuth();
+  const { canManage, person } = useAuth();
   const wide = useIsWide();
   const insets = useSafeAreaInsets();
 
+  // A head of employees gets Projects too: he files his own people's
+  // expenses against sites, so he needs somewhere to see them.
   const items: NavItem[] = canManage
-    ? [HOME, PEOPLE, REPORTS, SETTINGS]
-    : [HOME, KHATA, SETTINGS];
+    ? [HOME, PEOPLE, PROJECTS, REPORTS, SETTINGS]
+    : person?.is_head
+      ? [HOME, KHATA, PROJECTS, SETTINGS]
+      : [HOME, KHATA, SETTINGS];
 
   const content = (
     <Stack

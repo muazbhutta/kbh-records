@@ -12,6 +12,7 @@ import { Button } from '@/components/Button';
 import { Field } from '@/components/Field';
 import { PhotoPicker } from '@/components/BillPhotos';
 import { AmountField, CategoryField, DateField, PersonField } from '@/components/pickers';
+import { ProjectField } from '@/components/ProjectField';
 import { Header, Screen } from '@/components/Screen';
 import { Txt } from '@/components/Txt';
 import { useCategories, useCreateEntry, usePeopleNames } from '@/api/entries';
@@ -82,6 +83,7 @@ export default function NewEntryScreen() {
   const { data: people = [], isLoading: peopleLoading } = usePeopleNames();
   const { data: categories = [], isLoading: catsLoading } = useCategories();
   const createEntry = useCreateEntry();
+  const [projectId, setProjectId] = useState<string | null>(null);
   const checkDuplicates = useCheckDuplicates();
   const checkInvoice = useInvoiceDuplicateCheck();
 
@@ -120,6 +122,9 @@ export default function NewEntryScreen() {
   // A plain employee hands money to nobody. A head may pass his own cash
   // down to the people under him; an Admin may move anyone's.
   const isHead = !!me?.is_head;
+  // Who may say which site an expense was for. The database keeps the
+  // same rule; this only decides whether the question is asked.
+  const canFileProjects = canManage || isHead;
   const myTeam = useMemo(
     () => people.filter((p) => p.head_id === me?.id && p.id !== me?.id),
     [people, me?.id],
@@ -188,6 +193,7 @@ export default function NewEntryScreen() {
         qr: type === 'expense' ? qr : null,
         duplicateOf: warning?.same_photo?.entry_id ?? null,
         payMethod: type === 'expense' ? null : payMethod,
+        projectId: type === 'expense' ? projectId : null,
       });
       router.replace(`/entry/${id}?person=${personId}&saved=1`);
     } catch (err) {
@@ -374,6 +380,9 @@ export default function NewEntryScreen() {
               onChange={setCategoryId}
               error={touched && !categoryId ? 'Choose what it was for.' : null}
             />
+            {canFileProjects ? (
+              <ProjectField value={projectId} onChange={setProjectId} />
+            ) : null}
           </Card>
         ) : null}
 

@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { Modal, Pressable, StyleSheet, View } from 'react-native';
 
 import { Badge, Banner, Card, DetailRow, Loading, SectionTitle, useBackdrop } from '@/components/Bits';
+import { ProjectField } from '@/components/ProjectField';
 import { BillImage, PhotoViewer } from '@/components/BillPhotos';
 import { Button } from '@/components/Button';
 import { lineIcon, lineTitle } from '@/components/EntryRow';
@@ -21,6 +22,7 @@ import { useAuth } from '@/auth/AuthProvider';
 import { formatDate, formatDateTime, money } from '@/lib/format';
 import { signedUrl } from '@/lib/photos';
 import { errorMessage } from '@/lib/supabase';
+import { useSetEntryProject } from '@/api/projects';
 import { colors, radius, shadow } from '@/theme';
 import { EXPENSE_KIND_LABEL, LINE_META, PAY_METHOD_LABEL } from '@/types';
 
@@ -32,7 +34,10 @@ export default function EntryScreen() {
     edited?: string;
   }>();
   const router = useRouter();
-  const { canManage } = useAuth();
+  const { person: me, canManage } = useAuth();
+  // Who may say which site an expense was for. The database keeps the
+  // same rule; this only decides whether the question is asked.
+  const canFileProjects = canManage || !!me?.is_head;
 
   const { data: entry, isLoading, error } = useEntry(id, person);
   const { data: photos = [] } = useEntryPhotos(id, (entry?.photo_count ?? 0) > 0);
@@ -40,6 +45,8 @@ export default function EntryScreen() {
 
   const [viewing, setViewing] = useState<string | null>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [fileError, setFileError] = useState<string | null>(null);
+  const setProject = useSetEntryProject();
   const [showHistory, setShowHistory] = useState(false);
 
   if (isLoading) {
@@ -160,6 +167,9 @@ export default function EntryScreen() {
         {entry.type === 'expense' ? (
           <DetailRow label="Category" value={entry.category_name ?? '-'} />
         ) : null}
+        {entry.type === 'expense' && !canFileProjects ? (
+          <DetailRow label="Project" value={entry.project_name ?? 'Not filed'} />
+        ) : null}
         <DetailRow
           label={entry.type === 'transfer' ? 'Sent by' : 'Whose khata'}
           value={entry.owner_name ?? '-'}
@@ -170,6 +180,31 @@ export default function EntryScreen() {
         <DetailRow label="Entered by" value={entry.entered_by_name ?? '-'} />
         <DetailRow label="Saved at" value={formatDateTime(entry.entered_at)} last />
       </Card>
+
+      {entry.type === 'expense' && canFileProjects ? (
+        <>
+          <SectionTitle title="Project" />
+          <Card>
+            <ProjectField
+              value={entry.project_id}
+              onChange={(id) => {
+                setFileError(null);
+                setProject.mutate(
+                  { entryId: entry.id, projectId: id },
+                  { onError: (err) => setFileError(errorMessage(err)) },
+                );
+              }}
+              label="WHAT WAS THIS SPENT ON?"
+            />
+            {setProject.isPending ? (
+              <Txt variant="caption" color={colors.textMuted}>
+                Saving...
+              </Txt>
+            ) : null}
+            {fileError ? <Banner tone="error" message={fileError} /> : null}
+          </Card>
+        </>
+      ) : null}
 
       {entry.photo_count > 0 ? (
         <>

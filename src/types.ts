@@ -127,6 +127,8 @@ export type FeedEntry = {
   type_flags: string[];
   bill_scan_state: BillScanState;
   category_id: string | null;
+  project_id: string | null;
+  project_name: string | null;
   category_name: string | null;
   category_icon: string | null;
   photo_count: number;
@@ -560,4 +562,28 @@ export type CashHolder = {
   gave_back: number;
   balance: number;
   entry_count: number;
+};
+
+// ------------------------------------------------------------- projects
+
+/** A site or job the company spends money on. Closed, never deleted. */
+export type Project = {
+  id: string;
+  name: string;
+  note: string | null;
+  is_active: boolean;
+  created_by: string | null;
+  created_at: string;
+  closed_at: string | null;
+};
+
+/** One project with what has been spent on it. */
+export type ProjectTotal = {
+  project_id: string;
+  name: string;
+  is_active: boolean;
+  spent: number;
+  entry_count: number;
+  people_count: number;
+  last_spend: string | null;
 };

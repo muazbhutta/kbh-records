@@ -58,6 +58,55 @@ for (const [from, to] of rewrites) {
 }
 fs.writeFileSync(`${DIST}/sw.js`, sw);
 
+// ------------------------------------------------- the icons in the font
+// The Ionicons file this app ships is cut down to the symbols it uses, so
+// an icon named in the code but missing from that list draws nothing at
+// all - a blank square, on a screen nobody looked at twice. It happened
+// once, to the Projects screen, and it is invisible until somebody opens
+// the page. So the build counts them.
+//
+// Run `npm run fonts` after naming a new icon.
+const USED = 'assets/fonts/icons-used.json';
+if (fs.existsSync(USED)) {
+  const inFont = new Set(JSON.parse(fs.readFileSync(USED, 'utf8')));
+  const glyphs = JSON.parse(
+    fs.readFileSync(
+      'node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/glyphmaps/Ionicons.json',
+      'utf8',
+    ),
+  );
+
+  const named = new Set();
+  const walk = (dir) => {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const full = `${dir}/${entry.name}`;
+      if (entry.isDirectory()) {
+        if (entry.name !== 'node_modules') walk(full);
+      } else if (/\.tsx?$/.test(entry.name)) {
+        const text = fs.readFileSync(full, 'utf8');
+        for (const m of text.matchAll(
+          /(?:name|icon|iconActive)\s*[:=]\s*['"]([a-z][a-z0-9-]{2,})['"]/g,
+        )) {
+          named.add(m[1]);
+        }
+        for (const m of text.matchAll(/name=\{?['"]([a-z][a-z0-9-]{2,})['"]/g)) named.add(m[1]);
+      }
+    }
+  };
+  walk('src');
+  walk('app');
+
+  const missing = [...named].filter((n) => glyphs[n] !== undefined && !inFont.has(n)).sort();
+  if (missing.length > 0) {
+    throw new Error(
+      'These icons are used but are not in the font this build ships, so they ' +
+        'would draw as blank squares:\n  ' +
+        missing.join('\n  ') +
+        '\nRun `npm run fonts` and build again.',
+    );
+  }
+}
+
 // -------------------------------------------------------------- the head
 const HEAD = `
     <meta name="description" content="The cash book for KBH Construction, Jeddah: money given out, what it was spent on, and the bill for every expense." />

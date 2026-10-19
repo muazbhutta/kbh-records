@@ -21,6 +21,7 @@ import {
   useTopCashHolders,
 } from '@/api/dashboard';
 import { useRecentEntries } from '@/api/entries';
+import { useProjectTotals, useUnfiledExpenses } from '@/api/projects';
 import { periodRange, type Period } from '@/components/KhataList';
 import { formatDate, money, todayInRiyadh } from '@/lib/format';
 import { signedUrls } from '@/lib/photos';
@@ -32,6 +33,7 @@ const SECTION_IDS = [
   'checks',
   'months',
   'categories',
+  'projects',
   'holders',
   'teams',
   'activity',
@@ -74,6 +76,8 @@ export function Dashboard() {
   const stale = usePeopleNeedingCheck(30);
   const teams = useTeams();
   const recent = useRecentEntries({}, 10);
+  const projects = useProjectTotals(range);
+  const unfiled = useUnfiledExpenses(range);
 
   const s = summary.data;
 
@@ -333,6 +337,69 @@ export function Dashboard() {
         </View>
       </View>
 
+      {/* --------------------------------------------------- projects */}
+      <Section
+        title="Spent on each project"
+        open={sections.isOpen('projects')}
+        onToggle={() => sections.toggle('projects')}
+        hint={
+          projects.data && projects.data.length > 0
+            ? `${projects.data.length} ${projects.data.length === 1 ? 'project' : 'projects'}`
+            : 'None yet'
+        }
+        action={
+          <Pressable onPress={() => router.push('/projects')} accessibilityRole="button">
+            <Txt variant="caption" weight="semibold" color={colors.blue}>
+              All projects
+            </Txt>
+          </Pressable>
+        }
+      >
+      <Card>
+        {projects.isLoading ? (
+          <Loading />
+        ) : (projects.data ?? []).length === 0 ? (
+          <Txt variant="caption" color={colors.textMuted} center>
+            No project has been started yet. One can be written down while recording an expense.
+          </Txt>
+        ) : (
+          <>
+            <RankedBars
+              data={(projects.data ?? []).slice(0, 6).map((p) => ({
+                id: p.project_id,
+                label: p.name,
+                sub:
+                  Number(p.entry_count) === 0
+                    ? 'Nothing spent yet'
+                    : `${p.entry_count} ${Number(p.entry_count) === 1 ? 'expense' : 'expenses'}`,
+                value: Number(p.spent),
+              }))}
+              onPress={(id) =>
+                router.push(
+                  `/projects?project=${id}&name=${encodeURIComponent(
+                    (projects.data ?? []).find((p) => p.project_id === id)?.name ?? '',
+                  )}`,
+                )
+              }
+            />
+            {unfiled.data && unfiled.data.spent > 0 ? (
+              <Pressable
+                onPress={() => router.push('/projects?unfiled=1')}
+                accessibilityRole="button"
+                style={styles.unfiled}
+              >
+                <Ionicons name="help-circle-outline" size={15} color={colors.textMuted} />
+                <Txt variant="caption" color={colors.textMuted}>
+                  {money(unfiled.data.spent)} not filed against any project yet
+                </Txt>
+                <Ionicons name="chevron-forward" size={14} color={colors.textFaint} />
+              </Pressable>
+            ) : null}
+          </>
+        )}
+      </Card>
+      </Section>
+
       <Section
         title="Who is holding the most cash"
         open={sections.isOpen('holders')}
@@ -548,6 +615,15 @@ const styles = StyleSheet.create({
   teamBorder: { borderBottomWidth: 1, borderBottomColor: colors.line },
   teamText: { flex: 1, gap: 1, minWidth: 0 },
   teamCash: { alignItems: 'flex-end', gap: 1 },
+  unfiled: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.line,
+  },
   flagRow: { marginBottom: 8 },
   feed: { overflow: 'hidden' },
 });

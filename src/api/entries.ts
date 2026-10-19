@@ -22,7 +22,7 @@ import type {
 import type { ZatcaInvoice } from '@/lib/zatca';
 
 const FEED_COLUMNS =
-  'id, person_id, line_type, signed_amount, type, amount, bill_date, entered_at, note, owner_id, owner_name, counterparty_id, counterparty_name, other_person_id, other_person_name, entered_by, entered_by_name, entered_for_someone_else, duplicate_photo, pay_method, system_id, expense_type, type_source, type_flags, bill_scan_state, category_id, category_name, category_icon, photo_count, thumb_path';
+  'id, person_id, line_type, signed_amount, type, amount, bill_date, entered_at, note, owner_id, owner_name, counterparty_id, counterparty_name, other_person_id, other_person_name, entered_by, entered_by_name, entered_for_someone_else, duplicate_photo, pay_method, system_id, expense_type, type_source, type_flags, bill_scan_state, category_id, category_name, category_icon, project_id, project_name, photo_count, thumb_path';
 
 export const PAGE_SIZE = 20;
 
@@ -35,6 +35,12 @@ export type FeedFilter = {
   categoryId?: string;
   /** Petty or Invoice. Only expenses carry one. */
   expenseType?: ExpenseKind;
+  /**
+   * Which project. A project id narrows to that one; 'none' narrows to
+   * the expenses nobody has filed against a project yet. Left out, the
+   * project is not asked about at all.
+   */
+  projectId?: string | 'none';
 };
 
 function applyFilter<T extends ReturnType<typeof baseQuery>>(q: T, filter: FeedFilter) {
@@ -45,6 +51,8 @@ function applyFilter<T extends ReturnType<typeof baseQuery>>(q: T, filter: FeedF
   if (filter.to) out = out.lte('bill_date', filter.to) as T;
   if (filter.categoryId) out = out.eq('category_id', filter.categoryId) as T;
   if (filter.expenseType) out = out.eq('expense_type', filter.expenseType) as T;
+  if (filter.projectId === 'none') out = out.is('project_id', null) as T;
+  else if (filter.projectId) out = out.eq('project_id', filter.projectId) as T;
   return out;
 }
 
@@ -253,6 +261,8 @@ export type NewEntry = {
   duplicateOf?: string | null;
   /** Cash in hand or bank transfer. Never set on an expense. */
   payMethod?: PayMethod | null;
+  /** Which site it was spent on. Expenses only, and never required. */
+  projectId?: string | null;
 };
 
 function friendlyDbError(message: string): string {
@@ -293,6 +303,7 @@ export function useCreateEntry() {
         p_qr: input.qr ? (JSON.parse(JSON.stringify(input.qr)) as Json) : undefined,
         p_duplicate_of: input.duplicateOf ?? undefined,
         p_pay_method: input.payMethod ?? undefined,
+        p_project_id: input.projectId ?? undefined,
       });
 
       if (error) {

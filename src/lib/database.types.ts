@@ -685,6 +685,13 @@ export type Database = {
             referencedRelation: "team_summary"
             referencedColumns: ["head_id"]
           },
+          {
+            foreignKeyName: "entries_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
         ]
       }
       entry_photos: {
@@ -1136,6 +1143,65 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "groups"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      projects: {
+        Row: {
+          closed_at: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean
+          name: string
+          note: string | null
+        }
+        Insert: {
+          closed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          note?: string | null
+        }
+        Update: {
+          closed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          note?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "projects_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "app_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "projects_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "people_list"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "projects_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "people_names"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "projects_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "team_summary"
+            referencedColumns: ["head_id"]
           },
         ]
       }
@@ -1720,6 +1786,7 @@ export type Database = {
           person_id: string | null
           photo_count: number | null
           project_id: string | null
+          project_name: string | null
           signed_amount: number | null
           system_id: string | null
           thumb_path: string | null
@@ -1818,6 +1885,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "team_summary"
             referencedColumns: ["head_id"]
+          },
+          {
+            foreignKeyName: "entries_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -2333,6 +2407,7 @@ export type Database = {
           total: number
         }[]
       }
+      can_file_projects: { Args: never; Returns: boolean }
       cancel_entry: {
         Args: { p_id: string; p_reason?: string }
         Returns: string
@@ -2390,6 +2465,7 @@ export type Database = {
           p_pay_method?: Database["public"]["Enums"]["pay_method"]
           p_person_id: string
           p_photos?: Json
+          p_project_id?: string
           p_qr?: Json
           p_type: Database["public"]["Enums"]["entry_type"]
           p_type_source?: Database["public"]["Enums"]["type_source"]
@@ -2426,6 +2502,24 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "app_users"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      create_project: {
+        Args: { p_name: string; p_note?: string }
+        Returns: {
+          closed_at: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean
+          name: string
+          note: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "projects"
           isOneToOne: true
           isSetofReturn: false
         }
@@ -2524,6 +2618,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      my_people: { Args: never; Returns: string[] }
       my_team_ids: { Args: never; Returns: string[] }
       next_expense_id: { Args: { p_year: number }; Returns: string }
       people_needing_check: {
@@ -2536,6 +2631,29 @@ export type Database = {
         }[]
       }
       phash_distance: { Args: { a: string; b: string }; Returns: number }
+      project_by_person: {
+        Args: { p_from?: string; p_project_id?: string; p_to?: string }
+        Returns: {
+          entry_count: number
+          full_name: string
+          is_active: boolean
+          job_title: string
+          person_id: string
+          total: number
+        }[]
+      }
+      project_totals: {
+        Args: { p_from?: string; p_to?: string }
+        Returns: {
+          entry_count: number
+          is_active: boolean
+          last_spend: string
+          name: string
+          people_count: number
+          project_id: string
+          spent: number
+        }[]
+      }
       record_cash_check: {
         Args: { p_counted: number; p_note?: string; p_person_id: string }
         Returns: string
@@ -2567,6 +2685,10 @@ export type Database = {
         Returns: string
       }
       restore_entry: { Args: { p_id: string }; Returns: string }
+      set_entry_project: {
+        Args: { p_entry_id: string; p_project_id?: string }
+        Returns: undefined
+      }
       set_expense_type: {
         Args: {
           p_id: string
@@ -2589,6 +2711,13 @@ export type Database = {
         }[]
       }
       uncancel_entry: { Args: { p_id: string }; Returns: string }
+      unfiled_expenses: {
+        Args: { p_from?: string; p_to?: string }
+        Returns: {
+          entry_count: number
+          spent: number
+        }[]
+      }
       update_entry: {
         Args: {
           p_amount?: number
