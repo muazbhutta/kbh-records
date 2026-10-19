@@ -99,6 +99,7 @@ export function CashCard({
   owedNote = 'More was spent than was handed over',
   subtitle,
   style,
+  onPress,
 }: {
   balance: number;
   given: number;
@@ -111,6 +112,12 @@ export function CashCard({
   owedNote?: string;
   subtitle?: string;
   style?: StyleProp<ViewStyle>;
+  /**
+   * Given one, the card opens up into whose hands the money is in. The
+   * card on a person's own khata has no such question to answer, so it
+   * passes nothing and stays a plain card.
+   */
+  onPress?: () => void;
 }) {
   const owed = balance < 0;
   // "Should be holding SAR 1,560" over a minus figure sends a person off to
@@ -118,17 +125,22 @@ export function CashCard({
   // has to say so in the heading, not in the small print.
   const heading = owed ? owedTitle : title;
 
-  return (
-    <View style={[styles.cash, shadow.raised, style]}>
+  const body = (
+    <>
       <View style={styles.cashTop}>
         <Txt variant="label" color={owed ? colors.red : colors.onDarkMuted} style={styles.upper}>
           {heading}
         </Txt>
-        {subtitle ? (
-          <Txt variant="caption" color={colors.onDarkMuted}>
-            {subtitle}
-          </Txt>
-        ) : null}
+        <View style={styles.cashTopRight}>
+          {subtitle ? (
+            <Txt variant="caption" color={colors.onDarkMuted}>
+              {subtitle}
+            </Txt>
+          ) : null}
+          {onPress ? (
+            <Ionicons name="chevron-forward" size={16} color={colors.onDarkMuted} />
+          ) : null}
+        </View>
       </View>
 
       <Txt
@@ -155,7 +167,20 @@ export function CashCard({
         <CashBit label={spentLabel} value={spent} tone={colors.amber} />
         <CashBit label="Returned" value={returned} tone={colors.onDarkMuted} />
       </View>
-    </View>
+    </>
+  );
+
+  if (!onPress) return <View style={[styles.cash, shadow.raised, style]}>{body}</View>;
+
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={`${heading}, ${money(Math.abs(balance))}. Open to see whose hands it is in.`}
+      style={({ pressed }) => [styles.cash, shadow.raised, style, pressed && styles.cashPressed]}
+    >
+      {body}
+    </Pressable>
   );
 }
 
@@ -232,6 +257,8 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   cashTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  cashTopRight: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  cashPressed: { backgroundColor: colors.navyDeep },
   cashAmount: { fontSize: 38, lineHeight: 48, letterSpacing: -1.2 },
   owes: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: -2, marginBottom: 2 },
   cashRow: {

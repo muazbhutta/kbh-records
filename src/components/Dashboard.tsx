@@ -146,6 +146,7 @@ export function Dashboard() {
           given={Number(s.money_given)}
           spent={Number(s.expenses)}
           returned={Number(s.returned)}
+          onPress={() => router.push('/cash-with-people')}
         />
       )}
 

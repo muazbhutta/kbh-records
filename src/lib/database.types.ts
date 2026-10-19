@@ -2337,6 +2337,20 @@ export type Database = {
         Args: { p_id: string; p_reason?: string }
         Returns: string
       }
+      cash_with_people: {
+        Args: never
+        Returns: {
+          balance: number
+          entry_count: number
+          full_name: string
+          gave_back: number
+          got: number
+          head_name: string
+          job_title: string
+          person_id: string
+          spent: number
+        }[]
+      }
       check_duplicates: {
         Args: {
           p_amount?: number

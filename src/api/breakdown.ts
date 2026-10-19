@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 
 import { supabase } from '@/lib/supabase';
 import type { Range } from '@/api/dashboard';
-import type { PersonShare, DayShare, FigureKind } from '@/types';
+import type { CashHolder, PersonShare, DayShare, FigureKind } from '@/types';
 
 /**
  * Opening up one of the figures on the dashboard.
@@ -46,6 +46,23 @@ export function useBreakdownByDate(
       });
       if (error) throw new Error(error.message);
       return (data ?? []) as DayShare[];
+    },
+  });
+}
+
+/**
+ * Who is holding company cash right now. Not a period figure: this is
+ * what is in people's hands at this moment, which is why it takes no
+ * dates.
+ */
+export function useCashWithPeople(enabled = true) {
+  return useQuery({
+    queryKey: ['breakdown', 'cash-with-people'],
+    enabled,
+    queryFn: async (): Promise<CashHolder[]> => {
+      const { data, error } = await supabase.rpc('cash_with_people');
+      if (error) throw new Error(error.message);
+      return (data ?? []) as CashHolder[];
     },
   });
 }

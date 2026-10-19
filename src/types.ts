@@ -548,3 +548,16 @@ export const FIGURE_META: Record<
   expense:     { label: 'Expenses',    icon: 'receipt-outline',    question: 'Who spent it' },
   returned:    { label: 'Returned',    icon: 'arrow-undo-outline', question: 'Who gave it back' },
 };
+
+/** One person's standing: what reached them, what is left in their hands. */
+export type CashHolder = {
+  person_id: string;
+  full_name: string;
+  job_title: string | null;
+  head_name: string | null;
+  got: number;
+  spent: number;
+  gave_back: number;
+  balance: number;
+  entry_count: number;
+};
