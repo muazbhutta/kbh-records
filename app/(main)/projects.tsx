@@ -6,6 +6,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { Avatar, Badge, Banner, Card, EmptyState, Loading } from '@/components/Bits';
 import { breakdownStyles, DrillRow, ShareBar, TotalCard } from '@/components/Breakdown';
 import { EntryRow } from '@/components/EntryRow';
+import { ProjectCrew } from '@/components/ProjectCrew';
 import { NewProjectBox } from '@/components/ProjectField';
 import { ProjectSheets } from '@/components/ProjectSheets';
 import { Header, Screen, useIsWide } from '@/components/Screen';
@@ -376,6 +377,7 @@ function OneProject({
       <Header title={title} subtitle="Who spent it" back />
 
       {project ? <ProjectLife project={project} /> : null}
+      {projectId ? <ProjectCrew projectId={projectId} /> : null}
 
       {isLoading ? (
         <Loading />

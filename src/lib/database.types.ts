@@ -1146,6 +1146,91 @@ export type Database = {
           },
         ]
       }
+      project_members: {
+        Row: {
+          added_at: string
+          added_by: string | null
+          person_id: string
+          project_id: string
+        }
+        Insert: {
+          added_at?: string
+          added_by?: string | null
+          person_id: string
+          project_id: string
+        }
+        Update: {
+          added_at?: string
+          added_by?: string | null
+          person_id?: string
+          project_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_members_added_by_fkey"
+            columns: ["added_by"]
+            isOneToOne: false
+            referencedRelation: "app_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_members_added_by_fkey"
+            columns: ["added_by"]
+            isOneToOne: false
+            referencedRelation: "people_list"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_members_added_by_fkey"
+            columns: ["added_by"]
+            isOneToOne: false
+            referencedRelation: "people_names"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_members_added_by_fkey"
+            columns: ["added_by"]
+            isOneToOne: false
+            referencedRelation: "team_summary"
+            referencedColumns: ["head_id"]
+          },
+          {
+            foreignKeyName: "project_members_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "app_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_members_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "people_list"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_members_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "people_names"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_members_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "team_summary"
+            referencedColumns: ["head_id"]
+          },
+          {
+            foreignKeyName: "project_members_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       projects: {
         Row: {
           closed_at: string | null
@@ -2353,6 +2438,10 @@ export type Database = {
       }
     }
     Functions: {
+      add_to_project: {
+        Args: { p_person_id: string; p_project_id: string }
+        Returns: undefined
+      }
       apply_bill_scan: {
         Args: {
           p_entry_id: string
@@ -2411,6 +2500,7 @@ export type Database = {
         }[]
       }
       can_file_projects: { Args: never; Returns: boolean }
+      can_use_project: { Args: { p_project_id: string }; Returns: boolean }
       cancel_entry: {
         Args: { p_id: string; p_reason?: string }
         Returns: string
@@ -2625,6 +2715,7 @@ export type Database = {
         Returns: undefined
       }
       my_people: { Args: never; Returns: string[] }
+      my_project_ids: { Args: never; Returns: string[] }
       my_team_ids: { Args: never; Returns: string[] }
       next_expense_id: { Args: { p_year: number }; Returns: string }
       people_needing_check: {
@@ -2648,6 +2739,16 @@ export type Database = {
           total: number
         }[]
       }
+      project_crew: {
+        Args: { p_project_id: string }
+        Returns: {
+          full_name: string
+          job_title: string
+          person_id: string
+          role: string
+          spent: number
+        }[]
+      }
       project_totals: {
         Args: { p_from?: string; p_to?: string }
         Returns: {
@@ -2666,6 +2767,10 @@ export type Database = {
       record_cash_check: {
         Args: { p_counted: number; p_note?: string; p_person_id: string }
         Returns: string
+      }
+      remove_from_project: {
+        Args: { p_person_id: string; p_project_id: string }
+        Returns: undefined
       }
       rename_project: {
         Args: {

@@ -24,10 +24,16 @@ export function ProjectField({
   value,
   onChange,
   label = 'WHICH PROJECT?',
+  canStartOne = false,
 }: {
   value: string | null;
   onChange: (id: string | null) => void;
   label?: string;
+  /**
+   * Naming a site is the office's job. Everybody else picks from the
+   * sites they have been put on - which is all the database hands them.
+   */
+  canStartOne?: boolean;
 }) {
   const { data, isLoading } = useProjects();
   const [adding, setAdding] = useState(false);
@@ -45,6 +51,11 @@ export function ProjectField({
       ) : (
         <View style={styles.row}>
           <Chip label="No project" active={value === null} onPress={() => onChange(null)} />
+          {projects.length === 0 && !canStartOne ? (
+            <Txt variant="caption" color={colors.textMuted}>
+              You have not been put on a project yet.
+            </Txt>
+          ) : null}
           {projects.map((p) => (
             <Chip
               key={p.id}
@@ -53,7 +64,7 @@ export function ProjectField({
               onPress={() => onChange(p.id)}
             />
           ))}
-          {!adding ? (
+          {canStartOne && !adding ? (
             <Pressable
               onPress={() => setAdding(true)}
               accessibilityRole="button"
@@ -69,7 +80,7 @@ export function ProjectField({
         </View>
       )}
 
-      {adding ? (
+      {canStartOne && adding ? (
         <NewProjectBox
           onDone={(project) => {
             onChange(project.id);

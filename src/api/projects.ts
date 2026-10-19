@@ -4,7 +4,7 @@ import { refreshTheBooks } from '@/lib/queryClient';
 
 import { supabase } from '@/lib/supabase';
 import type { Range } from '@/api/dashboard';
-import type { PersonShare, Project, ProjectTotal } from '@/types';
+import type { PersonShare, Project, ProjectCrewMember, ProjectTotal } from '@/types';
 
 /**
  * Projects: what the money was spent on.
@@ -186,6 +186,42 @@ export function useDeleteProject() {
   return useMutation({
     mutationFn: async (id: string): Promise<void> => {
       const { error } = await supabase.rpc('delete_project', { p_id: id });
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => refreshTheBooks(qc),
+  });
+}
+
+/** Who has been put on this site, and what each of them spent on it. */
+export function useProjectCrew(projectId: string | null | undefined, enabled = true) {
+  return useQuery({
+    queryKey: ['projects', 'crew', projectId],
+    enabled: enabled && !!projectId,
+    queryFn: async (): Promise<ProjectCrewMember[]> => {
+      const { data, error } = await supabase.rpc('project_crew', { p_project_id: projectId! });
+      if (error) throw new Error(error.message);
+      return (data ?? []) as ProjectCrewMember[];
+    },
+  });
+}
+
+/** Put somebody on a site, or take them off it. */
+export function useSetProjectMember() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      projectId,
+      personId,
+      on,
+    }: {
+      projectId: string;
+      personId: string;
+      on: boolean;
+    }): Promise<void> => {
+      const { error } = await supabase.rpc(on ? 'add_to_project' : 'remove_from_project', {
+        p_project_id: projectId,
+        p_person_id: personId,
+      });
       if (error) throw new Error(error.message);
     },
     onSuccess: () => refreshTheBooks(qc),

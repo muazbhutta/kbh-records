@@ -122,15 +122,14 @@ export default function NewEntryScreen() {
   // A plain employee hands money to nobody. A head may pass his own cash
   // down to the people under him; an Admin may move anyone's.
   const isHead = !!me?.is_head;
-  // Who may say which site an expense was for. The database keeps the
-  // same rule; this only decides whether the question is asked.
-  const canFileProjects = canManage || isHead;
+  // The office and the heads may name a new site; everybody else picks
+  // from the ones they have been put on. The database decides both.
+  const canStartProjects = canManage || isHead;
   const myTeam = useMemo(
     () => people.filter((p) => p.head_id === me?.id && p.id !== me?.id),
     [people, me?.id],
   );
-  const allowed =
-    (!adminOnly || canManage) && (type !== 'transfer' || canManage || isHead);
+  const allowed = (!adminOnly || canManage) && (type !== 'transfer' || canManage);
 
   const value = Number(amount);
   const amountOk = Number.isFinite(value) && value > 0;
@@ -287,13 +286,7 @@ export default function NewEntryScreen() {
     );
   }
 
-  const base = TITLES[type];
-  // A head is not "sending money to another person", he is paying his own
-  // men, and the screen should say so.
-  const meta =
-    type === 'transfer' && !canManage && isHead
-      ? { ...base, title: 'Give to my team', subtitle: 'Your own cash, down to your own people' }
-      : base;
+  const meta = TITLES[type];
 
   return (
     <Screen
@@ -380,9 +373,11 @@ export default function NewEntryScreen() {
               onChange={setCategoryId}
               error={touched && !categoryId ? 'Choose what it was for.' : null}
             />
-            {canFileProjects ? (
-              <ProjectField value={projectId} onChange={setProjectId} />
-            ) : null}
+            <ProjectField
+              value={projectId}
+              onChange={setProjectId}
+              canStartOne={canStartProjects}
+            />
           </Card>
         ) : null}
 

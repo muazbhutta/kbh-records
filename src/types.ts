@@ -595,3 +595,12 @@ export type ProjectTotal = {
   people_count: number;
   last_spend: string | null;
 };
+
+/** Somebody put on a site, with what they have spent on it. */
+export type ProjectCrewMember = {
+  person_id: string;
+  full_name: string;
+  job_title: string | null;
+  role: string;
+  spent: number;
+};

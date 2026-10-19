@@ -70,14 +70,6 @@ function EmployeeHome() {
           tint={colors.red}
           onPress={() => router.push('/entry/new?type=expense')}
         />
-        {isHead ? (
-          <BigActionButton
-            label="Give to my team"
-            icon="swap-horizontal"
-            tint={colors.blue}
-            onPress={() => router.push('/entry/new?type=transfer')}
-          />
-        ) : null}
       </View>
 
       {isHead ? <TeamStrip /> : null}
