@@ -34,14 +34,28 @@ manifest.shortcuts = (manifest.shortcuts ?? []).map((s) => ({
 }));
 fs.writeFileSync(`${DIST}/manifest.json`, `${JSON.stringify(manifest, null, 2)}\n`);
 
+// The worker names three addresses, and only in these three places, so
+// that hosting the app in a folder is a matter of rewriting three lines
+// rather than hunting for quoted paths through the code.
 let sw = fs.readFileSync(`${DIST}/sw.js`, 'utf8');
-sw = sw.replace(
-  "const CORE = ['/', '/index.html', '/manifest.json', '/favicon.ico'];",
-  `const CORE = ${JSON.stringify([at('/'), at('/index.html'), at('/manifest.json'), at('/favicon.ico')])};`,
-);
-sw = sw.replace(/caches\.match\('\/index\.html'\)/g, `caches.match('${at('/index.html')}')`);
-sw = sw.replace(/cache\.put\('\/index\.html', copy\)/g, `cache.put('${at('/index.html')}', copy)`);
-sw = sw.replace(/caches\.match\('\/'\)/g, `caches.match('${at('/')}')`);
+const rewrites = [
+  [
+    "const CORE = ['/', '/index.html', '/manifest.json', '/favicon.ico'];",
+    `const CORE = ${JSON.stringify([at('/'), at('/index.html'), at('/manifest.json'), at('/favicon.ico')])};`,
+  ],
+  ["const PAGE = '/index.html';", `const PAGE = '${at('/index.html')}';`],
+  ["const ROOT = '/';", `const ROOT = '${at('/')}';`],
+];
+for (const [from, to] of rewrites) {
+  if (!sw.includes(from)) {
+    throw new Error(
+      `sw.js no longer contains the line this build rewrites:\n  ${from}\n` +
+        'Put it back, or teach scripts/finish-web-build.mjs the new wording. ' +
+        'Leaving it unrewritten would serve the app the wrong paths.',
+    );
+  }
+  sw = sw.replace(from, to);
+}
 fs.writeFileSync(`${DIST}/sw.js`, sw);
 
 // -------------------------------------------------------------- the head
