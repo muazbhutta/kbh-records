@@ -575,6 +575,7 @@ export type Project = {
   created_by: string | null;
   created_at: string;
   closed_at: string | null;
+  started_on: string;
 };
 
 /** One project with what has been spent on it. */
@@ -582,6 +583,13 @@ export type ProjectTotal = {
   project_id: string;
   name: string;
   is_active: boolean;
+  started_on: string;
+  closed_at: string | null;
+  /**
+   * Nothing has ever been put on it, so removing it loses nothing. A
+   * project that has been spent on is renamed, never removed.
+   */
+  can_remove: boolean;
   spent: number;
   entry_count: number;
   people_count: number;

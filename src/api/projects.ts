@@ -22,7 +22,7 @@ export function useProjects(enabled = true) {
     queryFn: async (): Promise<Project[]> => {
       const { data, error } = await supabase
         .from('projects')
-        .select('id, name, note, is_active, created_by, created_at, closed_at')
+        .select('id, name, note, is_active, created_by, created_at, closed_at, started_on')
         .eq('is_active', true)
         .order('created_at', { ascending: false });
       if (error) throw new Error(error.message);
@@ -130,5 +130,69 @@ export function useSetEntryProject() {
       qc.invalidateQueries({ queryKey: ['entry-recent'] });
       qc.invalidateQueries({ queryKey: ['entry'] });
     },
+  });
+}
+
+/** Mark a project finished. Nothing new can be put on it afterwards. */
+export function useCloseProject() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string): Promise<void> => {
+      const { error } = await supabase.rpc('close_project', { p_id: id });
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['projects'] }),
+  });
+}
+
+/** Open a finished project again, for when the wrong button was pressed. */
+export function useReopenProject() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string): Promise<void> => {
+      const { error } = await supabase.rpc('reopen_project', { p_id: id });
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['projects'] }),
+  });
+}
+
+/** Change a project's name, or the date work started on it. */
+export function useRenameProject() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      id,
+      name,
+      startedOn,
+    }: {
+      id: string;
+      name: string;
+      startedOn?: string;
+    }): Promise<Project> => {
+      const { data, error } = await supabase.rpc('rename_project', {
+        p_id: id,
+        p_name: name,
+        p_started_on: startedOn ?? undefined,
+      });
+      if (error) throw new Error(error.message);
+      return data as unknown as Project;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['projects'] }),
+  });
+}
+
+/**
+ * Remove a project. The database refuses the moment anything has ever
+ * been put on it, so this only ever removes a name typed by mistake.
+ */
+export function useDeleteProject() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string): Promise<void> => {
+      const { error } = await supabase.rpc('delete_project', { p_id: id });
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['projects'] }),
   });
 }

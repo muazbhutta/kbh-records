@@ -1155,6 +1155,7 @@ export type Database = {
           is_active: boolean
           name: string
           note: string | null
+          started_on: string
         }
         Insert: {
           closed_at?: string | null
@@ -1164,6 +1165,7 @@ export type Database = {
           is_active?: boolean
           name: string
           note?: string | null
+          started_on?: string
         }
         Update: {
           closed_at?: string | null
@@ -1173,6 +1175,7 @@ export type Database = {
           is_active?: boolean
           name?: string
           note?: string | null
+          started_on?: string
         }
         Relationships: [
           {
@@ -2451,6 +2454,7 @@ export type Database = {
         Returns: Json
       }
       clear_type_flags: { Args: { p_id: string }; Returns: string }
+      close_project: { Args: { p_id: string }; Returns: undefined }
       create_entry: {
         Args: {
           p_amount: number
@@ -2516,6 +2520,7 @@ export type Database = {
           is_active: boolean
           name: string
           note: string | null
+          started_on: string
         }
         SetofOptions: {
           from: "*"
@@ -2537,6 +2542,7 @@ export type Database = {
         Args: { p_id: string; p_reason?: string }
         Returns: string
       }
+      delete_project: { Args: { p_id: string }; Returns: undefined }
       expense_report: {
         Args: {
           p_category_id?: string
@@ -2645,6 +2651,8 @@ export type Database = {
       project_totals: {
         Args: { p_from?: string; p_to?: string }
         Returns: {
+          can_remove: boolean
+          closed_at: string
           entry_count: number
           is_active: boolean
           last_spend: string
@@ -2652,12 +2660,38 @@ export type Database = {
           people_count: number
           project_id: string
           spent: number
+          started_on: string
         }[]
       }
       record_cash_check: {
         Args: { p_counted: number; p_note?: string; p_person_id: string }
         Returns: string
       }
+      rename_project: {
+        Args: {
+          p_id: string
+          p_name: string
+          p_note?: string
+          p_started_on?: string
+        }
+        Returns: {
+          closed_at: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean
+          name: string
+          note: string | null
+          started_on: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "projects"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      reopen_project: { Args: { p_id: string }; Returns: undefined }
       report_photos: {
         Args: {
           p_category_id?: string

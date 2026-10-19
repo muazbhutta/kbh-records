@@ -83,6 +83,7 @@ export function EntryRow({
         {entry.entered_for_someone_else ||
         entry.photo_count > 0 ||
         entry.expense_type ||
+        entry.project_name ||
         entry.pay_method ? (
           <View style={styles.flags}>
             {entry.type === 'expense' ? (
@@ -95,6 +96,9 @@ export function EntryRow({
             ) : (
               <PayMethodTag method={entry.pay_method} short />
             )}
+            {entry.project_name ? (
+              <Badge label={entry.project_name} tone="navy" icon="business-outline" />
+            ) : null}
             {entry.entered_for_someone_else ? (
               <Badge
                 label={`Entered by ${firstName(entry.entered_by_name) || 'someone else'}`}
