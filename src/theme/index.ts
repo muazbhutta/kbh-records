@@ -66,6 +66,18 @@ export const fonts = {
   bold: withFallback('Inter_700Bold'),
 } as const;
 
+/**
+ * Every box a person types into uses this size, and never less.
+ *
+ * Safari on an iPhone zooms the whole page in when a field smaller than
+ * 16 points is tapped, and does not zoom back out afterwards: the app is
+ * left scaled up with half the screen off the edge. It looks like a
+ * broken layout and it is really a font size.
+ *
+ * One field at 15 did it. So the number lives here, once.
+ */
+export const inputFontSize = 16;
+
 /** Soft, premium card shadow that behaves on all three platforms. */
 export const shadow = {
   card: Platform.select({

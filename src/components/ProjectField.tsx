@@ -5,7 +5,7 @@ import { ActivityIndicator, Pressable, StyleSheet, TextInput, View } from 'react
 import { Txt } from '@/components/Txt';
 import { useCreateProject, useProjects } from '@/api/projects';
 import type { Project } from '@/types';
-import { fonts, colors, radius } from '@/theme';
+import { colors, fonts, inputFontSize, radius } from '@/theme';
 
 /**
  * Which site was this spent on.
@@ -235,7 +235,7 @@ const styles = StyleSheet.create({
     borderColor: colors.navy,
     backgroundColor: colors.card,
     fontFamily: fonts.medium,
-    fontSize: 15,
+    fontSize: inputFontSize,
     color: colors.text,
   },
   save: {

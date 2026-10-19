@@ -1,23 +1,16 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
+import { refreshTheBooks } from '@/lib/queryClient';
+
 import { supabase } from '@/lib/supabase';
 import type { AuditEntry, CashCheck, CheckSummary, DeletedEntry, DuplicateWarning } from '@/types';
 
 const PAGE = 25;
 
-/** Everything a saved entry can change invalidates these. */
+/** One entry changed, so every view of the books is now stale. */
 function useRefreshMoney() {
   const qc = useQueryClient();
-  return () => {
-    qc.invalidateQueries({ queryKey: ['entry-feed'] });
-    qc.invalidateQueries({ queryKey: ['entry-recent'] });
-    qc.invalidateQueries({ queryKey: ['entry'] });
-    qc.invalidateQueries({ queryKey: ['totals'] });
-    qc.invalidateQueries({ queryKey: ['people'] });
-    qc.invalidateQueries({ queryKey: ['person'] });
-    qc.invalidateQueries({ queryKey: ['audit'] });
-    qc.invalidateQueries({ queryKey: ['deleted-entries'] });
-  };
+  return () => refreshTheBooks(qc);
 }
 
 function friendly(message: string): string {
@@ -228,15 +221,10 @@ export function useCheckSummary(personId: string | undefined) {
   });
 }
 
+/** A cash check changes balances, people and the history alike. */
 function useRefreshChecks() {
   const qc = useQueryClient();
-  return () => {
-    qc.invalidateQueries({ queryKey: ['cash-checks'] });
-    qc.invalidateQueries({ queryKey: ['check-summary'] });
-    qc.invalidateQueries({ queryKey: ['people'] });
-    qc.invalidateQueries({ queryKey: ['person'] });
-    qc.invalidateQueries({ queryKey: ['audit'] });
-  };
+  return () => refreshTheBooks(qc);
 }
 
 export function useRecordCashCheck() {

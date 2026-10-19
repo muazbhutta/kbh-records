@@ -5,6 +5,8 @@ import {
   useQueryClient,
 } from '@tanstack/react-query';
 
+import { refreshTheBooks } from '@/lib/queryClient';
+
 import { removeUploaded, uploadPhotos, type LocalPhoto } from '@/lib/photos';
 import { supabase } from '@/lib/supabase';
 import type { Json } from '@/lib/database.types';
@@ -222,7 +224,7 @@ export function useSaveCategory() {
         );
       }
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['categories'] }),
+    onSuccess: () => refreshTheBooks(qc),
   });
 }
 
@@ -236,7 +238,7 @@ export function useHideCategory() {
         .eq('id', input.id);
       if (error) throw new Error(error.message);
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['categories'] }),
+    onSuccess: () => refreshTheBooks(qc),
   });
 }
 
@@ -324,12 +326,6 @@ export function useCreateEntry() {
 
       return data as string;
     },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['entry-feed'] });
-      qc.invalidateQueries({ queryKey: ['entry-recent'] });
-      qc.invalidateQueries({ queryKey: ['totals'] });
-      qc.invalidateQueries({ queryKey: ['people'] });
-      qc.invalidateQueries({ queryKey: ['person'] });
-    },
+    onSuccess: () => refreshTheBooks(qc),
   });
 }

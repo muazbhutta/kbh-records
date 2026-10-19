@@ -14,7 +14,7 @@ import {
 import { Avatar, Badge, useBackdrop } from '@/components/Bits';
 import { Txt } from '@/components/Txt';
 import { formatDate, TIME_ZONE, todayInRiyadh } from '@/lib/format';
-import { colors, fonts, radius, shadow } from '@/theme';
+import { colors, fonts, inputFontSize, radius, shadow } from '@/theme';
 import type { Category, PersonName } from '@/types';
 
 /**
@@ -652,7 +652,13 @@ const styles = StyleSheet.create({
     borderColor: colors.line,
     paddingHorizontal: 12,
   },
-  searchInput: { flex: 1, minWidth: 0, fontSize: 16, fontFamily: fonts.medium, color: colors.text },
+  searchInput: {
+    flex: 1,
+    minWidth: 0,
+    fontSize: inputFontSize,
+    fontFamily: fonts.medium,
+    color: colors.text,
+  },
   personRow: {
     flexDirection: 'row',
     alignItems: 'center',

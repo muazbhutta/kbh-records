@@ -1,5 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
+import { refreshTheBooks } from '@/lib/queryClient';
+
 import { supabase } from '@/lib/supabase';
 import type { Range } from '@/api/dashboard';
 import type { PersonShare, Project, ProjectTotal } from '@/types';
@@ -101,9 +103,7 @@ export function useCreateProject() {
       if (error) throw new Error(error.message);
       return data as unknown as Project;
     },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['projects'] });
-    },
+    onSuccess: () => refreshTheBooks(qc),
   });
 }
 
@@ -124,12 +124,7 @@ export function useSetEntryProject() {
       });
       if (error) throw new Error(error.message);
     },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['projects'] });
-      qc.invalidateQueries({ queryKey: ['entry-feed'] });
-      qc.invalidateQueries({ queryKey: ['entry-recent'] });
-      qc.invalidateQueries({ queryKey: ['entry'] });
-    },
+    onSuccess: () => refreshTheBooks(qc),
   });
 }
 
@@ -141,7 +136,7 @@ export function useCloseProject() {
       const { error } = await supabase.rpc('close_project', { p_id: id });
       if (error) throw new Error(error.message);
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['projects'] }),
+    onSuccess: () => refreshTheBooks(qc),
   });
 }
 
@@ -153,7 +148,7 @@ export function useReopenProject() {
       const { error } = await supabase.rpc('reopen_project', { p_id: id });
       if (error) throw new Error(error.message);
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['projects'] }),
+    onSuccess: () => refreshTheBooks(qc),
   });
 }
 
@@ -178,7 +173,7 @@ export function useRenameProject() {
       if (error) throw new Error(error.message);
       return data as unknown as Project;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['projects'] }),
+    onSuccess: () => refreshTheBooks(qc),
   });
 }
 
@@ -193,6 +188,6 @@ export function useDeleteProject() {
       const { error } = await supabase.rpc('delete_project', { p_id: id });
       if (error) throw new Error(error.message);
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['projects'] }),
+    onSuccess: () => refreshTheBooks(qc),
   });
 }

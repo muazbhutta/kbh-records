@@ -1,5 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
+import { refreshTheBooks } from '@/lib/queryClient';
+
 import { queryKeys } from '@/lib/queryClient';
 import { callFunction, supabase } from '@/lib/supabase';
 import type { PeopleRow, Person, Role } from '@/types';
@@ -70,12 +72,13 @@ export function usePerson(id: string | undefined) {
   });
 }
 
+/**
+ * Adding somebody, changing a role or turning a person off reaches the
+ * dashboard, the teams and the projects alike, so it refreshes all of it.
+ */
 function useInvalidatePeople() {
   const qc = useQueryClient();
-  return (id?: string) => {
-    qc.invalidateQueries({ queryKey: ['people'] });
-    if (id) qc.invalidateQueries({ queryKey: queryKeys.person(id) });
-  };
+  return (_id?: string) => refreshTheBooks(qc);
 }
 
 export type NewPersonInput = {

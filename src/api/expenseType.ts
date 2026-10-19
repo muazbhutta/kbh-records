@@ -1,5 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
+import { refreshTheBooks } from '@/lib/queryClient';
+
 import { supabase } from '@/lib/supabase';
 import type {
   ExpenseKind,
@@ -8,19 +10,10 @@ import type {
   ToCheckRow,
 } from '@/types';
 
+/** Changing what a bill is counts as changing the books. */
 function useRefresh() {
   const qc = useQueryClient();
-  return () => {
-    qc.invalidateQueries({ queryKey: ['entry-feed'] });
-    qc.invalidateQueries({ queryKey: ['entry-recent'] });
-    qc.invalidateQueries({ queryKey: ['entry'] });
-    qc.invalidateQueries({ queryKey: ['to-check'] });
-    qc.invalidateQueries({ queryKey: ['invoice-details'] });
-    qc.invalidateQueries({ queryKey: ['audit'] });
-    qc.invalidateQueries({ queryKey: ['dashboard'] });
-    qc.invalidateQueries({ queryKey: ['totals'] });
-    qc.invalidateQueries({ queryKey: ['people'] });
-  };
+  return () => refreshTheBooks(qc);
 }
 
 /** Has this exact invoice been recorded before, by anybody? */

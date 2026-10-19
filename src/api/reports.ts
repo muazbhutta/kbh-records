@@ -1,5 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
+import { refreshTheBooks } from '@/lib/queryClient';
+
 import { supabase } from '@/lib/supabase';
 import type {
   DownloadLogRow,
@@ -99,6 +101,6 @@ export function useLogDownload() {
       });
       if (error) console.warn('could not record the download', error.message);
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['download-log'] }),
+    onSuccess: () => refreshTheBooks(qc),
   });
 }

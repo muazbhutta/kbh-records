@@ -1,5 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
+import { refreshTheBooks } from '@/lib/queryClient';
+
 import { supabase } from '@/lib/supabase';
 import type { SuspectedDuplicate } from '@/types';
 
@@ -40,20 +42,7 @@ export function useResolveDuplicate() {
     },
     onSuccess: () => {
       // Cancelling puts the money back, so the balances move too.
-      for (const key of [
-        'duplicates',
-        'entry-feed',
-        'entry-recent',
-        'entry',
-        'totals',
-        'people',
-        'person',
-        'dashboard',
-        'audit',
-        'to-check',
-      ]) {
-        qc.invalidateQueries({ queryKey: [key] });
-      }
+      refreshTheBooks(qc);
     },
   });
 }
