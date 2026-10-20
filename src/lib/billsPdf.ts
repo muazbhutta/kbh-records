@@ -1,6 +1,7 @@
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import { Platform } from 'react-native';
 
+import { paperInImage } from '@/lib/autoCrop';
 import { BILLS_BUCKET } from '@/lib/photos';
 import { makeAndSharePdf } from '@/lib/reportPdf';
 import { KBH_LOGO_DATA_URI } from '@/lib/reportLogo';
@@ -165,24 +166,42 @@ async function fetchShrunk(path: string): Promise<string | null> {
   }
 }
 
-/** One decode, one draw, one JPEG out. */
+/**
+ * One decode, one draw, one JPEG out - and the bill cut out of the
+ * photograph on the way.
+ *
+ * The cutting matters most here. A bill photographed in a car is a
+ * narrow strip of paper in a wide picture of a dashboard, and on a
+ * portrait page it is the picture's width that runs out first, so the
+ * bill ends up a third of the size it could be. Cutting to the paper
+ * turns a wide picture into a tall one and the bill fills the page.
+ *
+ * Photographs taken from now on are cut when they are taken. This is for
+ * the ones already in the books, which were not.
+ */
 function shrinkWithCanvas(blob: Blob): Promise<string | null> {
   return new Promise((resolve) => {
     const url = URL.createObjectURL(blob);
     const image = new Image();
     image.onload = () => {
       try {
-        const long = Math.max(image.naturalWidth, image.naturalHeight);
+        const box = paperInImage(image);
+        const sx = box ? box.originX : 0;
+        const sy = box ? box.originY : 0;
+        const sw = box ? box.width : image.naturalWidth;
+        const sh = box ? box.height : image.naturalHeight;
+
+        const long = Math.max(sw, sh);
         const scale = long > PAGE_IMAGE_SIDE ? PAGE_IMAGE_SIDE / long : 1;
         const canvas = document.createElement('canvas');
-        canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
-        canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+        canvas.width = Math.max(1, Math.round(sw * scale));
+        canvas.height = Math.max(1, Math.round(sh * scale));
         const ctx = canvas.getContext('2d');
         if (!ctx) {
           resolve(null);
           return;
         }
-        ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+        ctx.drawImage(image, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
         resolve(canvas.toDataURL('image/jpeg', PAGE_IMAGE_QUALITY));
       } catch {
         resolve(null);
@@ -320,7 +339,7 @@ function pdfHtml(
     break-after: page;
     page-break-inside: avoid;
     break-inside: avoid;
-    padding: 12mm 12mm 10mm;
+    padding: 10mm 10mm 8mm;
   }
   .sheet:last-child { page-break-after: auto; break-after: auto; }
   .shot {
@@ -342,7 +361,7 @@ function pdfHtml(
        ceiling is set low enough that it cannot, and the white left at
        the foot of the page costs nothing.
     */
-    max-height: 185mm;
+    max-height: 196mm;
     object-fit: contain;
     vertical-align: middle;
   }

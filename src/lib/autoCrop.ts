@@ -48,9 +48,22 @@ export const canAutoCrop = Platform.OS === 'web' && typeof document !== 'undefin
  */
 export async function findPaper(uri: string): Promise<Box | null> {
   if (!canAutoCrop) return null;
+  try {
+    return paperInImage(await loadImage(uri));
+  } catch {
+    // A picture that cannot be read is a picture kept whole.
+    return null;
+  }
+}
+
+/**
+ * The same, for a picture already loaded. The bill photos PDF has one in
+ * hand and should not have to decode it twice.
+ */
+export function paperInImage(image: HTMLImageElement): Box | null {
+  if (!canAutoCrop) return null;
 
   try {
-    const image = await loadImage(uri);
     const full = { width: image.naturalWidth, height: image.naturalHeight };
     if (!full.width || !full.height) return null;
 
