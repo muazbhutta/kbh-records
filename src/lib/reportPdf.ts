@@ -48,6 +48,16 @@ const escape = (value: unknown): string =>
  * "01 - 31 Oct 2026" when it is one month, "01 Oct - 30 Nov 2026" inside
  * one year, and the long form only when it has to be.
  */
+/**
+ * The line along the foot of every page: what the report covers, and
+ * when it was taken. Two different questions, and a page torn out of a
+ * printed copy has to answer both on its own.
+ */
+function footLine(meta: ReportMeta): string {
+  const covers = periodText(meta.from, meta.to).replace(/&ndash;/g, '-');
+  return `KBH Construction, Jeddah · ${REPORT_TITLE[meta.kind]} for ${covers} · Taken ${formatDateTime(new Date())}`;
+}
+
 function periodText(from?: string, to?: string): string {
   if (!from && !to) return 'All time';
   if (!to) return `From ${formatDate(from)}`;
@@ -181,6 +191,14 @@ export function buildReportHtml(rows: ReportRow[], meta: ReportMeta): string {
   */
   tr.gap td { height: 9mm; border: 0; background: none; padding: 0; }
   thead tr.gap td { height: 9mm; }
+  /* The foot row says its piece as well as holding the page off the edge. */
+  tfoot tr.gap td {
+    vertical-align: bottom;
+    padding-bottom: 2mm;
+    font-size: 8.5px;
+    color: #8599B0;
+    text-align: center;
+  }
 
   /* The tail can start a page of its own, with nothing above holding it
      off the edge, so it holds itself off. */
@@ -363,7 +381,7 @@ export function buildReportHtml(rows: ReportRow[], meta: ReportMeta): string {
         <th>Category</th><th class="mid">Type</th><th>Note</th><th class="num">Amount</th>
       </tr>
     </thead>
-    <tfoot><tr class="gap"><td colspan="7"></td></tr></tfoot>
+    <tfoot><tr class="gap"><td colspan="7">${escape(footLine(meta))}</td></tr></tfoot>
     <tbody>${bodyRows}</tbody>
   </table>`
   }

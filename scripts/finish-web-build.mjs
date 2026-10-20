@@ -137,8 +137,33 @@ const SCRIPT = `
       if ('serviceWorker' in navigator && window.isSecureContext) {
         window.addEventListener('load', function () {
           navigator.serviceWorker
-            .register('${at('/sw.js')}', { scope: '${at('/')}' })
+            // updateViaCache 'none' so the worker file itself is always
+            // asked of the network. Left to the ordinary cache it can be
+            // ten minutes stale, and on a phone where the app is never
+            // really closed it can be stale far longer than that: the
+            // laptop had the new version and the phone had last week's.
+            .register('${at('/sw.js')}', { scope: '${at('/')}', updateViaCache: 'none' })
+            .then(function (reg) {
+              // Ask again whenever the app is brought back up, which on a
+              // phone is the only moment it reliably gets a chance.
+              var ask = function () {
+                if (document.visibilityState === 'visible') reg.update();
+              };
+              document.addEventListener('visibilitychange', ask);
+              window.addEventListener('focus', ask);
+              setInterval(ask, 60 * 60 * 1000);
+            })
             .catch(function () {});
+
+          // A new worker has taken over, so the page is running the old
+          // code against the new. Reload once - the guard is there so a
+          // reload cannot start another.
+          var reloaded = false;
+          navigator.serviceWorker.addEventListener('controllerchange', function () {
+            if (reloaded) return;
+            reloaded = true;
+            window.location.reload();
+          });
         });
       }
     </script>

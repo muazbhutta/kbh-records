@@ -4,7 +4,7 @@ import { Platform } from 'react-native';
 import { BILLS_BUCKET } from '@/lib/photos';
 import { makeAndSharePdf } from '@/lib/reportPdf';
 import { KBH_LOGO_DATA_URI } from '@/lib/reportLogo';
-import { formatDate, money, stampInRiyadh } from '@/lib/format';
+import { formatDate, formatDateTime, money, stampInRiyadh } from '@/lib/format';
 import { supabase } from '@/lib/supabase';
 import type { ReportPhoto } from '@/types';
 
@@ -78,6 +78,7 @@ export async function buildBillsPdf(
   for (let part = 1; part <= parts; part++) {
     const slice = photos.slice((part - 1) * BILLS_PER_PART, part * BILLS_PER_PART);
     const images: (string | null)[] = new Array(slice.length).fill(null);
+    const foot = footLine(meta);
 
     let next = 0;
     const worker = async () => {
@@ -97,7 +98,7 @@ export async function buildBillsPdf(
     const pages: string[] = [];
     slice.forEach((photo, i) => {
       const image = images[i];
-      if (image) pages.push(billPage(photo, image));
+      if (image) pages.push(billPage(photo, image, foot));
     });
 
     const fileName = billsPdfFileName(meta.from, meta.to, part, parts, options.label);
@@ -107,6 +108,23 @@ export async function buildBillsPdf(
   }
 
   return names;
+}
+
+/**
+ * The line along the foot of every page: what the report covers, and
+ * when it was taken. Two different questions, and a page torn out of a
+ * printed copy has to answer both on its own.
+ */
+function footLine(meta: BillsPdfMeta): string {
+  const covers =
+    meta.from && meta.to
+      ? `${formatDate(meta.from)} to ${formatDate(meta.to)}`
+      : meta.from
+        ? `from ${formatDate(meta.from)}`
+        : meta.to
+          ? `up to ${formatDate(meta.to)}`
+          : 'all time';
+  return `KBH Construction, Jeddah · Bills for ${covers} · Taken ${formatDateTime(new Date())}`;
 }
 
 /**
@@ -197,7 +215,7 @@ function escapeHtml(value: string): string {
     .replace(/"/g, '&quot;');
 }
 
-function billPage(photo: ReportPhoto, image: string): string {
+function billPage(photo: ReportPhoto, image: string, foot: string): string {
   const of =
     photo.photo_total > 1 ? ` · bill ${photo.photo_index + 1} of ${photo.photo_total}` : '';
   const kind = photo.expense_type === 'invoice' ? 'Invoice' : 'Petty';
@@ -217,6 +235,7 @@ function billPage(photo: ReportPhoto, image: string): string {
           <div><b>Expense ID</b>${escapeHtml(photo.system_id ?? '-')}${of}</div>
         </div>
       </div>
+      <div class="foot">${escapeHtml(foot)}</div>
     </section>`;
 }
 
@@ -349,6 +368,14 @@ function pdfHtml(
     font-size: 10.5px;
   }
   .grid b { color: #5A7190; font-weight: 600; margin-right: 6px; }
+
+  /* The line the browser used to print, said properly and by us. */
+  .foot {
+    margin-top: 6px;
+    font-size: 8.5px;
+    color: #8599B0;
+    text-align: center;
+  }
 </style>
 </head>
 <body>

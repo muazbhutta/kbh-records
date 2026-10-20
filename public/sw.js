@@ -8,7 +8,7 @@
  * balance that was true an hour ago.
  */
 
-const VERSION = 'kbh-v3';
+const VERSION = 'kbh-v4';
 const SHELL = `${VERSION}-shell`;
 
 // The two addresses this worker has to name. The build rewrites them
