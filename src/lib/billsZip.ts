@@ -5,6 +5,7 @@ import { Platform } from 'react-native';
 
 import { supabase } from '@/lib/supabase';
 import { BILLS_BUCKET } from '@/lib/photos';
+import { stampInRiyadh } from '@/lib/format';
 import type { ReportPhoto } from '@/types';
 
 /**
@@ -109,7 +110,7 @@ export function zipFileName(
   const range = `${from ?? 'start'}_to_${to ?? 'today'}`;
   const suffix = parts && parts > 1 ? `_Part${part}` : '';
   const slice = label ? `_${cleanFilePart(label, '')}` : '';
-  return `Bills_Images${slice}_${range}${suffix}.zip`;
+  return `Bills_Images${slice}_${range}${suffix}__${stampInRiyadh()}.zip`;
 }
 
 /**

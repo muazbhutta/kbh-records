@@ -4,7 +4,7 @@ import { Platform } from 'react-native';
 import { BILLS_BUCKET } from '@/lib/photos';
 import { makeAndSharePdf } from '@/lib/reportPdf';
 import { KBH_LOGO_DATA_URI } from '@/lib/reportLogo';
-import { formatDate, money } from '@/lib/format';
+import { formatDate, money, stampInRiyadh } from '@/lib/format';
 import { supabase } from '@/lib/supabase';
 import type { ReportPhoto } from '@/types';
 
@@ -56,7 +56,7 @@ export function billsPdfFileName(
     ? `_${label.replace(/[^\p{L}\p{N}]+/gu, '_').replace(/^_|_$/g, '')}`
     : '';
   const piece = parts > 1 ? `_part_${part}_of_${parts}` : '';
-  return `KBH_Bill_Photos${slice}_${when}${piece}.pdf`;
+  return `KBH_Bill_Photos${slice}_${when}${piece}__${stampInRiyadh()}.pdf`;
 }
 
 /**

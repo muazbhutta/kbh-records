@@ -61,6 +61,34 @@ export function formatDateTime(value: string | Date | null | undefined): string 
   return `${formatDate(value)}, ${formatTime(value)}`;
 }
 
+/**
+ * The moment, in Riyadh, as 20261020-1432 - the stamp that goes on the
+ * end of every file this app hands out.
+ *
+ * It is there so that taking the same report twice in one day leaves two
+ * files rather than one over the top of the other, and so that a file
+ * found months later on somebody's desktop still says when it was taken,
+ * not just what it covers.
+ *
+ * Riyadh, because that is where the books are kept. A report taken at
+ * half past one in the morning in Jeddah must not be stamped with
+ * yesterday's date because the phone was set to London.
+ */
+export function stampInRiyadh(at: Date = new Date()): string {
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: TIME_ZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).formatToParts(at);
+
+  const get = (type: string) => parts.find((p) => p.type === type)?.value ?? '00';
+  return `${get('year')}${get('month')}${get('day')}-${get('hour')}${get('minute')}`;
+}
+
 /** Today in Riyadh as YYYY-MM-DD, for date pickers that must not go forward. */
 export function todayInRiyadh(): string {
   const parts = new Intl.DateTimeFormat('en-CA', {

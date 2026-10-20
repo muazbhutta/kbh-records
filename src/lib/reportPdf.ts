@@ -2,7 +2,7 @@ import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import { Platform } from 'react-native';
 
-import { amountOnly, formatDate, formatDateTime, formatTime, money } from '@/lib/format';
+import { amountOnly, formatDate, formatDateTime, formatTime, money, stampInRiyadh } from '@/lib/format';
 import { KBH_LOGO_DATA_URI } from '@/lib/reportLogo';
 import type { ReportRow } from '@/types';
 
@@ -462,5 +462,8 @@ export function reportFileName(
   const slice = categoryName
     ? `_${categoryName.replace(/[^\p{L}\p{N}]+/gu, '_').replace(/^_|_$/g, '')}`
     : '';
-  return `KBH_${name}_Expenses${slice}_${part}.pdf`;
+  // The stamp is when it was taken, which is not the same as what it
+  // covers - and it is what keeps this morning's copy from landing on
+  // top of last night's.
+  return `KBH_${name}_Expenses${slice}_${part}__${stampInRiyadh()}.pdf`;
 }
