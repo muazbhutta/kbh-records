@@ -273,29 +273,56 @@ function pdfHtml(
   .sum span { font-size: 11px; color: #5A7190; letter-spacing: .08em; text-transform: uppercase; }
   .sum b { font-size: 22px; letter-spacing: -0.5px; }
 
-  /* One bill to a page, the picture given as much room as it can have. */
+  /*
+     One bill to a page, and the bill and its facts must never come
+     apart - a photograph on one page and the amount on the next is
+     worse than no page break at all.
+
+     The first try set the page to a fixed 271mm and let a flex column
+     fill it. That assumed the whole printable page was ours, and it is
+     not: a browser prints its own address and page number at the top
+     and bottom unless told otherwise, and that pushed every bill over
+     by a few millimetres. Twenty bills came out as forty-nine pages.
+
+     So nothing here is told how tall it is. The picture is given a
+     ceiling in millimetres that leaves room for the facts beneath it
+     and for the browser's own furniture, and the pair are forbidden to
+     be split. Whatever is left over at the bottom is white, which costs
+     nothing.
+  */
   .sheet {
     page-break-after: always;
-    height: 271mm;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
+    break-after: page;
+    page-break-inside: avoid;
+    break-inside: avoid;
   }
-  .sheet:last-child { page-break-after: auto; }
+  .sheet:last-child { page-break-after: auto; break-after: auto; }
   .shot {
-    flex: 1;
-    min-height: 0;
     border: 1px solid #DCE4EE;
     border-radius: 8px;
-    padding: 6px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    padding: 5px;
     background: #F7F9FC;
+    text-align: center;
+    page-break-inside: avoid;
+    break-inside: avoid;
   }
-  .shot img { max-width: 100%; max-height: 100%; object-fit: contain; }
+  .shot img {
+    max-width: 100%;
+    /* A4 is 297mm. Take off the page margins, the facts card below and
+       the browser's header and footer, and this is what is left. */
+    max-height: 198mm;
+    object-fit: contain;
+    vertical-align: middle;
+  }
 
-  .facts { border: 1px solid #DCE4EE; border-radius: 8px; padding: 10px 12px; }
+  .facts {
+    margin-top: 7px;
+    border: 1px solid #DCE4EE;
+    border-radius: 8px;
+    padding: 10px 12px;
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
   .line { display: flex; justify-content: space-between; align-items: center; }
   .amount { font-size: 19px; font-weight: 700; letter-spacing: -0.4px; }
   .kind { font-size: 10px; padding: 3px 9px; border-radius: 999px; font-weight: 600; }
