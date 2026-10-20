@@ -155,6 +155,18 @@ export function buildReportHtml(rows: ReportRow[], meta: ReportMeta): string {
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Naskh+Arabic:wght@400;600;700&display=swap" rel="stylesheet" />
 <style>
   /* A4 portrait, said in millimetres so no printer can turn it sideways. */
+  /*
+     The page keeps its margins here, unlike the bill photos next door
+     where each sheet is its own page and can hold its own padding.
+     This report is a table that flows over as many pages as it needs,
+     and padding on the body would only pad the first page and the last:
+     every page in between would print to the edge of the paper, where
+     most printers cut it off.
+
+     So a browser may still print its address and page number here if
+     the person has that switched on. That is a line in the print
+     options, not a hole in the report.
+  */
   @page { size: 210mm 297mm; margin: 12mm 11mm 14mm; }
   @media print { @page { size: 210mm 297mm; } }
   * { box-sizing: border-box; }

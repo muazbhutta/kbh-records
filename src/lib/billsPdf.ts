@@ -235,7 +235,13 @@ function pdfHtml(
 <meta charset="utf-8" />
 <title>KBH Bill Photos</title>
 <style>
-  @page { size: 210mm 297mm; margin: 10mm; }
+  /*
+     No margin on the page itself. The margin is where a browser prints
+     its own address and page number, and with none there is nowhere for
+     them to go - which is what was wanted, and also gives the whole
+     sheet back to us. Each page keeps its own padding instead.
+  */
+  @page { size: 210mm 297mm; margin: 0; }
   * { box-sizing: border-box; }
   body {
     margin: 0;
@@ -245,7 +251,7 @@ function pdfHtml(
     print-color-adjust: exact;
   }
 
-  .cover { page-break-after: always; }
+  .cover { page-break-after: always; break-after: page; padding: 12mm; }
   .band {
     background: #0E2340;
     color: #fff;
@@ -295,6 +301,7 @@ function pdfHtml(
     break-after: page;
     page-break-inside: avoid;
     break-inside: avoid;
+    padding: 12mm 12mm 10mm;
   }
   .sheet:last-child { page-break-after: auto; break-after: auto; }
   .shot {
@@ -308,9 +315,15 @@ function pdfHtml(
   }
   .shot img {
     max-width: 100%;
-    /* A4 is 297mm. Take off the page margins, the facts card below and
-       the browser's header and footer, and this is what is left. */
-    max-height: 198mm;
+    /*
+       A4 is 297mm. Take off this page's own padding and the facts card
+       beneath, and there is room for far more than this - but an iPhone
+       lays a page out slightly differently from a desktop, and a bill
+       that spills onto a second page is the whole complaint. So the
+       ceiling is set low enough that it cannot, and the white left at
+       the foot of the page costs nothing.
+    */
+    max-height: 185mm;
     object-fit: contain;
     vertical-align: middle;
   }
