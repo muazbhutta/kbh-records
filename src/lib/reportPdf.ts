@@ -156,19 +156,38 @@ export function buildReportHtml(rows: ReportRow[], meta: ReportMeta): string {
 <style>
   /* A4 portrait, said in millimetres so no printer can turn it sideways. */
   /*
-     The page keeps its margins here, unlike the bill photos next door
-     where each sheet is its own page and can hold its own padding.
-     This report is a table that flows over as many pages as it needs,
-     and padding on the body would only pad the first page and the last:
-     every page in between would print to the edge of the paper, where
-     most printers cut it off.
+     No margin on the page. The margin is where a browser prints its own
+     address and page number, and nobody wants a github.io link down the
+     side of the company's accounts. With none, there is nowhere for them
+     to go.
+     
+     Keeping the paper's edges clear is then ours to do, and this report
+     is a table that flows over as many pages as it needs, so padding on
+     the body is not enough: it pads the first page and the last, and
+     every page in between would print to the edge where most printers
+     cut it off.
 
-     So a browser may still print its address and page number here if
-     the person has that switched on. That is a line in the print
-     options, not a hole in the report.
+     So the body handles the sides on every page and the top and foot of
+     the first and last, and the table carries blank rows in its head and
+     foot, which paged media repeats on every page the table reaches.
+     Between them no page prints to its edge.
   */
-  @page { size: 210mm 297mm; margin: 12mm 11mm 14mm; }
-  @media print { @page { size: 210mm 297mm; } }
+  @page { size: 210mm 297mm; margin: 0; }
+  /*
+     Blank rows. Paged media repeats a table's head and foot on every
+     page the table reaches, so these two are what keep the middle pages
+     off the paper's edges. They are invisible: no border, no background,
+     just height.
+  */
+  tr.gap td { height: 9mm; border: 0; background: none; padding: 0; }
+  thead tr.gap td { height: 9mm; }
+
+  /* The tail can start a page of its own, with nothing above holding it
+     off the edge, so it holds itself off. */
+  .close { padding-top: 9mm; }
+  .close, .sign { page-break-inside: avoid; break-inside: avoid; }
+
+  @media print { @page { size: 210mm 297mm; margin: 0; } }
   * { box-sizing: border-box; }
   html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   body {
@@ -177,6 +196,7 @@ export function buildReportHtml(rows: ReportRow[], meta: ReportMeta): string {
     font-size: 11px;
     line-height: 1.45;
     margin: 0;
+    padding: 12mm 11mm 14mm;
     background: #fff;
   }
 
@@ -337,11 +357,13 @@ export function buildReportHtml(rows: ReportRow[], meta: ReportMeta): string {
       <col style="width:12%" /><col style="width:9%" /><col style="width:20%" /><col style="width:15%" />
     </colgroup>
     <thead>
+      <tr class="gap"><td colspan="7"></td></tr>
       <tr>
         <th>Expense ID</th><th>Date</th><th>Person</th>
         <th>Category</th><th class="mid">Type</th><th>Note</th><th class="num">Amount</th>
       </tr>
     </thead>
+    <tfoot><tr class="gap"><td colspan="7"></td></tr></tfoot>
     <tbody>${bodyRows}</tbody>
   </table>`
   }
