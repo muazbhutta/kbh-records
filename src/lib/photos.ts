@@ -5,6 +5,8 @@ import { computePhash } from '@/lib/phash';
 import * as ImagePicker from 'expo-image-picker';
 import { Platform } from 'react-native';
 
+import { findPaper } from '@/lib/autoCrop';
+
 import { supabase } from '@/lib/supabase';
 
 export const BILLS_BUCKET = 'bills';
@@ -61,14 +63,35 @@ function base64Bytes(b64: string) {
  * iPhone and the web.
  */
 async function prepareCapped(uri: string): Promise<LocalPhoto> {
-  const probe = await ImageManipulator.manipulate(uri).renderAsync();
-  const landscape = probe.width >= probe.height;
+  // Find the bill in the photograph first, so everything after this -
+  // the sizes, the hashes, the duplicate check - is about the bill and
+  // not the bench it was lying on. Hands back nothing when it is not
+  // sure, and then the whole picture is kept.
+  const paper = await findPaper(uri);
 
-  const render = async (side: number, quality: number) => {
+  const probe = await ImageManipulator.manipulate(uri).renderAsync();
+  const landscape = paper
+    ? paper.width >= paper.height
+    : probe.width >= probe.height;
+
+  const renderWith = async (box: typeof paper, side: number, quality: number) => {
     const ctx = ImageManipulator.manipulate(uri);
+    if (box) ctx.crop(box);
     ctx.resize(landscape ? { width: side } : { height: side });
     const image = await ctx.renderAsync();
     return image.saveAsync({ format: SaveFormat.JPEG, compress: quality, base64: true });
+  };
+
+  // An expense cannot be recorded without its bill, so cropping must
+  // never be the reason a photograph fails. If the box turns out to be
+  // one this phone will not take, the whole picture goes through.
+  const render = async (side: number, quality: number) => {
+    try {
+      return await renderWith(paper, side, quality);
+    } catch (err) {
+      if (!paper) throw err;
+      return renderWith(null, side, quality);
+    }
   };
 
   const full = await render(FULL_MAX_SIDE, FULL_QUALITY);
@@ -80,7 +103,7 @@ async function prepareCapped(uri: string): Promise<LocalPhoto> {
     Crypto.CryptoDigestAlgorithm.SHA256,
     fullBase64,
   );
-  const phash = await computePhash(uri);
+  const phash = await computePhash(full.uri);
 
   return {
     key: randomId(),

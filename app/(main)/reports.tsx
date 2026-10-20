@@ -5,6 +5,7 @@ import { Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native'
 
 import { Badge, Banner, Card, DetailRow, Loading, SectionTitle } from '@/components/Bits';
 import { Button } from '@/components/Button';
+import { buildBillsPdf } from '@/lib/billsPdf';
 import {
   CategoryFilter,
   type CategoryChoice,
@@ -205,6 +206,64 @@ export default function ReportsScreen() {
       setError(errorMessage(err));
     } finally {
       setBusy(null);
+    }
+  };
+
+  const makeBillsPdf = async () => {
+    setError(null);
+    setNotice(null);
+    setBusy('billspdf');
+    setProgress(null);
+    try {
+      const photos = await fetchReportPhotos(filter, kind ?? undefined);
+      if (photos.length === 0) {
+        setNotice({ title: 'No bill photos in this period', lines: [], hint: null });
+        return;
+      }
+
+      const names = await buildBillsPdf(
+        photos,
+        {
+          from: filter.from,
+          to: filter.to,
+          heading: `${rangeText(filter.from, filter.to)}`,
+          lines: [
+            personName ?? 'All people',
+            categoryName ?? 'All categories',
+            kind === 'petty' ? 'Petty only' : kind === 'invoice' ? 'Invoices only' : 'Petty and invoices',
+          ],
+          total: Number(t?.all_total ?? 0),
+        },
+        { label: categoryName, onProgress: setProgress },
+      );
+
+      await logDownload.mutateAsync({
+        kind: 'pdf_bills',
+        filter,
+        rows: photos.length,
+        total: Number(t?.all_total ?? 0),
+        note: names.join(', '),
+      });
+
+      setNotice({
+        title:
+          names.length === 1
+            ? 'The bill photos PDF is ready'
+            : `The bill photos are ready in ${names.length} files`,
+        lines: [
+          `${photos.length} ${photos.length === 1 ? 'bill' : 'bills'} · ${rangeText(filter.from, filter.to)}`,
+          ...names,
+        ],
+        hint:
+          Platform.OS === 'web'
+            ? 'Choose "Save as PDF" in the window that just opened.'
+            : 'Saved to this phone - pick where to send it.',
+      });
+    } catch (err) {
+      setError(errorMessage(err));
+    } finally {
+      setBusy(null);
+      setProgress(null);
     }
   };
 
@@ -431,6 +490,17 @@ export default function ReportsScreen() {
         ) : null}
         <Button
           label={
+            categoryName ? `${categoryName} - Bill Photos (PDF)` : 'Bill Photos (PDF)'
+          }
+          icon="document-attach-outline"
+          size="lg"
+          full
+          loading={busy === 'billspdf'}
+          disabled={working && busy !== 'billspdf'}
+          onPress={makeBillsPdf}
+        />
+        <Button
+          label={
             categoryName ? `${categoryName} - Bill Photos (ZIP)` : 'Download Bill Photos (ZIP)'
           }
           icon="images-outline"
@@ -461,8 +531,10 @@ export default function ReportsScreen() {
       ) : null}
 
       <Txt variant="caption" color={colors.textFaint} style={styles.note}>
-        PDFs never contain photos, so they stay small enough to send. The bill photos come in the
-        ZIP, filed by month and day. Cancelled expenses are in neither.
+        The expense reports are figures only, so they stay small enough to send. The bill photos
+        come either as one PDF, a bill to a page with its date, person and amount underneath, or as
+        a ZIP filed by month and day. All of them answer the filter set above. Cancelled expenses
+        are in none of them.
       </Txt>
 
       {/* ------------------------------------------------- before you file */}

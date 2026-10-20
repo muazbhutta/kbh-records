@@ -32,6 +32,7 @@
   "copy-outline",
   "create",
   "create-outline",
+  "document-attach-outline",
   "document-text",
   "document-text-outline",
   "documents-outline",
