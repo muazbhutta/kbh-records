@@ -417,8 +417,30 @@ async function printHtmlInBrowser(html: string, fileName: string): Promise<strin
     new Promise((r) => setTimeout(r, 2500)),
   ]);
 
+  // The name in the Save dialog comes from the title of the page doing
+  // the printing - the one in the address bar, not the hidden frame
+  // being printed. Setting only the frame's title left the File name box
+  // empty, and every report had to be named by hand.
+  //
+  // So the app's own title becomes the file name for as long as the
+  // dialog is open, and is put back the moment it closes. The person
+  // sees "KBH Records" again; in between, the Save box is filled in.
+  const previousTitle = document.title;
+  const restore = () => {
+    document.title = previousTitle;
+  };
+  document.title = title;
+  window.addEventListener('afterprint', restore, { once: true });
+
   win.focus();
-  win.print();
+  try {
+    win.print();
+  } finally {
+    // print() blocks while the dialog is up in most browsers, so by here
+    // it is usually done. afterprint covers the ones where it is not,
+    // and a timer covers a browser that fires neither.
+    setTimeout(restore, 1000);
+  }
 
   // The print window is handed the frame's document, so the frame has to
   // stay alive until the person is finished with it.
