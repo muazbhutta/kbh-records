@@ -269,7 +269,7 @@ export default function NewEntryScreen() {
           tone="error"
           message={
             type === 'transfer'
-              ? 'Only an Admin, or a head passing cash to his own team, can record this.'
+              ? 'Money is sent out by the office. You can record what you spent.'
               : 'Only an Admin can record this kind of entry.'
           }
         />

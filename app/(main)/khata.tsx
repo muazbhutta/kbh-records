@@ -36,27 +36,28 @@ export default function MyKhataScreen() {
         />
       )}
 
+      {/*
+        Money goes out from the office now, so nobody but the office
+        sends any - not a head, not anybody. The button went with the
+        rule; leaving it would have been a button that could only ever
+        say no.
+      */}
       <View style={styles.actions}>
         <Button
           label="Add Expense"
           icon="receipt"
+          size="lg"
+          full
           onPress={() => router.push('/entry/new?type=expense')}
-          style={styles.action}
-        />
-        <Button
-          label="Send Money"
-          icon="swap-horizontal"
-          variant="outline"
-          onPress={() => router.push('/entry/new?type=transfer')}
-          style={styles.action}
         />
       </View>
 
       <View style={styles.list}>
         <KhataList
           personId={person?.id}
+          showSent={false}
           emptyTitle="No entries yet"
-          emptyMessage="Add an expense or send money and it will appear here."
+          emptyMessage="Record an expense and it will appear here."
         />
       </View>
     </Screen>
@@ -65,7 +66,6 @@ export default function MyKhataScreen() {
 
 const styles = StyleSheet.create({
   skeleton: { minHeight: 150, justifyContent: 'center' },
-  actions: { flexDirection: 'row', gap: 10, marginTop: 16 },
-  action: { flex: 1 },
+  actions: { marginTop: 16 },
   list: { marginTop: 18 },
 });

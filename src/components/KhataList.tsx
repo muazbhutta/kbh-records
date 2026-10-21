@@ -17,11 +17,19 @@ import { colors, radius } from '@/theme';
 
 export type Period = 'this_month' | 'last_month' | 'this_year' | 'all';
 
-const TYPE_FILTERS: { key: string; label: string; lines: string[] }[] = [
+/**
+ * The kinds of line a khata can be narrowed to.
+ *
+ * "Sent" is money this person passed to somebody else, which only the
+ * office can do now. On a person's own khata it is a filter that can
+ * only ever come back empty, so it is not offered there - a filter that
+ * never finds anything reads as a thing that is broken.
+ */
+const TYPE_FILTERS: { key: string; label: string; lines: string[]; office?: true }[] = [
   { key: 'all', label: 'Everything', lines: [] },
   { key: 'in', label: 'Money in', lines: ['money_given', 'transfer_in'] },
   { key: 'expense', label: 'Expenses', lines: ['expense'] },
-  { key: 'out', label: 'Sent', lines: ['transfer_out'] },
+  { key: 'out', label: 'Sent', lines: ['transfer_out'], office: true },
   { key: 'returned', label: 'Returned', lines: ['returned'] },
 ];
 
@@ -63,12 +71,15 @@ export function KhataList({
   emptyMessage,
   showOwner = false,
   showFilters = true,
+  showSent = true,
 }: {
   personId: string | undefined;
   emptyTitle?: string;
   emptyMessage?: string;
   showOwner?: boolean;
   showFilters?: boolean;
+  /** Off on a person's own khata, where it can only come back empty. */
+  showSent?: boolean;
 }) {
   const [period, setPeriod] = useState<Period>('this_month');
   const [typeKey, setTypeKey] = useState('all');
@@ -132,7 +143,7 @@ export function KhataList({
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.chips}
           >
-            {TYPE_FILTERS.map((t) => (
+            {TYPE_FILTERS.filter((t) => showSent || !t.office).map((t) => (
               <Chip
                 key={t.key}
                 label={t.label}
