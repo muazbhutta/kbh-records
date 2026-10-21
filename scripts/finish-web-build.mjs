@@ -76,6 +76,10 @@ if (fs.existsSync(USED)) {
     ),
   );
 
+  // Every quoted string in the code that is an Ionicons name. Reading
+  // only what follows `name=` misses an icon chosen inside an
+  // expression - name={edit ? 'a' : 'b'} - and that icon then prints as
+  // a blank square. It happened, so this looks everywhere.
   const named = new Set();
   const walk = (dir) => {
     for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -84,19 +88,16 @@ if (fs.existsSync(USED)) {
         if (entry.name !== 'node_modules') walk(full);
       } else if (/\.tsx?$/.test(entry.name)) {
         const text = fs.readFileSync(full, 'utf8');
-        for (const m of text.matchAll(
-          /(?:name|icon|iconActive)\s*[:=]\s*['"]([a-z][a-z0-9-]{2,})['"]/g,
-        )) {
-          named.add(m[1]);
+        for (const m of text.matchAll(/['"`]([a-z][a-z0-9-]{2,})['"`]/g)) {
+          if (glyphs[m[1]] !== undefined) named.add(m[1]);
         }
-        for (const m of text.matchAll(/name=\{?['"]([a-z][a-z0-9-]{2,})['"]/g)) named.add(m[1]);
       }
     }
   };
   walk('src');
   walk('app');
 
-  const missing = [...named].filter((n) => glyphs[n] !== undefined && !inFont.has(n)).sort();
+  const missing = [...named].filter((n) => !inFont.has(n)).sort();
   if (missing.length > 0) {
     throw new Error(
       'These icons are used but are not in the font this build ships, so they ' +

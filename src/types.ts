@@ -604,3 +604,30 @@ export type ProjectCrewMember = {
   role: string;
   spent: number;
 };
+
+// -------------------------------------------------------- the tickets
+
+/**
+ * One per entry recorded, and one per entry changed. The office clears
+ * them by saying the entry looks right.
+ */
+export type Ticket = {
+  id: number;
+  entry_id: string;
+  kind: 'new' | 'edit';
+  at: string;
+  actor_name: string | null;
+  /** Why it was changed. Always there on an edit. */
+  reason: string | null;
+  /** What changed, field by field: { "Amount": { from, to } }. */
+  changes: Record<string, { from: string | null; to: string | null }> | null;
+  amount: number;
+  entry_type: EntryType;
+  bill_date: string;
+  person_id: string;
+  person_name: string | null;
+  category_name: string | null;
+  system_id: string | null;
+  note: string | null;
+  photo_count: number;
+};

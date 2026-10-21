@@ -21,6 +21,8 @@ import {
   useTopCashHolders,
 } from '@/api/dashboard';
 import { useRecentEntries } from '@/api/entries';
+import { useOpenTicketCount } from '@/api/tickets';
+import { Tickets } from '@/components/Tickets';
 import { useProjectTotals, useUnfiledExpenses } from '@/api/projects';
 import { periodRange, type Period } from '@/components/KhataList';
 import { formatDate, money, todayInRiyadh } from '@/lib/format';
@@ -30,6 +32,7 @@ import type { FeedEntry, FigureKind } from '@/types';
 
 /** Every foldable block on the dashboard, in the order they appear. */
 const SECTION_IDS = [
+  'tickets',
   'checks',
   'months',
   'categories',
@@ -76,6 +79,7 @@ export function Dashboard() {
   const stale = usePeopleNeedingCheck(30);
   const teams = useTeams();
   const recent = useRecentEntries({}, 10);
+  const waiting = useOpenTicketCount();
   const projects = useProjectTotals(range);
   const unfiled = useUnfiledExpenses(range);
 
@@ -225,6 +229,20 @@ export function Dashboard() {
           onPress={() => router.push('/entry/new?type=returned')}
         />
       </View>
+
+      {/* ------------------------------------------------- the tickets */}
+      <Section
+        title="Waiting for you"
+        open={sections.isOpen('tickets')}
+        onToggle={() => sections.toggle('tickets')}
+        hint={
+          (waiting.data ?? 0) === 0
+            ? 'Nothing waiting'
+            : `${waiting.data} ${waiting.data === 1 ? 'entry' : 'entries'}`
+        }
+      >
+        <Tickets />
+      </Section>
 
       {/* ------------------------------------------------- cash check */}
       <Section

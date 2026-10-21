@@ -786,6 +786,154 @@ export type Database = {
           },
         ]
       }
+      entry_tickets: {
+        Row: {
+          actor_id: string | null
+          actor_name: string | null
+          at: string
+          changes: Json | null
+          entry_id: string
+          id: number
+          kind: string
+          reason: string | null
+          seen_at: string | null
+          seen_by: string | null
+          seen_by_name: string | null
+        }
+        Insert: {
+          actor_id?: string | null
+          actor_name?: string | null
+          at?: string
+          changes?: Json | null
+          entry_id: string
+          id?: never
+          kind: string
+          reason?: string | null
+          seen_at?: string | null
+          seen_by?: string | null
+          seen_by_name?: string | null
+        }
+        Update: {
+          actor_id?: string | null
+          actor_name?: string | null
+          at?: string
+          changes?: Json | null
+          entry_id?: string
+          id?: never
+          kind?: string
+          reason?: string | null
+          seen_at?: string | null
+          seen_by?: string | null
+          seen_by_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "entry_tickets_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "app_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entry_tickets_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "people_list"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entry_tickets_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "people_names"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entry_tickets_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "team_summary"
+            referencedColumns: ["head_id"]
+          },
+          {
+            foreignKeyName: "entry_tickets_entry_id_fkey"
+            columns: ["entry_id"]
+            isOneToOne: false
+            referencedRelation: "cancelled_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entry_tickets_entry_id_fkey"
+            columns: ["entry_id"]
+            isOneToOne: false
+            referencedRelation: "deleted_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entry_tickets_entry_id_fkey"
+            columns: ["entry_id"]
+            isOneToOne: false
+            referencedRelation: "entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entry_tickets_entry_id_fkey"
+            columns: ["entry_id"]
+            isOneToOne: false
+            referencedRelation: "expenses_to_check"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entry_tickets_entry_id_fkey"
+            columns: ["entry_id"]
+            isOneToOne: false
+            referencedRelation: "invoice_details"
+            referencedColumns: ["entry_id"]
+          },
+          {
+            foreignKeyName: "entry_tickets_entry_id_fkey"
+            columns: ["entry_id"]
+            isOneToOne: false
+            referencedRelation: "suspected_duplicates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entry_tickets_entry_id_fkey"
+            columns: ["entry_id"]
+            isOneToOne: false
+            referencedRelation: "suspected_duplicates"
+            referencedColumns: ["other_id"]
+          },
+          {
+            foreignKeyName: "entry_tickets_seen_by_fkey"
+            columns: ["seen_by"]
+            isOneToOne: false
+            referencedRelation: "app_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entry_tickets_seen_by_fkey"
+            columns: ["seen_by"]
+            isOneToOne: false
+            referencedRelation: "people_list"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entry_tickets_seen_by_fkey"
+            columns: ["seen_by"]
+            isOneToOne: false
+            referencedRelation: "people_names"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entry_tickets_seen_by_fkey"
+            columns: ["seen_by"]
+            isOneToOne: false
+            referencedRelation: "team_summary"
+            referencedColumns: ["head_id"]
+          },
+        ]
+      }
       expense_categories: {
         Row: {
           created_at: string
@@ -2714,10 +2862,33 @@ export type Database = {
         }
         Returns: undefined
       }
+      mark_ticket_seen: { Args: { p_id: number }; Returns: undefined }
       my_people: { Args: never; Returns: string[] }
       my_project_ids: { Args: never; Returns: string[] }
       my_team_ids: { Args: never; Returns: string[] }
       next_expense_id: { Args: { p_year: number }; Returns: string }
+      open_ticket_count: { Args: never; Returns: number }
+      open_tickets: {
+        Args: { p_limit?: number }
+        Returns: {
+          actor_name: string
+          amount: number
+          at: string
+          bill_date: string
+          category_name: string
+          changes: Json
+          entry_id: string
+          entry_type: string
+          id: number
+          kind: string
+          note: string
+          person_id: string
+          person_name: string
+          photo_count: number
+          reason: string
+          system_id: string
+        }[]
+      }
       people_needing_check: {
         Args: { p_days?: number }
         Returns: {
@@ -2867,6 +3038,7 @@ export type Database = {
           p_id: string
           p_note?: string
           p_person_id?: string
+          p_reason: string
         }
         Returns: string
       }

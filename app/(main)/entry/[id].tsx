@@ -233,6 +233,28 @@ export default function EntryScreen() {
         <Banner tone="warn" message="This expense has no bill photo." />
       ) : null}
 
+      {/*
+        A man who typed the wrong figure can put it right himself, which
+        beats ringing the office. He says why, and the office is told -
+        so this is a correction in the open, not a quiet change.
+      */}
+      {!canManage && entry.person_id === me?.id ? (
+        <>
+          <SectionTitle title="Made a mistake?" />
+          <Button
+            label="Correct This Entry"
+            icon="create-outline"
+            variant="navy"
+            size="lg"
+            full
+            onPress={() => router.push(`/entry/edit?id=${entry.id}&person=${entry.person_id}`)}
+          />
+          <Txt variant="caption" color={colors.textFaint} center style={styles.note}>
+            You will be asked why. The office is told about every correction.
+          </Txt>
+        </>
+      ) : null}
+
       {canManage ? (
         <>
           <SectionTitle title="Admin" />

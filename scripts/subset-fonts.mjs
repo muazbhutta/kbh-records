@@ -69,7 +69,19 @@ for (const weight of WANTED) {
 
 // ------------------------------------------------------------- Ionicons
 // Every icon the app names, gathered from the source.
-function iconsUsed() {
+//
+// This looks at every quoted string in the code and keeps the ones that
+// are Ionicons names. That is blunter than reading the `name=` on each
+// icon, and deliberately so: an icon chosen in the middle of an
+// expression -
+//
+//   name={edit ? 'create-outline' : 'add-circle-outline'}
+//
+// - is invisible to anything that only reads what follows `name=`, and
+// the icon then prints as a blank square that nobody notices until they
+// open the page. That happened. A handful of extra glyphs costs a few
+// hundred bytes; a missing one costs a hole in the screen.
+function iconsUsed(glyphMap) {
   const names = new Set();
   const walk = (dir) => {
     for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -78,10 +90,9 @@ function iconsUsed() {
         if (entry.name !== 'node_modules') walk(full);
       } else if (/\.(tsx?|ts)$/.test(entry.name)) {
         const text = fs.readFileSync(full, 'utf8');
-        for (const m of text.matchAll(/(?:name|icon|iconActive)\s*[:=]\s*['"]([a-z][a-z0-9-]{2,})['"]/g)) {
-          names.add(m[1]);
+        for (const m of text.matchAll(/['"`]([a-z][a-z0-9-]{2,})['"`]/g)) {
+          if (glyphMap[m[1]] !== undefined) names.add(m[1]);
         }
-        for (const m of text.matchAll(/name=\{?['"]([a-z][a-z0-9-]{2,})['"]/g)) names.add(m[1]);
       }
     }
   };
@@ -97,7 +108,7 @@ const glyphMap = JSON.parse(
   ),
 );
 
-const used = iconsUsed();
+const used = iconsUsed(glyphMap);
 const points = [...used].filter((n) => glyphMap[n] !== undefined).map((n) => glyphMap[n]);
 console.log(`\nIonicons — ${points.length} of ${Object.keys(glyphMap).length} symbols are used\n`);
 

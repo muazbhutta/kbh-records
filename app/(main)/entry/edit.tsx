@@ -1,3 +1,4 @@
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
@@ -36,6 +37,8 @@ export default function EditEntryScreen() {
   const [counterpartyId, setCounterpartyId] = useState<string | null>(null);
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [note, setNote] = useState('');
+  const [reason, setReason] = useState('');
+  const [touched, setTouched] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
 
@@ -72,6 +75,7 @@ export default function EditEntryScreen() {
   const amountOk = Number.isFinite(value) && value > 0;
 
   const save = async () => {
+    setTouched(true);
     setError(null);
     if (!amountOk) return setError('Enter an amount bigger than zero.');
     if (!personId) return setError('Choose a person.');
@@ -82,10 +86,14 @@ export default function EditEntryScreen() {
       return setError('You cannot send money to yourself.');
     }
     if (entry.type === 'expense' && !categoryId) return setError('Choose what it was for.');
+    if (reason.trim().length < 3) {
+      return setError('Say why you are changing this entry. The office is told.');
+    }
 
     try {
       await updateEntry.mutateAsync({
         id: entry.id,
+        reason: reason.trim(),
         amount: value,
         billDate,
         personId,
@@ -171,6 +179,28 @@ export default function EditEntryScreen() {
           />
         </Card>
 
+        {/*
+          Why, not optional. A change to the books without a reason beside
+          it is a change somebody has to come and ask about later, and the
+          office gets this word for word.
+        */}
+        <Card>
+          <Field
+            label="Why are you changing this?"
+            value={reason}
+            onChangeText={(v) => setReason(v.slice(0, 300))}
+            placeholder="Typed 55, the bill says 60"
+            icon="help-circle-outline"
+            error={touched && reason.trim().length < 3 ? 'This is needed.' : null}
+          />
+          <View style={styles.tellRow}>
+            <Ionicons name="notifications-outline" size={14} color={colors.textMuted} />
+            <Txt variant="caption" color={colors.textMuted}>
+              The office is told about this change, with your reason.
+            </Txt>
+          </View>
+        </Card>
+
         {entry.photo_count > 0 ? (
           <Txt variant="caption" color={colors.textFaint} center>
             The bill photos stay as they are.
@@ -186,4 +216,5 @@ export default function EditEntryScreen() {
 const styles = StyleSheet.create({
   form: { gap: 12, paddingBottom: 12, marginTop: 12 },
   group: { gap: 16 },
+  tellRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8 },
 });

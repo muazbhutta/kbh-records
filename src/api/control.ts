@@ -28,6 +28,11 @@ function friendly(message: string): string {
 
 export type EntryEdit = {
   id: string;
+  /**
+   * Why it is being changed. The database insists on it, because it is
+   * the whole of the ticket the office is about to receive.
+   */
+  reason: string;
   amount?: number;
   billDate?: string;
   personId?: string;
@@ -42,6 +47,7 @@ export function useUpdateEntry() {
     mutationFn: async (input: EntryEdit) => {
       const { error } = await supabase.rpc('update_entry', {
         p_id: input.id,
+        p_reason: input.reason,
         p_amount: input.amount,
         p_bill_date: input.billDate,
         p_person_id: input.personId,
