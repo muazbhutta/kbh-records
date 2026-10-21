@@ -4,7 +4,13 @@ import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 
 import { Banner, Card, SectionTitle } from '@/components/Bits';
 import { Txt } from '@/components/Txt';
-import { pushState, turnPushOff, turnPushOn, type PushState } from '@/lib/push';
+import {
+  pushState,
+  turnPushOff,
+  turnPushOn,
+  whatIsMissing,
+  type PushState,
+} from '@/lib/push';
 import { colors, radius } from '@/theme';
 
 /**
@@ -22,6 +28,7 @@ export function PushSwitch() {
   const [state, setState] = useState<PushState | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const missing = whatIsMissing();
 
   useEffect(() => {
     let alive = true;
@@ -43,14 +50,39 @@ export function PushSwitch() {
     }
   };
 
+  // Never nothing. A screen that vanishes when it cannot do something
+  // looks exactly like a broken app, and was taken for one.
   if (state === null) return null;
-  if (state === 'unsupported') return null;
 
   return (
     <>
       <SectionTitle title="Being told" />
       <Card>
-        {state === 'needs-install' ? (
+        {state === 'too-old' ? (
+          <View style={styles.note}>
+            <Ionicons name="phone-portrait-outline" size={18} color={colors.amberDark} />
+            <Txt variant="caption" color={colors.textMuted}>
+              This iPhone is too old for notifications. Safari learned to do them in{' '}
+              <Txt variant="caption" weight="semibold">iOS 16.4</Txt>. Update the phone from
+              Settings, then come back here.
+            </Txt>
+          </View>
+        ) : state === 'unsupported' ? (
+          <View style={styles.note}>
+            <Ionicons name="information-circle-outline" size={18} color={colors.textMuted} />
+            <View style={styles.flex}>
+              <Txt variant="caption" color={colors.textMuted}>
+                This browser cannot show notifications. Everything still waits for you on the home
+                screen.
+              </Txt>
+              {missing.length > 0 ? (
+                <Txt variant="caption" color={colors.textFaint}>
+                  It has no {missing.join(', no ')}.
+                </Txt>
+              ) : null}
+            </View>
+          </View>
+        ) : state === 'needs-install' ? (
           <View style={styles.note}>
             <Ionicons name="phone-portrait-outline" size={18} color={colors.blue} />
             <Txt variant="caption" color={colors.textMuted}>
@@ -147,5 +179,6 @@ const styles = StyleSheet.create({
   knobOn: { alignSelf: 'flex-end' },
 
   note: { flexDirection: 'row', gap: 9, alignItems: 'flex-start' },
+  flex: { flex: 1, gap: 3 },
   foot: { marginTop: 10 },
 });

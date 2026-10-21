@@ -25,7 +25,27 @@ export type PushState =
   | 'off'
   | 'on'
   /** iPhone: the browser only allows this once the app is on the home screen. */
-  | 'needs-install';
+  | 'needs-install'
+  /** An iPhone that is installed but older than iOS 16.4, which brought this in. */
+  | 'too-old';
+
+/**
+ * What this browser is missing, in plain words.
+ *
+ * Here so that a screen which cannot offer the switch can still say why.
+ * The first version of this showed nothing at all when a browser could
+ * not do it, which looks exactly like a broken app - and was taken for
+ * one.
+ */
+export function whatIsMissing(): string[] {
+  if (typeof window === 'undefined') return ['a browser'];
+  const missing: string[] = [];
+  if (!('serviceWorker' in navigator)) missing.push('background work');
+  if (!('PushManager' in window)) missing.push('push messages');
+  if (!('Notification' in window)) missing.push('notifications');
+  if (!window.isSecureContext) missing.push('a secure connection');
+  return missing;
+}
 
 /** Whether this browser can be told anything at all. */
 export function canPush(): boolean {
@@ -44,9 +64,19 @@ export function canPush(): boolean {
  * been added to the home screen. Asking before that gives an error the
  * person cannot act on, so the screen says what to do instead.
  */
+function isIphone(): boolean {
+  if (typeof navigator === 'undefined') return false;
+  // An iPad on recent iPadOS says it is a Mac, so the touch count is
+  // what tells them apart.
+  return (
+    /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+  );
+}
+
 function isUninstalledIphone(): boolean {
   if (typeof navigator === 'undefined') return false;
-  const ios = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  const ios = isIphone();
   const standalone =
     (window.navigator as unknown as { standalone?: boolean }).standalone === true ||
     window.matchMedia('(display-mode: standalone)').matches;
@@ -54,7 +84,13 @@ function isUninstalledIphone(): boolean {
 }
 
 export async function pushState(): Promise<PushState> {
-  if (!canPush()) return isUninstalledIphone() ? 'needs-install' : 'unsupported';
+  if (!canPush()) {
+    if (isUninstalledIphone()) return 'needs-install';
+    // Installed on an iPhone and still cannot: the phone is older than
+    // iOS 16.4, which is where Safari learned to do this at all.
+    if (isIphone()) return 'too-old';
+    return 'unsupported';
+  }
   if (Notification.permission === 'denied') return 'blocked';
   if (isUninstalledIphone()) return 'needs-install';
 
@@ -89,7 +125,7 @@ function thisBrowser(): string {
 
 /** Asks, subscribes, and tells the database where to send. */
 export async function turnPushOn(): Promise<PushState> {
-  if (!canPush()) return isUninstalledIphone() ? 'needs-install' : 'unsupported';
+  if (!canPush()) return pushState();
 
   const allowed = await Notification.requestPermission();
   if (allowed !== 'granted') return allowed === 'denied' ? 'blocked' : 'off';

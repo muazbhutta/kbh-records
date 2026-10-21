@@ -14,6 +14,13 @@ import { prettyMobile, ROLE_LABEL } from '@/lib/format';
 import { isSupabaseConfigured } from '@/lib/supabase';
 import { colors, radius } from '@/theme';
 
+/** The stamp the build wrote into the page, or a word saying there is none. */
+function buildStamp(): string {
+  if (Platform.OS !== 'web' || typeof document === 'undefined') return 'app';
+  const tag = document.querySelector('meta[name="kbh-build"]');
+  return tag?.getAttribute('content') || 'before builds were stamped';
+}
+
 export default function SettingsScreen() {
   const { person, canManage, logout } = useAuth();
   const router = useRouter();
@@ -123,6 +130,12 @@ export default function SettingsScreen() {
           label="Version"
           value={`${Constants.expoConfig?.version ?? '1.0.0'} (${Platform.OS})`}
         />
+        {/*
+          Which build this phone actually has. Telling a cached old copy
+          from a real fault was guesswork without it, and the guessing
+          cost two rounds of asking somebody to delete and reinstall.
+        */}
+        <DetailRow label="Build" value={buildStamp()} />
         <DetailRow label="Currency" value="SAR - Saudi Riyal" />
         <DetailRow label="Time zone" value="Asia/Riyadh" />
         <DetailRow

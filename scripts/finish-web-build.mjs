@@ -17,6 +17,15 @@ if (!fs.existsSync(FILE)) {
 // Where the site will live. "" means the root of a domain; "/kbh-records"
 // means a folder under one, which is how GitHub Pages serves a project.
 const BASE = (process.env.KBH_BASE_URL ?? '').replace(/\/$/, '');
+// The build stamp, so a phone can be asked which version it is running.
+// Without it, telling a cached old copy from a genuine fault is
+// guesswork - and it was guesswork, twice.
+const BUILD = new Date()
+  .toISOString()
+  .replace(/[-:]/g, '')
+  .replace('T', '-')
+  .slice(0, 13);
+
 const at = (p) => `${BASE}${p}`;
 
 // ------------------------------------------------- the manifest and worker
@@ -111,6 +120,7 @@ if (fs.existsSync(USED)) {
 
 // -------------------------------------------------------------- the head
 const HEAD = `
+    <meta name="kbh-build" content="${BUILD}" />
     <meta name="description" content="The cash book for KBH Construction, Jeddah: money given out, what it was spent on, and the bill for every expense." />
 
     <!-- Installing on Android and on a desktop -->
