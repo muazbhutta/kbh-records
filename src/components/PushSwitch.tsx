@@ -6,6 +6,7 @@ import { Banner, Card, SectionTitle } from '@/components/Bits';
 import { Txt } from '@/components/Txt';
 import {
   pushState,
+  refreshPushSubscription,
   turnPushOff,
   turnPushOn,
   whatIsMissing,
@@ -32,7 +33,13 @@ export function PushSwitch() {
 
   useEffect(() => {
     let alive = true;
-    pushState().then((s) => alive && setState(s));
+    pushState().then((s) => {
+      if (!alive) return;
+      setState(s);
+      // The browser can replace a subscription without saying so, and
+      // then the messages quietly stop. Saving it again keeps it alive.
+      if (s === 'on') void refreshPushSubscription();
+    });
     return () => {
       alive = false;
     };

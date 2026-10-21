@@ -150,9 +150,53 @@ export async function turnPushOn(): Promise<PushState> {
     p_auth: json.keys.auth,
     p_label: thisBrowser(),
   });
-  if (error) throw new Error(error.message);
+  if (error) {
+    throw new Error(
+      navigator.onLine
+        ? 'Could not save this phone for notifications. Try again.'
+        : 'Connect to the internet to turn notifications on.',
+    );
+  }
+
+  // Proof, at once. A switch that says On and then stays silent until
+  // somebody happens to record an expense is a switch nobody trusts.
+  try {
+    await reg.showNotification('Notifications are on', {
+      body: 'You will be told here whenever an entry is recorded or corrected.',
+      icon: 'icons/icon-192.png',
+      tag: 'kbh-on',
+    });
+  } catch {
+    // The subscription is saved either way; this was only a greeting.
+  }
 
   return 'on';
+}
+
+/**
+ * A push subscription can be replaced by the browser without telling
+ * anybody, and then the messages quietly stop. Saving it again each time
+ * the app opens keeps the address in the books current.
+ */
+export async function refreshPushSubscription(): Promise<void> {
+  try {
+    if (!canPush() || Notification.permission !== 'granted') return;
+    const reg = await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.getSubscription();
+    if (!sub) return;
+
+    const json = sub.toJSON() as { endpoint?: string; keys?: { p256dh?: string; auth?: string } };
+    if (!json.endpoint || !json.keys?.p256dh || !json.keys?.auth) return;
+
+    await supabase.rpc('save_push_subscription', {
+      p_endpoint: json.endpoint,
+      p_p256dh: json.keys.p256dh,
+      p_auth: json.keys.auth,
+      p_label: thisBrowser(),
+    });
+  } catch {
+    // Never worth interrupting somebody's morning over.
+  }
 }
 
 /** Stops this browser being told. Any others carry on. */
