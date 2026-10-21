@@ -10,6 +10,7 @@ import { AmountField, CategoryField, DateField, PersonField } from '@/components
 import { Header, Screen } from '@/components/Screen';
 import { Txt } from '@/components/Txt';
 import { useUpdateEntry } from '@/api/control';
+import { useRequestChange } from '@/api/tickets';
 import { useCategories, useEntry, usePeopleNames } from '@/api/entries';
 import { useAuth } from '@/auth/AuthProvider';
 import { money, todayInRiyadh } from '@/lib/format';
@@ -30,6 +31,7 @@ export default function EditEntryScreen() {
   const { data: people = [] } = usePeopleNames();
   const { data: categories = [] } = useCategories();
   const updateEntry = useUpdateEntry();
+  const askForChange = useRequestChange();
 
   const [amount, setAmount] = useState('');
   const [billDate, setBillDate] = useState(todayInRiyadh());
@@ -103,17 +105,32 @@ export default function EditEntryScreen() {
     }
 
     try {
-      await updateEntry.mutateAsync({
-        id: entry.id,
+      // The office edits. Everybody else asks, and the books do not move
+      // until somebody with the authority has looked at both figures.
+      if (canManage) {
+        await updateEntry.mutateAsync({
+          id: entry.id,
+          reason: reason.trim(),
+          amount: value,
+          billDate,
+          personId,
+          counterpartyId: entry.type === 'transfer' ? (counterpartyId ?? undefined) : undefined,
+          categoryId: entry.type === 'expense' ? (categoryId ?? undefined) : undefined,
+          note: note.trim() === '' ? null : note.trim(),
+        });
+        router.replace(`/entry/${entry.id}?person=${personId}&edited=1`);
+        return;
+      }
+
+      await askForChange.mutateAsync({
+        entryId: entry.id,
         reason: reason.trim(),
         amount: value,
         billDate,
-        personId,
-        counterpartyId: entry.type === 'transfer' ? (counterpartyId ?? undefined) : undefined,
         categoryId: entry.type === 'expense' ? (categoryId ?? undefined) : undefined,
         note: note.trim() === '' ? null : note.trim(),
       });
-      router.replace(`/entry/${entry.id}?person=${personId}&edited=1`);
+      router.replace(`/entry/${entry.id}?person=${personId}&asked=1`);
     } catch (err) {
       setError(errorMessage(err));
     }
@@ -123,7 +140,15 @@ export default function EditEntryScreen() {
     <Screen
       footer={
         <Button
-          label={updateEntry.isPending ? 'Saving...' : 'Save Changes'}
+          label={
+            canManage
+              ? updateEntry.isPending
+                ? 'Saving...'
+                : 'Save Changes'
+              : askForChange.isPending
+                ? 'Sending...'
+                : 'Send for Approval'
+          }
           icon="checkmark-circle"
           size="lg"
           full
@@ -200,7 +225,7 @@ export default function EditEntryScreen() {
         */}
         <Card>
           <Field
-            label="Why are you changing this?"
+            label={canManage ? 'Why are you changing this?' : 'Why should this change?'}
             value={reason}
             onChangeText={(v) => setReason(v.slice(0, 300))}
             placeholder="Typed 55, the bill says 60"
@@ -210,7 +235,9 @@ export default function EditEntryScreen() {
           <View style={styles.tellRow}>
             <Ionicons name="notifications-outline" size={14} color={colors.textMuted} />
             <Txt variant="caption" color={colors.textMuted}>
-              The office is told about this change, with your reason.
+              {canManage
+                ? 'The office is told about this change, with your reason.'
+                : 'Nothing changes yet. The office is asked, and sees both figures beside your reason.'}
             </Txt>
           </View>
         </Card>

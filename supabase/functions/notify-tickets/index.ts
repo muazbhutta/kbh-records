@@ -39,7 +39,7 @@ type Target = { id: number; endpoint: string; p256dh: string; auth: string };
 type Ticket = {
   id: number;
   entry_id: string;
-  kind: 'new' | 'edit';
+  kind: 'new' | 'edit' | 'request';
   actor_name: string | null;
   reason: string | null;
   amount: string | number | null;
@@ -57,6 +57,15 @@ function money(value: string | number | null): string {
 function wording(t: Ticket): { title: string; body: string } {
   const who = t.person_name ?? 'Somebody';
   const what = t.category_name ? ` · ${t.category_name}` : '';
+
+  // A correction asked for is the one that stops the books until
+  // somebody answers it, so it says so plainly.
+  if (t.kind === 'request') {
+    return {
+      title: `${who} is asking to change an entry`,
+      body: `${money(t.amount)}${what}${t.reason ? ` — "${t.reason}"` : ''} · waiting for you`,
+    };
+  }
 
   if (t.kind === 'edit') {
     return {

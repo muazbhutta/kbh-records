@@ -27,11 +27,12 @@ import { colors, radius, shadow } from '@/theme';
 import { EXPENSE_KIND_LABEL, LINE_META, PAY_METHOD_LABEL } from '@/types';
 
 export default function EntryScreen() {
-  const { id, person, saved, edited } = useLocalSearchParams<{
+  const { id, person, saved, edited, asked } = useLocalSearchParams<{
     id: string;
     person?: string;
     saved?: string;
     edited?: string;
+    asked?: string;
   }>();
   const router = useRouter();
   const { person: me, canManage } = useAuth();
@@ -90,6 +91,13 @@ export default function EntryScreen() {
         />
       ) : null}
       {edited ? <Banner tone="success" message="Changes saved." /> : null}
+      {asked ? (
+        <Banner
+          tone="info"
+          title="Sent to the office"
+          message="This entry has not changed yet. It changes when the office approves what you asked for."
+        />
+      ) : null}
 
       {entry.duplicate_photo && canManage ? (
         <Banner

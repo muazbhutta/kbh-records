@@ -694,6 +694,195 @@ export type Database = {
           },
         ]
       }
+      entry_change_requests: {
+        Row: {
+          asked_at: string
+          asked_by: string | null
+          asked_by_name: string | null
+          clear_note: boolean
+          decided_at: string | null
+          decided_by: string | null
+          decided_by_name: string | null
+          decision_note: string | null
+          entry_id: string
+          id: number
+          new_amount: number | null
+          new_bill_date: string | null
+          new_category: string | null
+          new_note: string | null
+          old_amount: number
+          old_bill_date: string
+          old_category: string | null
+          old_note: string | null
+          reason: string
+          status: string
+        }
+        Insert: {
+          asked_at?: string
+          asked_by?: string | null
+          asked_by_name?: string | null
+          clear_note?: boolean
+          decided_at?: string | null
+          decided_by?: string | null
+          decided_by_name?: string | null
+          decision_note?: string | null
+          entry_id: string
+          id?: never
+          new_amount?: number | null
+          new_bill_date?: string | null
+          new_category?: string | null
+          new_note?: string | null
+          old_amount: number
+          old_bill_date: string
+          old_category?: string | null
+          old_note?: string | null
+          reason: string
+          status?: string
+        }
+        Update: {
+          asked_at?: string
+          asked_by?: string | null
+          asked_by_name?: string | null
+          clear_note?: boolean
+          decided_at?: string | null
+          decided_by?: string | null
+          decided_by_name?: string | null
+          decision_note?: string | null
+          entry_id?: string
+          id?: never
+          new_amount?: number | null
+          new_bill_date?: string | null
+          new_category?: string | null
+          new_note?: string | null
+          old_amount?: number
+          old_bill_date?: string
+          old_category?: string | null
+          old_note?: string | null
+          reason?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "entry_change_requests_asked_by_fkey"
+            columns: ["asked_by"]
+            isOneToOne: false
+            referencedRelation: "app_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entry_change_requests_asked_by_fkey"
+            columns: ["asked_by"]
+            isOneToOne: false
+            referencedRelation: "people_list"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entry_change_requests_asked_by_fkey"
+            columns: ["asked_by"]
+            isOneToOne: false
+            referencedRelation: "people_names"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entry_change_requests_asked_by_fkey"
+            columns: ["asked_by"]
+            isOneToOne: false
+            referencedRelation: "team_summary"
+            referencedColumns: ["head_id"]
+          },
+          {
+            foreignKeyName: "entry_change_requests_decided_by_fkey"
+            columns: ["decided_by"]
+            isOneToOne: false
+            referencedRelation: "app_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entry_change_requests_decided_by_fkey"
+            columns: ["decided_by"]
+            isOneToOne: false
+            referencedRelation: "people_list"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entry_change_requests_decided_by_fkey"
+            columns: ["decided_by"]
+            isOneToOne: false
+            referencedRelation: "people_names"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entry_change_requests_decided_by_fkey"
+            columns: ["decided_by"]
+            isOneToOne: false
+            referencedRelation: "team_summary"
+            referencedColumns: ["head_id"]
+          },
+          {
+            foreignKeyName: "entry_change_requests_entry_id_fkey"
+            columns: ["entry_id"]
+            isOneToOne: false
+            referencedRelation: "cancelled_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entry_change_requests_entry_id_fkey"
+            columns: ["entry_id"]
+            isOneToOne: false
+            referencedRelation: "deleted_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entry_change_requests_entry_id_fkey"
+            columns: ["entry_id"]
+            isOneToOne: false
+            referencedRelation: "entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entry_change_requests_entry_id_fkey"
+            columns: ["entry_id"]
+            isOneToOne: false
+            referencedRelation: "expenses_to_check"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entry_change_requests_entry_id_fkey"
+            columns: ["entry_id"]
+            isOneToOne: false
+            referencedRelation: "invoice_details"
+            referencedColumns: ["entry_id"]
+          },
+          {
+            foreignKeyName: "entry_change_requests_entry_id_fkey"
+            columns: ["entry_id"]
+            isOneToOne: false
+            referencedRelation: "suspected_duplicates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entry_change_requests_entry_id_fkey"
+            columns: ["entry_id"]
+            isOneToOne: false
+            referencedRelation: "suspected_duplicates"
+            referencedColumns: ["other_id"]
+          },
+          {
+            foreignKeyName: "entry_change_requests_new_category_fkey"
+            columns: ["new_category"]
+            isOneToOne: false
+            referencedRelation: "expense_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entry_change_requests_old_category_fkey"
+            columns: ["old_category"]
+            isOneToOne: false
+            referencedRelation: "expense_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       entry_photos: {
         Row: {
           bytes: number | null
@@ -2834,6 +3023,10 @@ export type Database = {
         Args: { p_from?: string; p_to?: string }
         Returns: Json
       }
+      decide_entry_change: {
+        Args: { p_approve: boolean; p_id: number; p_note?: string }
+        Returns: undefined
+      }
       delete_cash_check: { Args: { p_id: string }; Returns: string }
       delete_entry: {
         Args: { p_id: string; p_reason?: string }
@@ -2898,6 +3091,7 @@ export type Database = {
         Args: { p_endpoint: string }
         Returns: undefined
       }
+      forget_push_targets: { Args: { p_ids: number[] }; Returns: undefined }
       is_active_user: { Args: never; Returns: boolean }
       is_admin: { Args: never; Returns: boolean }
       is_head: { Args: never; Returns: boolean }
@@ -2998,6 +3192,16 @@ export type Database = {
           started_on: string
         }[]
       }
+      push_targets: {
+        Args: never
+        Returns: {
+          auth: string
+          endpoint: string
+          full_name: string
+          id: number
+          p256dh: string
+        }[]
+      }
       record_cash_check: {
         Args: { p_counted: number; p_note?: string; p_person_id: string }
         Returns: string
@@ -3052,6 +3256,18 @@ export type Database = {
           storage_path: string
           system_id: string
         }[]
+      }
+      request_entry_change: {
+        Args: {
+          p_amount?: number
+          p_bill_date?: string
+          p_category_id?: string
+          p_clear_note?: boolean
+          p_entry_id: string
+          p_note?: string
+          p_reason: string
+        }
+        Returns: number
       }
       resolve_duplicate: {
         Args: { p_action: string; p_id: string; p_reason?: string }
@@ -3113,6 +3329,29 @@ export type Database = {
           p_reason: string
         }
         Returns: string
+      }
+      waiting_changes: {
+        Args: { p_limit?: number }
+        Returns: {
+          asked_at: string
+          asked_by_name: string
+          clear_note: boolean
+          entry_id: string
+          entry_type: string
+          id: number
+          new_amount: number
+          new_bill_date: string
+          new_category: string
+          new_note: string
+          old_amount: number
+          old_bill_date: string
+          old_category: string
+          old_note: string
+          person_name: string
+          photo_count: number
+          reason: string
+          system_id: string
+        }[]
       }
     }
     Enums: {

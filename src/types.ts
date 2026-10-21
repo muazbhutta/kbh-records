@@ -631,3 +631,25 @@ export type Ticket = {
   note: string | null;
   photo_count: number;
 };
+
+/** A correction asked for and not yet applied. The entry has not moved. */
+export type WaitingChange = {
+  id: number;
+  entry_id: string;
+  asked_at: string;
+  asked_by_name: string | null;
+  reason: string;
+  person_name: string | null;
+  system_id: string | null;
+  entry_type: EntryType;
+  old_amount: number;
+  new_amount: number | null;
+  old_bill_date: string;
+  new_bill_date: string | null;
+  old_category: string | null;
+  new_category: string | null;
+  old_note: string | null;
+  new_note: string | null;
+  clear_note: boolean;
+  photo_count: number;
+};
