@@ -24,7 +24,7 @@ import { ENTRY_TYPE_LABEL } from '@/types';
 export default function EditEntryScreen() {
   const { id, person } = useLocalSearchParams<{ id: string; person?: string }>();
   const router = useRouter();
-  const { canManage } = useAuth();
+  const { person: me, canManage } = useAuth();
 
   const { data: entry, isLoading } = useEntry(id, person);
   const { data: people = [] } = usePeopleNames();
@@ -53,11 +53,23 @@ export default function EditEntryScreen() {
     setLoaded(true);
   }, [entry, loaded]);
 
-  if (!canManage) {
+  // The office may correct anybody; everybody else may correct himself.
+  // The database holds the same line - this only decides what is shown.
+  //
+  // This screen used to turn away anyone who was not an Admin, which it
+  // went on doing after the rule changed and the button to get here
+  // appeared. The button worked, the database would have allowed it, and
+  // the screen said no.
+  const mine = !!entry && entry.person_id === me?.id;
+  if (!canManage && !(loaded && mine)) {
     return (
       <Screen>
         <Header title="Edit entry" back />
-        <Banner tone="error" message="Only an Admin can change a saved entry." />
+        {isLoading ? (
+          <Loading />
+        ) : (
+          <Banner tone="error" message="You can only correct your own entries." />
+        )}
       </Screen>
     );
   }
@@ -144,12 +156,14 @@ export default function EditEntryScreen() {
 
         <Card>
           <View style={styles.group}>
-            <PersonField
-              label={entry.type === 'transfer' ? 'From' : 'Whose khata'}
-              value={personId}
-              people={people}
-              onChange={setPersonId}
-            />
+            {canManage ? (
+              <PersonField
+                label={entry.type === 'transfer' ? 'From' : 'Whose khata'}
+                value={personId}
+                people={people}
+                onChange={setPersonId}
+              />
+            ) : null}
             {entry.type === 'transfer' ? (
               <PersonField
                 label="To"
