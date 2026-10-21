@@ -45,6 +45,7 @@ const rewrites = [
   ],
   ["const PAGE = '/index.html';", `const PAGE = '${at('/index.html')}';`],
   ["const ROOT = '/';", `const ROOT = '${at('/')}';`],
+  ["const ICON = '/icons/icon-192.png';", `const ICON = '${at('/icons/icon-192.png')}';`],
 ];
 for (const [from, to] of rewrites) {
   if (!sw.includes(from)) {

@@ -8,13 +8,16 @@
  * balance that was true an hour ago.
  */
 
-const VERSION = 'kbh-v4';
+const VERSION = 'kbh-v5';
 const SHELL = `${VERSION}-shell`;
 
 // The two addresses this worker has to name. The build rewrites them
 // when the app is hosted in a folder rather than at the root.
 const PAGE = '/index.html';
 const ROOT = '/';
+
+// The picture the phone shows beside a notification.
+const ICON = '/icons/icon-192.png';
 
 // Enough to open the app with nothing else available.
 const CORE = ['/', '/index.html', '/manifest.json', '/favicon.ico'];
@@ -119,3 +122,56 @@ function withTimeout(promise, ms) {
     );
   });
 }
+
+/**
+ * A notification from the office's side of the books.
+ *
+ * The ticket is already recorded by the time this arrives; this only
+ * makes the phone say so. If the message cannot be read for any reason
+ * the phone is still told something, because a silent failure here
+ * looks exactly like nothing having happened.
+ */
+self.addEventListener('push', (event) => {
+  let data = {};
+  try {
+    data = event.data ? event.data.json() : {};
+  } catch (err) {
+    data = {};
+  }
+
+  const title = data.title || 'KBH Records';
+  const options = {
+    body: data.body || 'Something was recorded.',
+    icon: ICON,
+    badge: ICON,
+    // One notification per ticket: a second buzz for the same thing is
+    // noise, and a phone left off all morning should not wake up to
+    // forty of them.
+    tag: data.tag || 'kbh',
+    renotify: true,
+    data: { entryId: data.entryId || null },
+  };
+
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
+/** Tapping it opens the app - on the entry itself when there is one. */
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const entryId = event.notification.data && event.notification.data.entryId;
+  const target = entryId ? ROOT + 'entry/' + entryId : ROOT;
+
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windows) => {
+      // Already open somewhere: bring that one forward rather than
+      // opening a second copy of the app.
+      for (const client of windows) {
+        if (client.url.indexOf(ROOT) !== -1 && 'focus' in client) {
+          client.navigate(target);
+          return client.focus();
+        }
+      }
+      return self.clients.openWindow(target);
+    }),
+  );
+});

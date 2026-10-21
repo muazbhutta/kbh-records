@@ -8,6 +8,7 @@ import { Avatar, Badge, Card, DetailRow, SectionTitle } from '@/components/Bits'
 import { Button } from '@/components/Button';
 import { Header, Screen } from '@/components/Screen';
 import { Txt } from '@/components/Txt';
+import { PushSwitch } from '@/components/PushSwitch';
 import { useAuth } from '@/auth/AuthProvider';
 import { prettyMobile, ROLE_LABEL } from '@/lib/format';
 import { isSupabaseConfigured } from '@/lib/supabase';
@@ -112,6 +113,8 @@ export default function SettingsScreen() {
 
         </>
       ) : null}
+
+      {canManage ? <PushSwitch /> : null}
 
       <SectionTitle title="About" />
       <Card padded={false} style={styles.aboutCard}>

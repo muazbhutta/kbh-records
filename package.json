@@ -10,7 +10,7 @@
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
     "build:web": "expo export --platform web && node scripts/finish-web-build.mjs",
-    "functions:deploy": "npx supabase functions deploy pin-auth --no-verify-jwt && npx supabase functions deploy manage-users && npx supabase functions deploy scan-bill",
+    "functions:deploy": "npx supabase functions deploy pin-auth --no-verify-jwt && npx supabase functions deploy manage-users && npx supabase functions deploy scan-bill && npx supabase functions deploy notify-tickets --no-verify-jwt",
     "icons": "node scripts/make-icons.mjs",
     "serve": "node scripts/serve-dist.mjs",
     "pages": "node scripts/stage-pages.mjs",

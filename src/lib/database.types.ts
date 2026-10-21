@@ -1441,6 +1441,65 @@ export type Database = {
           },
         ]
       }
+      push_subscriptions: {
+        Row: {
+          auth: string
+          created_at: string
+          endpoint: string
+          id: number
+          label: string | null
+          p256dh: string
+          person_id: string
+        }
+        Insert: {
+          auth: string
+          created_at?: string
+          endpoint: string
+          id?: never
+          label?: string | null
+          p256dh: string
+          person_id: string
+        }
+        Update: {
+          auth?: string
+          created_at?: string
+          endpoint?: string
+          id?: never
+          label?: string | null
+          p256dh?: string
+          person_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "push_subscriptions_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "app_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "push_subscriptions_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "people_list"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "push_subscriptions_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "people_names"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "push_subscriptions_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "team_summary"
+            referencedColumns: ["head_id"]
+          },
+        ]
+      }
       report_downloads: {
         Row: {
           actor_id: string | null
@@ -2835,6 +2894,10 @@ export type Database = {
           total: number
         }[]
       }
+      forget_push_subscription: {
+        Args: { p_endpoint: string }
+        Returns: undefined
+      }
       is_active_user: { Args: never; Returns: boolean }
       is_admin: { Args: never; Returns: boolean }
       is_head: { Args: never; Returns: boolean }
@@ -2995,6 +3058,15 @@ export type Database = {
         Returns: string
       }
       restore_entry: { Args: { p_id: string }; Returns: string }
+      save_push_subscription: {
+        Args: {
+          p_auth: string
+          p_endpoint: string
+          p_label?: string
+          p_p256dh: string
+        }
+        Returns: undefined
+      }
       set_entry_project: {
         Args: { p_entry_id: string; p_project_id?: string }
         Returns: undefined
