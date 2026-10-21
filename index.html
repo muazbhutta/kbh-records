@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no, viewport-fit=cover" />
+    <title>KBH Records</title>
+    <!-- The `react-native-web` recommended style reset: https://necolas.github.io/react-native-web/docs/setup/#root-element -->
+    <style id="expo-reset">
+      /* These styles make the body full-height */
+      html,
+      body {
+        height: 100%;
+      }
+      /* These styles disable body scrolling if you are using <ScrollView> */
+      body {
+        overflow: hidden;
+      }
+      /* These styles make the root element full-height */
+      #root {
+        display: flex;
+        height: 100%;
+        flex: 1;
+      }
+    </style>
+  <meta name="theme-color" content="#0E2340">
+<link rel="icon" href="/kbh-records/favicon.ico"/>
+    <meta name="kbh-build" content="20261021-2047" />
+    <meta name="description" content="The cash book for KBH Construction, Jeddah: money given out, what it was spent on, and the bill for every expense." />
+
+    <!-- Installing on Android and on a desktop -->
+    <link rel="manifest" href="/kbh-records/manifest.json" />
+    <meta name="application-name" content="KBH Records" />
+
+    <!-- Installing on an iPhone, which ignores the manifest -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="KBH" />
+    <link rel="apple-touch-icon" href="/kbh-records/icons/apple-touch-icon.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/kbh-records/icons/icon-192.png" />
+
+    <style>
+      /* The app is a tool, not a document: a long press should not offer
+         to select and copy half the screen. */
+      body { -webkit-tap-highlight-color: transparent; background-color: #F5F7FA; }
+    </style>
+  </head>
+
+  <body>
+    <!-- Use static rendering with Expo Router to support running without JavaScript. -->
+    <noscript>
+      You need to enable JavaScript to run this app.
+    </noscript>
+    <!-- The root element for your Expo app. -->
+    <div id="root"></div>
+  <script src="/kbh-records/_expo/static/js/web/entry-59c1f003ce076c0eeba284b3e9c0682e.js" defer></script>
+
+    <script>
+      if ('serviceWorker' in navigator && window.isSecureContext) {
+        window.addEventListener('load', function () {
+          navigator.serviceWorker
+            // updateViaCache 'none' so the worker file itself is always
+            // asked of the network. Left to the ordinary cache it can be
+            // ten minutes stale, and on a phone where the app is never
+            // really closed it can be stale far longer than that: the
+            // laptop had the new version and the phone had last week's.
+            .register('/kbh-records/sw.js', { scope: '/kbh-records/', updateViaCache: 'none' })
+            .then(function (reg) {
+              // Ask again whenever the app is brought back up, which on a
+              // phone is the only moment it reliably gets a chance.
+              var ask = function () {
+                if (document.visibilityState === 'visible') reg.update();
+              };
+              document.addEventListener('visibilitychange', ask);
+              window.addEventListener('focus', ask);
+              setInterval(ask, 60 * 60 * 1000);
+            })
+            .catch(function () {});
+
+          // A new worker has taken over, so the page is running the old
+          // code against the new. Reload once - the guard is there so a
+          // reload cannot start another.
+          var reloaded = false;
+          navigator.serviceWorker.addEventListener('controllerchange', function () {
+            if (reloaded) return;
+            reloaded = true;
+            window.location.reload();
+          });
+        });
+      }
+    </script>
+  </body>
+</html>

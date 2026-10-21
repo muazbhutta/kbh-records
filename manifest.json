@@ -1,0 +1,69 @@
+{
+  "name": "KBH Records",
+  "short_name": "KBH",
+  "description": "The cash book for KBH Construction, Jeddah: money given out, what it was spent on, and the bill for every expense.",
+  "id": "/kbh-records/",
+  "start_url": "/kbh-records/",
+  "scope": "/kbh-records/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#0E2340",
+  "background_color": "#F5F7FA",
+  "lang": "en",
+  "dir": "ltr",
+  "categories": [
+    "business",
+    "finance",
+    "productivity"
+  ],
+  "icons": [
+    {
+      "src": "/kbh-records/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/kbh-records/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/kbh-records/icons/icon-maskable-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/kbh-records/icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Add an expense",
+      "short_name": "Expense",
+      "url": "/kbh-records/entry/new?type=expense",
+      "icons": [
+        {
+          "src": "/kbh-records/icons/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Reports",
+      "short_name": "Reports",
+      "url": "/kbh-records/reports",
+      "icons": [
+        {
+          "src": "/kbh-records/icons/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ]
+}
