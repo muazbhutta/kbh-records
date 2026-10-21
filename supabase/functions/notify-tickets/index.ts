@@ -23,7 +23,18 @@ const NOTIFY_SECRET = Deno.env.get('NOTIFY_SECRET') ?? '';
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? '';
 const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 
-webpush.setVapidDetails('mailto:records@kbh.example', VAPID_PUBLIC, VAPID_PRIVATE);
+// Apple's push service checks this and refuses what it does not like -
+// it answered 403 to every iPhone while this was a mailto: at
+// kbh.example, which is a reserved address for documentation. The app's
+// own public address is a real one, reachable, and belongs to nobody
+// personally.
+webpush.setVapidDetails(
+  'https://muazbhutta.github.io/kbh-records/',
+  VAPID_PUBLIC,
+  VAPID_PRIVATE,
+);
+
+type Target = { id: number; endpoint: string; p256dh: string; auth: string };
 
 type Ticket = {
   id: number;
@@ -80,12 +91,11 @@ Deno.serve(async (req) => {
     auth: { persistSession: false },
   });
 
-  // Everybody who should be told, and is listening.
-  const { data: subs, error } = await db
-    .from('push_subscriptions')
-    .select('id, endpoint, p256dh, auth, person_id, app_users!inner(role, is_active)')
-    .eq('app_users.is_active', true)
-    .in('app_users.role', ['admin', 'sub_admin']);
+  // Everybody who should be told, and is listening. Asked of a database
+  // function rather than built here out of an embedded join and a filter
+  // across it: that version returned nothing, and nothing looks exactly
+  // like "there was nobody to tell".
+  const { data: subs, error } = await db.rpc('push_targets');
 
   if (error) {
     console.error('could not read the subscriptions', error.message);
@@ -103,9 +113,13 @@ Deno.serve(async (req) => {
 
   let sent = 0;
   const gone: number[] = [];
+  // What happened to each one. The sender saying nothing but a number
+  // leaves "did it arrive?" unanswerable from here, and this is behind
+  // a secret nobody else has.
+  const trouble: { at: string; status?: number; why: string }[] = [];
 
   await Promise.all(
-    (subs ?? []).map(async (s) => {
+    ((subs ?? []) as Target[]).map(async (s) => {
       try {
         await webpush.sendNotification(
           { endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } },
@@ -118,17 +132,27 @@ Deno.serve(async (req) => {
         // app was deleted, or the browser cleared it. Those rows are
         // dead and should go, or they pile up and slow every send.
         const status = (err as { statusCode?: number }).statusCode;
-        if (status === 404 || status === 410) gone.push(s.id);
-        else console.error('push failed', status, (err as Error).message);
+        if (status === 404 || status === 410) {
+          gone.push(s.id);
+        } else {
+          const at = (() => {
+            try {
+              return new URL(s.endpoint).host;
+            } catch {
+              return 'unknown';
+            }
+          })();
+          trouble.push({ at, status, why: (err as Error).message.slice(0, 200) });
+        }
       }
     }),
   );
 
   if (gone.length > 0) {
-    await db.from('push_subscriptions').delete().in('id', gone);
+    await db.rpc('forget_push_targets', { p_ids: gone });
   }
 
-  return new Response(JSON.stringify({ sent, removed: gone.length }), {
+  return new Response(JSON.stringify({ sent, removed: gone.length, trouble }), {
     headers: { 'content-type': 'application/json' },
   });
 });
