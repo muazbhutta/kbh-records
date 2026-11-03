@@ -189,16 +189,9 @@ export function PaySheet({
 export function PayrollSheet({
   existing,
   onClose,
-  onThenAdvance,
 }: {
   existing?: SalaryLine;
   onClose: () => void;
-  /**
-   * Put him on, then go straight to handing him an advance. A new man
-   * often takes something the same day he is written down, and making
-   * that two trips through the same panel is two chances to forget.
-   */
-  onThenAdvance?: (personId: string) => void;
 }) {
   const set = useSetPayroll();
   const candidates = useSalaryCandidates(!existing);
@@ -216,7 +209,7 @@ export function PayrollSheet({
 
   const value = Number(amount);
 
-  const save = async (thenAdvance = false) => {
+  const save = async () => {
     if (!personId) return setError('Choose who this is for.');
     if (!Number.isFinite(value) || value <= 0) {
       return setError('Enter a monthly salary bigger than zero.');
@@ -227,14 +220,13 @@ export function PayrollSheet({
     const chosen = (candidates.data ?? []).find((c) => c.id === personId);
     const asUser = !existing && chosen?.kind === 'user';
     try {
-      const rosterId = await set.mutateAsync({
+      await set.mutateAsync({
         personId: asUser ? null : personId,
         userId: asUser ? personId : null,
         amount: value,
         since,
       });
-      if (thenAdvance && onThenAdvance) onThenAdvance(rosterId);
-      else onClose();
+      onClose();
     } catch (err) {
       setError(errorMessage(err));
     }
@@ -299,19 +291,8 @@ export function PayrollSheet({
         size="lg"
         full
         loading={set.isPending}
-        onPress={() => save(false)}
+        onPress={save}
       />
-      {!existing && onThenAdvance ? (
-        <Button
-          label="Put on salary and give an advance"
-          icon="time-outline"
-          variant="outline"
-          size="lg"
-          full
-          loading={set.isPending}
-          onPress={() => save(true)}
-        />
-      ) : null}
       <Button label="Cancel" variant="ghost" full onPress={onClose} />
     </Sheet>
   );

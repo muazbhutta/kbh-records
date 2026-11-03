@@ -1,5 +1,5 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { Avatar, Badge, Banner, EmptyState, Loading, SectionTitle } from '@/components/Bits';
@@ -82,20 +82,6 @@ export default function SalariesScreen() {
     return by;
   }, [payments.data]);
 
-  /**
-   * A man put on salary who is to take an advance in the same breath.
-   * The advance panel needs his line, and that only exists once the
-   * month has been read back, so it waits here until it turns up.
-   */
-  const [advanceFor, setAdvanceFor] = useState<string | null>(null);
-  useEffect(() => {
-    if (!advanceFor) return;
-    const line = (lines.data ?? []).find((l) => l.person_id === advanceFor);
-    if (line) {
-      setSheet({ kind: 'advance', line });
-      setAdvanceFor(null);
-    }
-  }, [advanceFor, lines.data]);
 
   if (!canManage) {
     return (
@@ -260,13 +246,7 @@ export default function SalariesScreen() {
         <PayrollSheet existing={sheet.line} onClose={() => setSheet(null)} />
       ) : null}
       {sheet?.kind === 'add' ? (
-        <PayrollSheet
-          onClose={() => setSheet(null)}
-          onThenAdvance={(personId) => {
-            setSheet(null);
-            setAdvanceFor(personId);
-          }}
-        />
+        <PayrollSheet onClose={() => setSheet(null)} />
       ) : null}
       {sheet?.kind === 'remove' ? (
         <RemoveFromPayrollSheet line={sheet.line} onClose={() => setSheet(null)} />
