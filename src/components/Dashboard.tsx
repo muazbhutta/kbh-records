@@ -22,6 +22,7 @@ import {
 } from '@/api/dashboard';
 import { useRecentEntries } from '@/api/entries';
 import { useOpenTicketCount } from '@/api/tickets';
+import { monthKey, useSalaryMonthTotal } from '@/api/salaries';
 import { Tickets } from '@/components/Tickets';
 import { useProjectTotals, useUnfiledExpenses } from '@/api/projects';
 import { periodRange, type Period } from '@/components/KhataList';
@@ -80,6 +81,7 @@ export function Dashboard() {
   const teams = useTeams();
   const recent = useRecentEntries({}, 10);
   const waiting = useOpenTicketCount();
+  const salaries = useSalaryMonthTotal(monthKey());
   const projects = useProjectTotals(range);
   const unfiled = useUnfiledExpenses(range);
 
@@ -189,6 +191,19 @@ export function Dashboard() {
             tone={colors.amberDark}
             icon="arrow-undo-outline"
             onPress={() => openFigure('returned')}
+          />
+          {/*
+            Salaries sit beside the others but are not one of them: the
+            figure is what is still owed this month, not what moved
+            through the khatas. Everything about them is behind this one
+            card, which is where the office goes looking.
+          */}
+          <Figure
+            label="Salaries"
+            value={Number(salaries.data?.remaining ?? 0)}
+            tone={colors.blue}
+            icon="people-circle-outline"
+            onPress={() => router.push('/salaries')}
           />
         </View>
       ) : null}

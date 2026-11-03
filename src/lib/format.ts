@@ -155,3 +155,23 @@ export const ROLE_LABEL: Record<string, string> = {
   sub_admin: 'Sub-admin',
   employee: 'Employee',
 };
+
+/** "November 2026", from the first of that month. */
+export function monthName(month: string | Date): string {
+  const d = typeof month === 'string' ? new Date(`${month.slice(0, 10)}T12:00:00`) : month;
+  if (Number.isNaN(d.getTime())) return '-';
+  return new Intl.DateTimeFormat('en-GB', {
+    timeZone: TIME_ZONE,
+    month: 'long',
+    year: 'numeric',
+  }).format(d);
+}
+
+/** The month before or after this one, as its first day. */
+export function shiftMonth(month: string, by: number): string {
+  const d = new Date(`${month.slice(0, 10)}T12:00:00`);
+  d.setMonth(d.getMonth() + by);
+  const y = d.getFullYear();
+  const m = `${d.getMonth() + 1}`.padStart(2, '0');
+  return `${y}-${m}-01`;
+}

@@ -653,3 +653,42 @@ export type WaitingChange = {
   clear_note: boolean;
   photo_count: number;
 };
+
+// -------------------------------------------------------- the salaries
+
+/** One person's standing for one month. */
+export type SalaryLine = {
+  person_id: string;
+  full_name: string;
+  job_title: string | null;
+  monthly_amount: number;
+  advance_paid: number;
+  salary_paid: number;
+  remaining: number;
+  payments: number;
+  /** False for somebody paid this month who has since come off the payroll. */
+  on_payroll: boolean;
+};
+
+/** The month in one line. */
+export type SalaryMonthTotal = {
+  payroll_total: number;
+  advance_paid: number;
+  salary_paid: number;
+  remaining: number;
+  people: number;
+};
+
+/** Money actually handed over. */
+export type SalaryPayment = {
+  id: number;
+  person_id: string;
+  full_name: string;
+  amount: number;
+  kind: 'salary' | 'advance';
+  paid_on: string;
+  method: PayMethod;
+  note: string | null;
+  entered_by_name: string | null;
+  entered_at: string;
+};

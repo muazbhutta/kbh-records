@@ -1483,6 +1483,93 @@ export type Database = {
           },
         ]
       }
+      payroll: {
+        Row: {
+          added_at: string
+          added_by: string | null
+          is_active: boolean
+          monthly_amount: number
+          note: string | null
+          person_id: string
+          since: string
+        }
+        Insert: {
+          added_at?: string
+          added_by?: string | null
+          is_active?: boolean
+          monthly_amount: number
+          note?: string | null
+          person_id: string
+          since?: string
+        }
+        Update: {
+          added_at?: string
+          added_by?: string | null
+          is_active?: boolean
+          monthly_amount?: number
+          note?: string | null
+          person_id?: string
+          since?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payroll_added_by_fkey"
+            columns: ["added_by"]
+            isOneToOne: false
+            referencedRelation: "app_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payroll_added_by_fkey"
+            columns: ["added_by"]
+            isOneToOne: false
+            referencedRelation: "people_list"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payroll_added_by_fkey"
+            columns: ["added_by"]
+            isOneToOne: false
+            referencedRelation: "people_names"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payroll_added_by_fkey"
+            columns: ["added_by"]
+            isOneToOne: false
+            referencedRelation: "team_summary"
+            referencedColumns: ["head_id"]
+          },
+          {
+            foreignKeyName: "payroll_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: true
+            referencedRelation: "app_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payroll_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: true
+            referencedRelation: "people_list"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payroll_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: true
+            referencedRelation: "people_names"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payroll_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: true
+            referencedRelation: "team_summary"
+            referencedColumns: ["head_id"]
+          },
+        ]
+      }
       project_members: {
         Row: {
           added_at: string
@@ -1787,6 +1874,142 @@ export type Database = {
           },
           {
             foreignKeyName: "report_downloads_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "team_summary"
+            referencedColumns: ["head_id"]
+          },
+        ]
+      }
+      salary_payments: {
+        Row: {
+          amount: number
+          delete_reason: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+          entered_at: string
+          entered_by: string | null
+          for_month: string
+          id: number
+          is_deleted: boolean
+          kind: string
+          method: Database["public"]["Enums"]["pay_method"]
+          note: string | null
+          paid_on: string
+          person_id: string
+        }
+        Insert: {
+          amount: number
+          delete_reason?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          entered_at?: string
+          entered_by?: string | null
+          for_month: string
+          id?: never
+          is_deleted?: boolean
+          kind: string
+          method?: Database["public"]["Enums"]["pay_method"]
+          note?: string | null
+          paid_on: string
+          person_id: string
+        }
+        Update: {
+          amount?: number
+          delete_reason?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          entered_at?: string
+          entered_by?: string | null
+          for_month?: string
+          id?: never
+          is_deleted?: boolean
+          kind?: string
+          method?: Database["public"]["Enums"]["pay_method"]
+          note?: string | null
+          paid_on?: string
+          person_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "salary_payments_deleted_by_fkey"
+            columns: ["deleted_by"]
+            isOneToOne: false
+            referencedRelation: "app_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "salary_payments_deleted_by_fkey"
+            columns: ["deleted_by"]
+            isOneToOne: false
+            referencedRelation: "people_list"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "salary_payments_deleted_by_fkey"
+            columns: ["deleted_by"]
+            isOneToOne: false
+            referencedRelation: "people_names"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "salary_payments_deleted_by_fkey"
+            columns: ["deleted_by"]
+            isOneToOne: false
+            referencedRelation: "team_summary"
+            referencedColumns: ["head_id"]
+          },
+          {
+            foreignKeyName: "salary_payments_entered_by_fkey"
+            columns: ["entered_by"]
+            isOneToOne: false
+            referencedRelation: "app_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "salary_payments_entered_by_fkey"
+            columns: ["entered_by"]
+            isOneToOne: false
+            referencedRelation: "people_list"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "salary_payments_entered_by_fkey"
+            columns: ["entered_by"]
+            isOneToOne: false
+            referencedRelation: "people_names"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "salary_payments_entered_by_fkey"
+            columns: ["entered_by"]
+            isOneToOne: false
+            referencedRelation: "team_summary"
+            referencedColumns: ["head_id"]
+          },
+          {
+            foreignKeyName: "salary_payments_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "app_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "salary_payments_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "people_list"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "salary_payments_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "people_names"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "salary_payments_person_id_fkey"
             columns: ["person_id"]
             isOneToOne: false
             referencedRelation: "team_summary"
@@ -3206,8 +3429,25 @@ export type Database = {
         Args: { p_counted: number; p_note?: string; p_person_id: string }
         Returns: string
       }
+      record_salary_payment: {
+        Args: {
+          p_amount: number
+          p_kind: string
+          p_method?: Database["public"]["Enums"]["pay_method"]
+          p_month: string
+          p_note?: string
+          p_paid_on?: string
+          p_person_id: string
+        }
+        Returns: number
+      }
+      remove_from_payroll: { Args: { p_person_id: string }; Returns: string }
       remove_from_project: {
         Args: { p_person_id: string; p_project_id: string }
+        Returns: undefined
+      }
+      remove_salary_payment: {
+        Args: { p_id: number; p_reason?: string }
         Returns: undefined
       }
       rename_project: {
@@ -3274,6 +3514,52 @@ export type Database = {
         Returns: string
       }
       restore_entry: { Args: { p_id: string }; Returns: string }
+      salary_month: {
+        Args: { p_month?: string }
+        Returns: {
+          advance_paid: number
+          full_name: string
+          job_title: string
+          monthly_amount: number
+          on_payroll: boolean
+          payments: number
+          person_id: string
+          remaining: number
+          salary_paid: number
+        }[]
+      }
+      salary_month_payments: {
+        Args: { p_month?: string }
+        Returns: {
+          amount: number
+          entered_at: string
+          entered_by_name: string
+          full_name: string
+          id: number
+          kind: string
+          method: string
+          note: string
+          paid_on: string
+          person_id: string
+        }[]
+      }
+      salary_month_total: {
+        Args: { p_month?: string }
+        Returns: {
+          advance_paid: number
+          payroll_total: number
+          people: number
+          remaining: number
+          salary_paid: number
+        }[]
+      }
+      salary_months: {
+        Args: never
+        Returns: {
+          month: string
+          paid: number
+        }[]
+      }
       save_push_subscription: {
         Args: {
           p_auth: string
@@ -3294,6 +3580,15 @@ export type Database = {
           p_type: Database["public"]["Enums"]["expense_kind"]
         }
         Returns: string
+      }
+      set_payroll: {
+        Args: {
+          p_amount: number
+          p_note?: string
+          p_person_id: string
+          p_since?: string
+        }
+        Returns: undefined
       }
       set_person_pin: {
         Args: { p_pin_hash: string; p_set_by: string; p_user_id: string }
