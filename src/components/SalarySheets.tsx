@@ -12,13 +12,20 @@ import {
   useAddSalaryPerson,
   useRecordSalary,
   useRemoveFromPayroll,
+  useRemoveSalaryPayment,
   useSalaryCandidates,
   useSetPayroll,
 } from '@/api/salaries';
 import { errorMessage } from '@/lib/supabase';
 import { money, monthName, todayInRiyadh } from '@/lib/format';
 import { colors, radius, shadow } from '@/theme';
-import type { PayMethod, PersonName, SalaryCandidate, SalaryLine } from '@/types';
+import type {
+  PayMethod,
+  PersonName,
+  SalaryCandidate,
+  SalaryLine,
+  SalaryPayment,
+} from '@/types';
 
 /**
  * The three things the office does on this screen: hand money over, put
@@ -182,9 +189,16 @@ export function PaySheet({
 export function PayrollSheet({
   existing,
   onClose,
+  onThenAdvance,
 }: {
   existing?: SalaryLine;
   onClose: () => void;
+  /**
+   * Put him on, then go straight to handing him an advance. A new man
+   * often takes something the same day he is written down, and making
+   * that two trips through the same panel is two chances to forget.
+   */
+  onThenAdvance?: (personId: string) => void;
 }) {
   const set = useSetPayroll();
   const candidates = useSalaryCandidates(!existing);
@@ -202,7 +216,7 @@ export function PayrollSheet({
 
   const value = Number(amount);
 
-  const save = async () => {
+  const save = async (thenAdvance = false) => {
     if (!personId) return setError('Choose who this is for.');
     if (!Number.isFinite(value) || value <= 0) {
       return setError('Enter a monthly salary bigger than zero.');
@@ -213,13 +227,14 @@ export function PayrollSheet({
     const chosen = (candidates.data ?? []).find((c) => c.id === personId);
     const asUser = !existing && chosen?.kind === 'user';
     try {
-      await set.mutateAsync({
+      const rosterId = await set.mutateAsync({
         personId: asUser ? null : personId,
         userId: asUser ? personId : null,
         amount: value,
         since,
       });
-      onClose();
+      if (thenAdvance && onThenAdvance) onThenAdvance(rosterId);
+      else onClose();
     } catch (err) {
       setError(errorMessage(err));
     }
@@ -284,8 +299,19 @@ export function PayrollSheet({
         size="lg"
         full
         loading={set.isPending}
-        onPress={save}
+        onPress={() => save(false)}
       />
+      {!existing && onThenAdvance ? (
+        <Button
+          label="Put on salary and give an advance"
+          icon="time-outline"
+          variant="outline"
+          size="lg"
+          full
+          loading={set.isPending}
+          onPress={() => save(true)}
+        />
+      ) : null}
       <Button label="Cancel" variant="ghost" full onPress={onClose} />
     </Sheet>
   );
@@ -420,7 +446,7 @@ export function RemoveFromPayrollSheet({
         <Txt variant="caption" color={colors.blue}>
           {paid
             ? 'What has already been paid stays exactly where it is. Those months have to keep saying what they said.'
-            : 'Nothing has ever been paid, so he comes off the list altogether and leaves no mark.'}
+            : 'Nothing stands against him this month, so he comes off the list. If nothing was ever handed over, his name goes with him.'}
         </Txt>
       </View>
 
@@ -479,3 +505,68 @@ const styles = StyleSheet.create({
     padding: 11,
   },
 });
+
+/**
+ * Taking a payment back out.
+ *
+ * A figure typed wrong on payday is the one mistake this screen was
+ * always going to see, and until now there was no way back from it.
+ * Nothing is really deleted: the row stays with who took it out and
+ * why, because money said to have changed hands and then unsaid is
+ * exactly the sort of thing an office argues about later.
+ */
+export function RemovePaymentSheet({
+  payment,
+  onClose,
+}: {
+  payment: SalaryPayment;
+  onClose: () => void;
+}) {
+  const remove = useRemoveSalaryPayment();
+  const [reason, setReason] = useState('');
+  const [error, setError] = useState<string | null>(null);
+
+  const go = async () => {
+    setError(null);
+    try {
+      await remove.mutateAsync({ id: payment.id, reason: reason.trim() || undefined });
+      onClose();
+    } catch (err) {
+      setError(errorMessage(err));
+    }
+  };
+
+  return (
+    <Sheet
+      title="Take this out?"
+      subtitle={`${payment.full_name} · ${payment.kind === 'advance' ? 'Advance' : 'Salary'} ${money(Number(payment.amount))}`}
+      onClose={onClose}
+    >
+      <Txt variant="caption" color={colors.textMuted}>
+        The month stops counting it, and what he is owed goes back up by{' '}
+        {money(Number(payment.amount))}.
+      </Txt>
+
+      <Field
+        label="Why (optional)"
+        value={reason}
+        onChangeText={(v) => setReason(v.slice(0, 200))}
+        placeholder="Typed the wrong figure"
+        icon="create-outline"
+      />
+
+      {error ? <Banner tone="error" message={error} /> : null}
+
+      <Button
+        label="Yes, take it out"
+        icon="trash-outline"
+        variant="danger"
+        size="lg"
+        full
+        loading={remove.isPending}
+        onPress={go}
+      />
+      <Button label="Leave it" variant="ghost" full onPress={onClose} />
+    </Sheet>
+  );
+}

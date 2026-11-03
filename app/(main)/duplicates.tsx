@@ -127,6 +127,7 @@ function DuplicatePair({
           category={row.category_name}
           note={row.note}
           thumb={row.thumb_path}
+          full={row.storage_path}
           onViewPhoto={onViewPhoto}
         />
 
@@ -145,6 +146,7 @@ function DuplicatePair({
           category={row.other_category_name}
           note={row.other_note}
           thumb={row.other_thumb_path}
+          full={row.other_storage_path}
           onViewPhoto={onViewPhoto}
         />
       </View>
@@ -186,6 +188,7 @@ function Side({
   category,
   note,
   thumb,
+  full,
   onViewPhoto,
 }: {
   label: string;
@@ -198,6 +201,8 @@ function Side({
   category: string | null;
   note: string | null;
   thumb: string | null;
+  /** The real bill. Telling two of them apart is this screen's whole job. */
+  full: string | null;
   onViewPhoto: (url: string) => void;
 }) {
   const router = useRouter();
@@ -213,7 +218,7 @@ function Side({
           path={thumb}
           style={styles.photo}
           onPress={async () => {
-            const url = await signedUrl(thumb);
+            const url = await signedUrl(full ?? thumb);
             if (url) onViewPhoto(url);
           }}
         />

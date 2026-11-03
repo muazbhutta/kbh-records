@@ -121,10 +121,11 @@ export default function NewEntryScreen() {
   const adminOnly = type === 'money_given' || type === 'returned';
   // A plain employee hands money to nobody. A head may pass his own cash
   // down to the people under him; an Admin may move anyone's.
-  const isHead = !!me?.is_head;
   // The office and the heads may name a new site; everybody else picks
   // from the ones they have been put on. The database decides both.
-  const canStartProjects = canManage || isHead;
+  // Naming a site belongs to the office. A head is an employee with men
+  // under him, not a man in the office, and the database says the same.
+  const canStartProjects = canManage;
   const myTeam = useMemo(
     () => people.filter((p) => p.head_id === me?.id && p.id !== me?.id),
     [people, me?.id],

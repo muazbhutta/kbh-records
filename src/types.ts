@@ -264,6 +264,7 @@ export type SuspectedDuplicate = {
   entered_by_name: string | null;
   category_name: string | null;
   thumb_path: string | null;
+  storage_path: string | null;
   other_id: string | null;
   other_system_id: string | null;
   other_amount: number | null;
@@ -273,6 +274,7 @@ export type SuspectedDuplicate = {
   other_person_name: string | null;
   other_category_name: string | null;
   other_thumb_path: string | null;
+  other_storage_path: string | null;
 };
 
 /** How a Cash Check reads on screen. */

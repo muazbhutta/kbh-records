@@ -12,10 +12,18 @@ import { supabase } from '@/lib/supabase';
 export const BILLS_BUCKET = 'bills';
 export const MAX_PHOTOS = 5;
 
-/** Long side of the stored photo, and of the small one used in lists. */
-const FULL_MAX_SIDE = 1600;
+/**
+ * Long side of the stored photo, and of the small one used in lists.
+ *
+ * A bill is a document, not a snapshot. What matters on it is small
+ * print - a date, a VAT line, the last two digits of a figure - and
+ * that is the first thing a hard JPEG squeeze throws away. 1600 at 0.7
+ * looked fine on a card and turned to mush the moment anybody zoomed
+ * in to read it, which is the only reason to open a bill at all.
+ */
+const FULL_MAX_SIDE = 2000;
 const THUMB_MAX_SIDE = 320;
-const FULL_QUALITY = 0.7;
+const FULL_QUALITY = 0.85;
 const THUMB_QUALITY = 0.6;
 
 export type LocalPhoto = {

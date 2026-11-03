@@ -1,14 +1,15 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import { Avatar, Badge, Banner, Card, EmptyState, Loading, SectionTitle } from '@/components/Bits';
+import { Avatar, Badge, Banner, EmptyState, Loading, SectionTitle } from '@/components/Bits';
 import { ShareBar } from '@/components/Breakdown';
 import { CashCard } from '@/components/Money';
 import {
   PayrollSheet,
   PaySheet,
   RemoveFromPayrollSheet,
+  RemovePaymentSheet,
 } from '@/components/SalarySheets';
 import { Header, Screen, useIsWide } from '@/components/Screen';
 import { Txt } from '@/components/Txt';
@@ -21,7 +22,7 @@ import {
 import { useAuth } from '@/auth/AuthProvider';
 import { formatDate, money, monthName, shiftMonth } from '@/lib/format';
 import { colors, radius, shadow } from '@/theme';
-import type { SalaryLine } from '@/types';
+import type { SalaryLine, SalaryPayment } from '@/types';
 
 /**
  * Salaries, a month at a time.
@@ -48,6 +49,7 @@ export default function SalariesScreen() {
     | { kind: 'edit'; line: SalaryLine }
     | { kind: 'remove'; line: SalaryLine }
     | { kind: 'add' }
+    | { kind: 'unpay'; payment: SalaryPayment }
     | null
   >(null);
 
@@ -64,6 +66,36 @@ export default function SalariesScreen() {
     () => (lines.data ?? []).filter((l) => !l.on_payroll),
     [lines.data],
   );
+
+  /**
+   * Every man's own handings-over, under his own name. A single list of
+   * everybody's below made you read the same names over and over to
+   * answer a question about one of them.
+   */
+  const handedTo = useMemo(() => {
+    const by = new Map<string, SalaryPayment[]>();
+    for (const p of payments.data ?? []) {
+      const had = by.get(p.person_id);
+      if (had) had.push(p);
+      else by.set(p.person_id, [p]);
+    }
+    return by;
+  }, [payments.data]);
+
+  /**
+   * A man put on salary who is to take an advance in the same breath.
+   * The advance panel needs his line, and that only exists once the
+   * month has been read back, so it waits here until it turns up.
+   */
+  const [advanceFor, setAdvanceFor] = useState<string | null>(null);
+  useEffect(() => {
+    if (!advanceFor) return;
+    const line = (lines.data ?? []).find((l) => l.person_id === advanceFor);
+    if (line) {
+      setSheet({ kind: 'advance', line });
+      setAdvanceFor(null);
+    }
+  }, [advanceFor, lines.data]);
 
   if (!canManage) {
     return (
@@ -174,6 +206,8 @@ export default function SalariesScreen() {
               key={line.person_id}
               line={line}
               wide={wide}
+              handed={handedTo.get(line.person_id)}
+              onUnpay={(payment) => setSheet({ kind: 'unpay', payment })}
               onPay={() => setSheet({ kind: 'pay', line })}
               onAdvance={() => setSheet({ kind: 'advance', line })}
               onEdit={() => setSheet({ kind: 'edit', line })}
@@ -200,46 +234,16 @@ export default function SalariesScreen() {
           <SectionTitle title="Paid this month, no longer on salary" />
           <View style={styles.cards}>
             {alsoPaid.map((line) => (
-              <SalaryCard key={line.person_id} line={line} wide={wide} past />
+              <SalaryCard
+                key={line.person_id}
+                line={line}
+                wide={wide}
+                handed={handedTo.get(line.person_id)}
+                onUnpay={(payment) => setSheet({ kind: 'unpay', payment })}
+                past
+              />
             ))}
           </View>
-        </>
-      ) : null}
-
-      {/* ---------------------------------------------- what was paid */}
-      {(payments.data ?? []).length > 0 ? (
-        <>
-          <SectionTitle title="Handed over this month" />
-          <Card padded={false} style={styles.list}>
-            {(payments.data ?? []).map((p) => (
-              <View key={p.id} style={styles.payRow}>
-                <View
-                  style={[
-                    styles.payIcon,
-                    { backgroundColor: p.kind === 'advance' ? colors.amberSoft : colors.greenSoft },
-                  ]}
-                >
-                  <Ionicons
-                    name={p.kind === 'advance' ? 'time-outline' : 'cash-outline'}
-                    size={16}
-                    color={p.kind === 'advance' ? colors.amberDark : colors.green}
-                  />
-                </View>
-                <View style={styles.payWho}>
-                  <Txt variant="subtitle" weight="semibold" numberOfLines={1}>
-                    {p.full_name}
-                  </Txt>
-                  <Txt variant="caption" color={colors.textMuted} numberOfLines={1}>
-                    {p.kind === 'advance' ? 'Advance' : 'Salary'} · {formatDate(p.paid_on)}
-                    {p.note ? ` · ${p.note}` : ''}
-                  </Txt>
-                </View>
-                <Txt weight="bold" color={p.kind === 'advance' ? colors.amberDark : colors.green}>
-                  {money(Number(p.amount))}
-                </Txt>
-              </View>
-            ))}
-          </Card>
         </>
       ) : null}
 
@@ -256,10 +260,19 @@ export default function SalariesScreen() {
         <PayrollSheet existing={sheet.line} onClose={() => setSheet(null)} />
       ) : null}
       {sheet?.kind === 'add' ? (
-        <PayrollSheet onClose={() => setSheet(null)} />
+        <PayrollSheet
+          onClose={() => setSheet(null)}
+          onThenAdvance={(personId) => {
+            setSheet(null);
+            setAdvanceFor(personId);
+          }}
+        />
       ) : null}
       {sheet?.kind === 'remove' ? (
         <RemoveFromPayrollSheet line={sheet.line} onClose={() => setSheet(null)} />
+      ) : null}
+      {sheet?.kind === 'unpay' ? (
+        <RemovePaymentSheet payment={sheet.payment} onClose={() => setSheet(null)} />
       ) : null}
     </Screen>
   );
@@ -275,6 +288,8 @@ export default function SalariesScreen() {
 function SalaryCard({
   line,
   wide,
+  handed: given,
+  onUnpay,
   past = false,
   onPay,
   onAdvance,
@@ -283,12 +298,17 @@ function SalaryCard({
 }: {
   line: SalaryLine;
   wide: boolean;
+  /** What this man was handed this month, his own entries and nobody else's. */
+  handed?: SalaryPayment[];
+  onUnpay?: (payment: SalaryPayment) => void;
   past?: boolean;
   onPay?: () => void;
   onAdvance?: () => void;
   onEdit?: () => void;
   onRemove?: () => void;
 }) {
+  const [open, setOpen] = useState(false);
+  const rows = given ?? [];
   const handed = Number(line.advance_paid) + Number(line.salary_paid);
   const monthly = Number(line.monthly_amount);
   const left = Number(line.remaining);
@@ -339,10 +359,92 @@ function SalaryCard({
         </View>
       ) : null}
 
-      <Txt variant="caption" color={colors.textFaint} numberOfLines={1}>
-        {Number(line.advance_paid) > 0 ? `Advance ${money(Number(line.advance_paid))} · ` : ''}
-        {Number(line.salary_paid) > 0 ? `Salary ${money(Number(line.salary_paid))}` : 'Nothing paid yet'}
-      </Txt>
+      {rows.length === 0 ? (
+        <Txt variant="caption" color={colors.textFaint} numberOfLines={1}>
+          Nothing handed over yet
+        </Txt>
+      ) : (
+        <>
+          {/* His own entries, under his own name. Shut by default, or a
+              yard of twenty men becomes a page nobody reads. */}
+          <Pressable
+            onPress={() => setOpen((v) => !v)}
+            accessibilityRole="button"
+            accessibilityLabel={open ? 'Hide what he was handed' : 'Show what he was handed'}
+            style={({ pressed }) => [styles.openRow, pressed && styles.openPressed]}
+          >
+            <Txt variant="caption" weight="semibold" color={colors.navy}>
+              {Number(line.advance_paid) > 0
+                ? `Advance ${money(Number(line.advance_paid))}`
+                : ''}
+              {Number(line.advance_paid) > 0 && Number(line.salary_paid) > 0 ? ' · ' : ''}
+              {Number(line.salary_paid) > 0 ? `Salary ${money(Number(line.salary_paid))}` : ''}
+            </Txt>
+            <Txt variant="caption" color={colors.textFaint}>
+              {rows.length === 1 ? '1 entry' : `${rows.length} entries`}
+            </Txt>
+            <Ionicons
+              name={open ? 'chevron-up' : 'chevron-down'}
+              size={15}
+              color={colors.textFaint}
+            />
+          </Pressable>
+
+          {open ? (
+            <View style={styles.entries}>
+              {rows.map((p) => (
+                <View key={p.id} style={styles.entry}>
+                  <View
+                    style={[
+                      styles.payIcon,
+                      {
+                        backgroundColor:
+                          p.kind === 'advance' ? colors.amberSoft : colors.greenSoft,
+                      },
+                    ]}
+                  >
+                    <Ionicons
+                      name={p.kind === 'advance' ? 'time-outline' : 'cash-outline'}
+                      size={14}
+                      color={p.kind === 'advance' ? colors.amberDark : colors.green}
+                    />
+                  </View>
+                  <View style={styles.payWho}>
+                    <Txt variant="caption" weight="semibold" numberOfLines={1}>
+                      {p.kind === 'advance' ? 'Advance' : 'Salary'} · {formatDate(p.paid_on)}
+                    </Txt>
+                    {p.note || p.entered_by_name ? (
+                      <Txt variant="caption" color={colors.textFaint} numberOfLines={1}>
+                        {p.note ? p.note : ''}
+                        {p.note && p.entered_by_name ? ' · ' : ''}
+                        {p.entered_by_name ? `by ${p.entered_by_name}` : ''}
+                      </Txt>
+                    ) : null}
+                  </View>
+                  <Txt
+                    variant="caption"
+                    weight="bold"
+                    color={p.kind === 'advance' ? colors.amberDark : colors.green}
+                  >
+                    {money(Number(p.amount))}
+                  </Txt>
+                  {onUnpay ? (
+                    <Pressable
+                      onPress={() => onUnpay(p)}
+                      hitSlop={8}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Take out this ${p.kind}`}
+                      style={({ pressed }) => [styles.unpay, pressed && styles.openPressed]}
+                    >
+                      <Ionicons name="close" size={15} color={colors.textFaint} />
+                    </Pressable>
+                  ) : null}
+                </View>
+              ))}
+            </View>
+          ) : null}
+        </>
+      )}
 
       {!past ? (
         <View style={[styles.actions, wide && styles.actionsWide]}>
@@ -446,22 +548,39 @@ const styles = StyleSheet.create({
   },
   addPressed: { backgroundColor: colors.navyTint },
 
-  list: { overflow: 'hidden' },
-  payRow: {
+  openRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 11,
-    paddingVertical: 11,
-    paddingHorizontal: 14,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.line,
+    gap: 8,
+    paddingVertical: 4,
+  },
+  openPressed: { opacity: 0.6 },
+  entries: {
+    gap: 2,
+    marginTop: 2,
+    paddingTop: 8,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.line,
+  },
+  entry: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 6,
   },
   payIcon: {
-    width: 34,
-    height: 34,
+    width: 28,
+    height: 28,
     borderRadius: radius.sm,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  payWho: { flex: 1, gap: 2 },
+  payWho: { flex: 1, gap: 1 },
+  unpay: {
+    width: 24,
+    height: 24,
+    borderRadius: radius.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 });

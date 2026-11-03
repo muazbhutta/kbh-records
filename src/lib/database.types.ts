@@ -3051,10 +3051,12 @@ export type Database = {
           other_id: string | null
           other_note: string | null
           other_person_name: string | null
+          other_storage_path: string | null
           other_system_id: string | null
           other_thumb_path: string | null
           person_id: string | null
           person_name: string | null
+          storage_path: string | null
           system_id: string | null
           thumb_path: string | null
         }

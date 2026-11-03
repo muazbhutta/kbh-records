@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabase';
 import type { SuspectedDuplicate } from '@/types';
 
 const COLUMNS =
-  'id, system_id, amount, bill_date, entered_at, note, expense_type, person_id, person_name, entered_by_name, category_name, thumb_path, other_id, other_system_id, other_amount, other_bill_date, other_entered_at, other_note, other_person_name, other_category_name, other_thumb_path';
+  'id, system_id, amount, bill_date, entered_at, note, expense_type, person_id, person_name, entered_by_name, category_name, thumb_path, storage_path, other_id, other_system_id, other_amount, other_bill_date, other_entered_at, other_note, other_person_name, other_category_name, other_thumb_path, other_storage_path';
 
 /** Expenses waiting on an Admin to say duplicate or not. */
 export function useSuspectedDuplicates(enabled = true) {

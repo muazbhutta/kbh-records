@@ -123,8 +123,8 @@ export function useSetPayroll() {
       amount: number;
       since?: string;
       note?: string;
-    }): Promise<void> => {
-      const { error } = await supabase.rpc('set_payroll', {
+    }): Promise<string> => {
+      const { data, error } = await supabase.rpc('set_payroll', {
         p_person_id: input.personId ?? undefined,
         p_user_id: input.userId ?? undefined,
         p_amount: input.amount,
@@ -132,6 +132,8 @@ export function useSetPayroll() {
         p_note: input.note ?? undefined,
       });
       if (error) throw new Error(error.message);
+      // The roster id, which is not the account id when the man had one.
+      return String(data);
     },
     onSuccess: () => refreshTheBooks(qc),
   });

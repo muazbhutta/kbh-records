@@ -222,8 +222,11 @@ export default function EntryScreen() {
           <View style={styles.photoGrid}>
             {photos.map((p) => (
               <View key={p.id} style={styles.photoCell}>
+                {/* The bill itself, not the list thumbnail. There are
+                    at most five, and this is the screen where somebody
+                    is actually trying to read one. */}
                 <BillImage
-                  path={p.thumb_path ?? p.storage_path}
+                  path={p.storage_path ?? p.thumb_path}
                   style={styles.photo}
                   onPress={async () => {
                     const url = await signedUrl(p.storage_path);
