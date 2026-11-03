@@ -12,7 +12,6 @@ import {
 } from '@/components/SalarySheets';
 import { Header, Screen, useIsWide } from '@/components/Screen';
 import { Txt } from '@/components/Txt';
-import { usePeopleNames } from '@/api/entries';
 import {
   monthKey,
   useSalaryMonth,
@@ -55,7 +54,6 @@ export default function SalariesScreen() {
   const lines = useSalaryMonth(month, canManage);
   const total = useSalaryMonthTotal(month, canManage);
   const payments = useSalaryPayments(month, canManage);
-  const people = usePeopleNames();
   const wide = useIsWide();
 
   const onPayroll = useMemo(
@@ -255,14 +253,10 @@ export default function SalariesScreen() {
         />
       ) : null}
       {sheet?.kind === 'edit' ? (
-        <PayrollSheet
-          people={people.data ?? []}
-          existing={sheet.line}
-          onClose={() => setSheet(null)}
-        />
+        <PayrollSheet existing={sheet.line} onClose={() => setSheet(null)} />
       ) : null}
       {sheet?.kind === 'add' ? (
-        <PayrollSheet people={people.data ?? []} onClose={() => setSheet(null)} />
+        <PayrollSheet onClose={() => setSheet(null)} />
       ) : null}
       {sheet?.kind === 'remove' ? (
         <RemoveFromPayrollSheet line={sheet.line} onClose={() => setSheet(null)} />

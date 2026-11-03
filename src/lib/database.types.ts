@@ -2017,6 +2017,51 @@ export type Database = {
           },
         ]
       }
+      salary_people: {
+        Row: {
+          added_at: string
+          added_by: string | null
+          full_name: string
+          id: string
+          is_active: boolean
+          job_title: string | null
+          user_id: string | null
+        }
+        Insert: {
+          added_at?: string
+          added_by?: string | null
+          full_name: string
+          id?: string
+          is_active?: boolean
+          job_title?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          added_at?: string
+          added_by?: string | null
+          full_name?: string
+          id?: string
+          is_active?: boolean
+          job_title?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "salary_people_added_by_fkey"
+            columns: ["added_by"]
+            isOneToOne: false
+            referencedRelation: "app_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "salary_people_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "app_users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_secrets: {
         Row: {
           auth_password: string
@@ -3057,6 +3102,14 @@ export type Database = {
       }
     }
     Functions: {
+      add_salary_person: {
+        Args: { p_job?: string; p_name: string }
+        Returns: {
+          full_name: string
+          id: string
+          job_title: string
+        }[]
+      }
       add_to_project: {
         Args: { p_person_id: string; p_project_id: string }
         Returns: undefined
@@ -3514,6 +3567,16 @@ export type Database = {
         Returns: string
       }
       restore_entry: { Args: { p_id: string }; Returns: string }
+      salary_candidates: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          full_name: string
+          id: string
+          job_title: string
+          kind: string
+          on_payroll: boolean
+        }[]
+      }
       salary_month: {
         Args: { p_month?: string }
         Returns: {
@@ -3583,12 +3646,13 @@ export type Database = {
       }
       set_payroll: {
         Args: {
-          p_amount: number
+          p_amount?: number
           p_note?: string
-          p_person_id: string
+          p_person_id?: string
           p_since?: string
+          p_user_id?: string
         }
-        Returns: undefined
+        Returns: string
       }
       set_person_pin: {
         Args: { p_pin_hash: string; p_set_by: string; p_user_id: string }

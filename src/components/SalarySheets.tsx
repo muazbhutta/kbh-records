@@ -9,15 +9,16 @@ import { PayMethodRow } from '@/components/PayMethodRow';
 import { AmountField, DateField, PersonField } from '@/components/pickers';
 import { Txt } from '@/components/Txt';
 import {
+  useAddSalaryPerson,
   useRecordSalary,
   useRemoveFromPayroll,
+  useSalaryCandidates,
   useSetPayroll,
 } from '@/api/salaries';
-import { useCreatePerson } from '@/api/people';
 import { errorMessage } from '@/lib/supabase';
-import { money, monthName, normalizeMobile, todayInRiyadh } from '@/lib/format';
+import { money, monthName, todayInRiyadh } from '@/lib/format';
 import { colors, radius, shadow } from '@/theme';
-import type { PayMethod, PersonName, SalaryLine } from '@/types';
+import type { PayMethod, PersonName, SalaryCandidate, SalaryLine } from '@/types';
 
 /**
  * The three things the office does on this screen: hand money over, put
@@ -179,16 +180,14 @@ export function PaySheet({
 
 /** Putting somebody on the payroll, or changing what they are on. */
 export function PayrollSheet({
-  people,
   existing,
   onClose,
 }: {
-  /** Everybody who could be put on. Already on the payroll is fine - it edits. */
-  people: PersonName[];
   existing?: SalaryLine;
   onClose: () => void;
 }) {
   const set = useSetPayroll();
+  const candidates = useSalaryCandidates(!existing);
   const [personId, setPersonId] = useState<string | null>(existing?.person_id ?? null);
   const [adding, setAdding] = useState(false);
   const [amount, setAmount] = useState(
@@ -209,8 +208,17 @@ export function PayrollSheet({
       return setError('Enter a monthly salary bigger than zero.');
     }
     setError(null);
+    // One of the app's people carries his account id, not a roster id,
+    // until the database writes him onto the roster.
+    const chosen = (candidates.data ?? []).find((c) => c.id === personId);
+    const asUser = !existing && chosen?.kind === 'user';
     try {
-      await set.mutateAsync({ personId, amount: value, since });
+      await set.mutateAsync({
+        personId: asUser ? null : personId,
+        userId: asUser ? personId : null,
+        amount: value,
+        since,
+      });
       onClose();
     } catch (err) {
       setError(errorMessage(err));
@@ -225,25 +233,30 @@ export function PayrollSheet({
     >
       {!existing ? (
         adding ? (
-          <NewEmployeeBox
-            onAdded={(p) => {
-              setPersonId(p.id);
+          <NewSalaryPersonBox
+            onAdded={(id) => {
+              setPersonId(id);
               setAdding(false);
             }}
             onCancel={() => setAdding(false)}
           />
         ) : (
           <>
-            <PersonField label="Who" value={personId} people={people} onChange={setPersonId} />
+            <PersonField
+              label="Who"
+              value={personId}
+              people={asPersonNames(candidates.data)}
+              onChange={setPersonId}
+            />
             <Pressable
               onPress={() => setAdding(true)}
               accessibilityRole="button"
-              accessibilityLabel="Add a new employee"
+              accessibilityLabel="Add somebody new"
               style={({ pressed }) => [styles.addNew, pressed && styles.addNewPressed]}
             >
               <Ionicons name="person-add-outline" size={16} color={colors.navy} />
               <Txt variant="caption" weight="semibold" color={colors.navy}>
-                Not on the list? Add a new employee
+                Not on the list? Add him here
               </Txt>
             </Pressable>
           </>
@@ -279,45 +292,38 @@ export function PayrollSheet({
 }
 
 /**
- * A new man, added from here.
+ * A new man on the payroll, written down here.
  *
- * Staff change every month on a site, and sending somebody to Settings
- * and back to put one on the payroll is three screens for one job. He
- * is added exactly as he would be from Settings - same function, same
- * rules - and then chosen, so the salary can be set in the same breath.
+ * Men change from month to month on a site, and most of them never
+ * touch the app: a mazdoor needs no mobile number, no PIN and no login
+ * he will never use. A name and a trade is the whole of what the
+ * payroll knows about him, and he stays inside it - he is in no picker
+ * and on no screen anywhere else.
  *
- * Role is employee. Making somebody an Admin is not a thing to do by
- * accident on a payroll screen; Settings is where that happens.
+ * Somebody who does need an account is added in Settings, as before,
+ * and then shows up in the list above this.
  */
-function NewEmployeeBox({
+function NewSalaryPersonBox({
   onAdded,
   onCancel,
 }: {
-  onAdded: (person: { id: string; full_name: string }) => void;
+  onAdded: (personId: string) => void;
   onCancel: () => void;
 }) {
-  const create = useCreatePerson();
+  const add = useAddSalaryPerson();
   const [name, setName] = useState('');
-  const [mobileText, setMobileText] = useState('');
   const [jobTitle, setJobTitle] = useState('');
-  const [pin, setPin] = useState('');
   const [error, setError] = useState<string | null>(null);
 
-  const add = async () => {
-    const mobile = normalizeMobile(mobileText);
+  const go = async () => {
     if (name.trim().length < 2) return setError('Enter his name.');
-    if (!mobile) return setError('Enter a Saudi mobile number like 050 123 4567.');
-    if (!/^\d{4}$/.test(pin)) return setError('Give him a 4-digit PIN to log in with.');
     setError(null);
     try {
-      const person = await create.mutateAsync({
-        fullName: name.trim(),
-        mobile,
-        role: 'employee',
-        pin,
+      const person = await add.mutateAsync({
+        name: name.trim(),
         jobTitle: jobTitle.trim() || undefined,
       });
-      onAdded({ id: person.id, full_name: person.full_name });
+      onAdded(person.id);
     } catch (err) {
       setError(errorMessage(err));
     }
@@ -327,7 +333,7 @@ function NewEmployeeBox({
     <View style={styles.newBox}>
       <View style={styles.newHead}>
         <Txt variant="label" color={colors.textMuted}>
-          A NEW EMPLOYEE
+          SOMEBODY NEW
         </Txt>
         <Pressable onPress={onCancel} hitSlop={8} accessibilityRole="button" accessibilityLabel="Cancel">
           <Ionicons name="close" size={17} color={colors.textMuted} />
@@ -342,31 +348,16 @@ function NewEmployeeBox({
         icon="person-outline"
       />
       <Field
-        label="Mobile"
-        value={mobileText}
-        onChangeText={setMobileText}
-        placeholder="050 123 4567"
-        icon="call-outline"
-        keyboardType="phone-pad"
-      />
-      <Field
-        label="Job title (optional)"
+        label="Work (optional)"
         value={jobTitle}
         onChangeText={(v) => setJobTitle(v.slice(0, 60))}
         placeholder="Mason, driver, foreman"
         icon="hammer-outline"
       />
-      <Field
-        label="PIN to log in with"
-        value={pin}
-        onChangeText={(v) => setPin(v.replace(/\D/g, '').slice(0, 4))}
-        placeholder="4 digits"
-        icon="keypad-outline"
-        keyboardType="number-pad"
-      />
 
       <Txt variant="caption" color={colors.textFaint}>
-        He is added as an employee. Roles and the rest are changed in Settings.
+        He goes on the payroll only. No login, and no name added anywhere else
+        in the app.
       </Txt>
 
       {error ? <Banner tone="error" message={error} /> : null}
@@ -375,11 +366,26 @@ function NewEmployeeBox({
         label="Add him"
         icon="person-add-outline"
         full
-        loading={create.isPending}
-        onPress={add}
+        loading={add.isPending}
+        onPress={go}
       />
     </View>
   );
+}
+
+/**
+ * The picker speaks in app people, so lend the roster that shape. None
+ * of the flags below mean anything on a payroll; it only draws names.
+ */
+function asPersonNames(rows: SalaryCandidate[] | undefined): PersonName[] {
+  return (rows ?? []).map((c) => ({
+    id: c.id,
+    full_name: c.full_name,
+    is_active: true,
+    is_owner: false,
+    is_head: false,
+    head_id: null,
+  }));
 }
 
 /** Taking somebody off. */

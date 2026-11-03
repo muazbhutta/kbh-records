@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { refreshTheBooks } from '@/lib/queryClient';
 import { supabase } from '@/lib/supabase';
-import type { SalaryLine, SalaryMonthTotal, SalaryPayment } from '@/types';
+import type { SalaryCandidate, SalaryLine, SalaryMonthTotal, SalaryPayment } from '@/types';
 
 /**
  * The salaries.
@@ -62,18 +62,71 @@ export function useSalaryPayments(month: string, enabled = true) {
   });
 }
 
-/** Put somebody on the payroll, or change what they are on. */
+/**
+ * Everybody who could be put on salary.
+ *
+ * Two sorts in one list: men already on the payroll's own roster, and
+ * the app's people who are not on it yet. Which one was chosen decides
+ * which id goes back to the database, so keep the whole row, not just
+ * the id.
+ */
+export function useSalaryCandidates(enabled = true) {
+  return useQuery({
+    queryKey: ['salaries', 'candidates'],
+    enabled,
+    queryFn: async (): Promise<SalaryCandidate[]> => {
+      const { data, error } = await supabase.rpc('salary_candidates');
+      if (error) throw new Error(error.message);
+      return (data ?? []) as SalaryCandidate[];
+    },
+  });
+}
+
+/**
+ * Write down a man who only draws a salary.
+ *
+ * A name and a trade. No mobile, no PIN, no account: he does not use
+ * the app and does not belong in anybody else's pickers.
+ */
+export function useAddSalaryPerson() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: {
+      name: string;
+      jobTitle?: string;
+    }): Promise<{ id: string; full_name: string }> => {
+      const { data, error } = await supabase.rpc('add_salary_person', {
+        p_name: input.name,
+        p_job: input.jobTitle ?? undefined,
+      });
+      if (error) throw new Error(error.message);
+      const row = (data ?? [])[0];
+      if (!row?.id) throw new Error('He was not added. Try again.');
+      return { id: String(row.id), full_name: String(row.full_name) };
+    },
+    onSuccess: () => refreshTheBooks(qc),
+  });
+}
+
+/**
+ * Put somebody on the payroll, or change what they are on.
+ *
+ * `personId` is a roster id. `userId` is for one of the app's people
+ * who is not on the roster yet - the database writes him on.
+ */
 export function useSetPayroll() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (input: {
-      personId: string;
+      personId?: string | null;
+      userId?: string | null;
       amount: number;
       since?: string;
       note?: string;
     }): Promise<void> => {
       const { error } = await supabase.rpc('set_payroll', {
-        p_person_id: input.personId,
+        p_person_id: input.personId ?? undefined,
+        p_user_id: input.userId ?? undefined,
         p_amount: input.amount,
         p_since: input.since ?? undefined,
         p_note: input.note ?? undefined,

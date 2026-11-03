@@ -656,6 +656,21 @@ export type WaitingChange = {
 
 // -------------------------------------------------------- the salaries
 
+/**
+ * Somebody who could be put on salary.
+ *
+ * `roster` is the payroll's own list - men who draw a wage and have no
+ * account in the app. `user` is one of the app's people who is not on
+ * that list yet; putting him on writes him onto it.
+ */
+export type SalaryCandidate = {
+  id: string;
+  full_name: string;
+  job_title: string | null;
+  kind: 'roster' | 'user';
+  on_payroll: boolean;
+};
+
 /** One person's standing for one month. */
 export type SalaryLine = {
   person_id: string;
