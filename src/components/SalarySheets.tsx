@@ -420,14 +420,14 @@ export function RemoveFromPayrollSheet({
         <Txt variant="caption" color={colors.blue}>
           {paid
             ? 'What has already been paid stays exactly where it is. Those months have to keep saying what they said.'
-            : 'Nothing has ever been paid, so there is nothing to keep.'}
+            : 'Nothing has ever been paid, so he comes off the list altogether and leaves no mark.'}
         </Txt>
       </View>
 
       {error ? <Banner tone="error" message={error} /> : null}
 
       <Button
-        label="Yes, Take Them Off"
+        label="Yes, take him off"
         icon="person-remove-outline"
         variant="danger"
         size="lg"
@@ -435,7 +435,7 @@ export function RemoveFromPayrollSheet({
         loading={remove.isPending}
         onPress={go}
       />
-      <Button label="Keep Them On" variant="ghost" full onPress={onClose} />
+      <Button label="Keep him on" variant="ghost" full onPress={onClose} />
     </Sheet>
   );
 }

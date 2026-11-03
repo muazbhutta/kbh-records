@@ -1544,29 +1544,8 @@ export type Database = {
             foreignKeyName: "payroll_person_id_fkey"
             columns: ["person_id"]
             isOneToOne: true
-            referencedRelation: "app_users"
+            referencedRelation: "salary_people"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "payroll_person_id_fkey"
-            columns: ["person_id"]
-            isOneToOne: true
-            referencedRelation: "people_list"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "payroll_person_id_fkey"
-            columns: ["person_id"]
-            isOneToOne: true
-            referencedRelation: "people_names"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "payroll_person_id_fkey"
-            columns: ["person_id"]
-            isOneToOne: true
-            referencedRelation: "team_summary"
-            referencedColumns: ["head_id"]
           },
         ]
       }
@@ -1991,29 +1970,8 @@ export type Database = {
             foreignKeyName: "salary_payments_person_id_fkey"
             columns: ["person_id"]
             isOneToOne: false
-            referencedRelation: "app_users"
+            referencedRelation: "salary_people"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "salary_payments_person_id_fkey"
-            columns: ["person_id"]
-            isOneToOne: false
-            referencedRelation: "people_list"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "salary_payments_person_id_fkey"
-            columns: ["person_id"]
-            isOneToOne: false
-            referencedRelation: "people_names"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "salary_payments_person_id_fkey"
-            columns: ["person_id"]
-            isOneToOne: false
-            referencedRelation: "team_summary"
-            referencedColumns: ["head_id"]
           },
         ]
       }
@@ -2054,11 +2012,53 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "salary_people_added_by_fkey"
+            columns: ["added_by"]
+            isOneToOne: false
+            referencedRelation: "people_list"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "salary_people_added_by_fkey"
+            columns: ["added_by"]
+            isOneToOne: false
+            referencedRelation: "people_names"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "salary_people_added_by_fkey"
+            columns: ["added_by"]
+            isOneToOne: false
+            referencedRelation: "team_summary"
+            referencedColumns: ["head_id"]
+          },
+          {
             foreignKeyName: "salary_people_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: true
             referencedRelation: "app_users"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "salary_people_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "people_list"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "salary_people_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "people_names"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "salary_people_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "team_summary"
+            referencedColumns: ["head_id"]
           },
         ]
       }
@@ -3568,7 +3568,7 @@ export type Database = {
       }
       restore_entry: { Args: { p_id: string }; Returns: string }
       salary_candidates: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           full_name: string
           id: string
