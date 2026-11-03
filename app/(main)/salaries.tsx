@@ -164,7 +164,10 @@ export default function SalariesScreen() {
         <EmptyState
           icon="people-outline"
           title="Nobody is on salary yet"
-          message="Put somebody on below, and this month will start keeping their figures."
+          message={
+            'Put somebody on below - a man already in the app, or a new one added right there. ' +
+            'Each person then gets their own line with Pay salary and Advance on it.'
+          }
         />
       ) : (
         <View style={styles.cards}>

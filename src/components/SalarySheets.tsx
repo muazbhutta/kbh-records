@@ -13,8 +13,9 @@ import {
   useRemoveFromPayroll,
   useSetPayroll,
 } from '@/api/salaries';
+import { useCreatePerson } from '@/api/people';
 import { errorMessage } from '@/lib/supabase';
-import { money, monthName, todayInRiyadh } from '@/lib/format';
+import { money, monthName, normalizeMobile, todayInRiyadh } from '@/lib/format';
 import { colors, radius, shadow } from '@/theme';
 import type { PayMethod, PersonName, SalaryLine } from '@/types';
 
@@ -189,6 +190,7 @@ export function PayrollSheet({
 }) {
   const set = useSetPayroll();
   const [personId, setPersonId] = useState<string | null>(existing?.person_id ?? null);
+  const [adding, setAdding] = useState(false);
   const [amount, setAmount] = useState(
     existing && existing.monthly_amount > 0 ? String(existing.monthly_amount) : '',
   );
@@ -222,7 +224,30 @@ export function PayrollSheet({
       onClose={onClose}
     >
       {!existing ? (
-        <PersonField label="Who" value={personId} people={people} onChange={setPersonId} />
+        adding ? (
+          <NewEmployeeBox
+            onAdded={(p) => {
+              setPersonId(p.id);
+              setAdding(false);
+            }}
+            onCancel={() => setAdding(false)}
+          />
+        ) : (
+          <>
+            <PersonField label="Who" value={personId} people={people} onChange={setPersonId} />
+            <Pressable
+              onPress={() => setAdding(true)}
+              accessibilityRole="button"
+              accessibilityLabel="Add a new employee"
+              style={({ pressed }) => [styles.addNew, pressed && styles.addNewPressed]}
+            >
+              <Ionicons name="person-add-outline" size={16} color={colors.navy} />
+              <Txt variant="caption" weight="semibold" color={colors.navy}>
+                Not on the list? Add a new employee
+              </Txt>
+            </Pressable>
+          </>
+        )
       ) : null}
 
       <AmountField
@@ -250,6 +275,110 @@ export function PayrollSheet({
       />
       <Button label="Cancel" variant="ghost" full onPress={onClose} />
     </Sheet>
+  );
+}
+
+/**
+ * A new man, added from here.
+ *
+ * Staff change every month on a site, and sending somebody to Settings
+ * and back to put one on the payroll is three screens for one job. He
+ * is added exactly as he would be from Settings - same function, same
+ * rules - and then chosen, so the salary can be set in the same breath.
+ *
+ * Role is employee. Making somebody an Admin is not a thing to do by
+ * accident on a payroll screen; Settings is where that happens.
+ */
+function NewEmployeeBox({
+  onAdded,
+  onCancel,
+}: {
+  onAdded: (person: { id: string; full_name: string }) => void;
+  onCancel: () => void;
+}) {
+  const create = useCreatePerson();
+  const [name, setName] = useState('');
+  const [mobileText, setMobileText] = useState('');
+  const [jobTitle, setJobTitle] = useState('');
+  const [pin, setPin] = useState('');
+  const [error, setError] = useState<string | null>(null);
+
+  const add = async () => {
+    const mobile = normalizeMobile(mobileText);
+    if (name.trim().length < 2) return setError('Enter his name.');
+    if (!mobile) return setError('Enter a Saudi mobile number like 050 123 4567.');
+    if (!/^\d{4}$/.test(pin)) return setError('Give him a 4-digit PIN to log in with.');
+    setError(null);
+    try {
+      const person = await create.mutateAsync({
+        fullName: name.trim(),
+        mobile,
+        role: 'employee',
+        pin,
+        jobTitle: jobTitle.trim() || undefined,
+      });
+      onAdded({ id: person.id, full_name: person.full_name });
+    } catch (err) {
+      setError(errorMessage(err));
+    }
+  };
+
+  return (
+    <View style={styles.newBox}>
+      <View style={styles.newHead}>
+        <Txt variant="label" color={colors.textMuted}>
+          A NEW EMPLOYEE
+        </Txt>
+        <Pressable onPress={onCancel} hitSlop={8} accessibilityRole="button" accessibilityLabel="Cancel">
+          <Ionicons name="close" size={17} color={colors.textMuted} />
+        </Pressable>
+      </View>
+
+      <Field
+        label="Name"
+        value={name}
+        onChangeText={(v) => setName(v.slice(0, 80))}
+        placeholder="Full name"
+        icon="person-outline"
+      />
+      <Field
+        label="Mobile"
+        value={mobileText}
+        onChangeText={setMobileText}
+        placeholder="050 123 4567"
+        icon="call-outline"
+        keyboardType="phone-pad"
+      />
+      <Field
+        label="Job title (optional)"
+        value={jobTitle}
+        onChangeText={(v) => setJobTitle(v.slice(0, 60))}
+        placeholder="Mason, driver, foreman"
+        icon="hammer-outline"
+      />
+      <Field
+        label="PIN to log in with"
+        value={pin}
+        onChangeText={(v) => setPin(v.replace(/\D/g, '').slice(0, 4))}
+        placeholder="4 digits"
+        icon="keypad-outline"
+        keyboardType="number-pad"
+      />
+
+      <Txt variant="caption" color={colors.textFaint}>
+        He is added as an employee. Roles and the rest are changed in Settings.
+      </Txt>
+
+      {error ? <Banner tone="error" message={error} /> : null}
+
+      <Button
+        label="Add him"
+        icon="person-add-outline"
+        full
+        loading={create.isPending}
+        onPress={add}
+      />
+    </View>
   );
 }
 
@@ -316,6 +445,25 @@ const styles = StyleSheet.create({
   },
   head: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 },
   flex: { flex: 1, gap: 2 },
+  newBox: {
+    gap: 10,
+    backgroundColor: colors.bg,
+    borderRadius: radius.md,
+    padding: 12,
+  },
+  newHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  addNew: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    height: 40,
+    borderRadius: radius.md,
+    borderWidth: 1.5,
+    borderStyle: 'dashed',
+    borderColor: colors.navyTint,
+  },
+  addNewPressed: { backgroundColor: colors.navyTint },
   note: {
     flexDirection: 'row',
     gap: 7,

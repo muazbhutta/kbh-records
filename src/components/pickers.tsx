@@ -410,7 +410,14 @@ export function PersonField({
               />
             </View>
 
-            <ScrollView style={styles.sheetList} keyboardShouldPersistTaps="handled">
+            {/* No scrollbar. On a desktop the browser draws a grey
+                track down the side of this short list and it looks like
+                a fault in the panel rather than a list that scrolls. */}
+            <ScrollView
+              style={styles.sheetList}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+            >
               {choices.length === 0 ? (
                 <Txt variant="caption" color={colors.textFaint} center style={styles.sheetEmpty}>
                   Nobody matches that name.
