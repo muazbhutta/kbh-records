@@ -632,6 +632,11 @@ export type Ticket = {
   system_id: string | null;
   note: string | null;
   photo_count: number;
+  /** True while nobody has said whether the paper is petty or an invoice. */
+  needs_type: boolean;
+  expense_type: ExpenseKind | null;
+  thumb_path: string | null;
+  storage_path: string | null;
 };
 
 /** A correction asked for and not yet applied. The entry has not moved. */

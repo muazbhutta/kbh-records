@@ -37,12 +37,21 @@ export function useOpenTicketCount(enabled = true) {
   });
 }
 
-/** "Looks right." */
-export function useMarkTicketSeen() {
+/**
+ * "Looks right" - and, where the question was open, what the paper is.
+ *
+ * Both answers in one call on purpose. Setting the type and clearing
+ * the ticket as two separate requests leaves the books in a state
+ * nobody meant if the second one fails.
+ */
+export function useSettleTicket() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (id: number): Promise<void> => {
-      const { error } = await supabase.rpc('mark_ticket_seen', { p_id: id });
+    mutationFn: async (input: { id: number; type?: 'petty' | 'invoice' }): Promise<void> => {
+      const { error } = await supabase.rpc('settle_ticket', {
+        p_id: input.id,
+        p_type: input.type ?? undefined,
+      });
       if (error) throw new Error(error.message);
     },
     onSuccess: () => refreshTheBooks(qc),

@@ -3414,14 +3414,18 @@ export type Database = {
           changes: Json
           entry_id: string
           entry_type: string
+          expense_type: string
           id: number
           kind: string
+          needs_type: boolean
           note: string
           person_id: string
           person_name: string
           photo_count: number
           reason: string
+          storage_path: string
           system_id: string
+          thumb_path: string
         }[]
       }
       people_needing_check: {
@@ -3658,6 +3662,13 @@ export type Database = {
       }
       set_person_pin: {
         Args: { p_pin_hash: string; p_set_by: string; p_user_id: string }
+        Returns: undefined
+      }
+      settle_ticket: {
+        Args: {
+          p_id: number
+          p_type?: Database["public"]["Enums"]["expense_kind"]
+        }
         Returns: undefined
       }
       top_cash_holders: {

@@ -4,13 +4,15 @@ import React, { useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 
 import { Avatar, Badge, Banner, Card, Loading } from '@/components/Bits';
+import { BillImage, PhotoViewer } from '@/components/BillPhotos';
 import { Txt } from '@/components/Txt';
 import {
   useDecideChange,
-  useMarkTicketSeen,
   useOpenTickets,
+  useSettleTicket,
   useWaitingChanges,
 } from '@/api/tickets';
+import { signedUrl } from '@/lib/photos';
 import { errorMessage } from '@/lib/supabase';
 import { formatDate, formatDateTime, money } from '@/lib/format';
 import { colors, radius, shadow } from '@/theme';
@@ -32,20 +34,24 @@ export function Tickets() {
   const router = useRouter();
   const { data, isLoading, error } = useOpenTickets();
   const changes = useWaitingChanges();
-  const seen = useMarkTicketSeen();
+  const settle = useSettleTicket();
   const [failed, setFailed] = useState<string | null>(null);
   const [clearing, setClearing] = useState<number | null>(null);
+  const [viewing, setViewing] = useState<string | null>(null);
 
   const tickets = data ?? [];
   const waiting = changes.data ?? [];
 
-  const clear = (id: number) => {
+  const clear = (id: number, type?: 'petty' | 'invoice') => {
     setFailed(null);
     setClearing(id);
-    seen.mutate(id, {
-      onError: (err) => setFailed(errorMessage(err)),
-      onSettled: () => setClearing(null),
-    });
+    settle.mutate(
+      { id, type },
+      {
+        onError: (err) => setFailed(errorMessage(err)),
+        onSettled: () => setClearing(null),
+      },
+    );
   };
 
   if (isLoading) return <Loading />;
@@ -85,9 +91,15 @@ export function Tickets() {
           ticket={t}
           busy={clearing === t.id}
           onOpen={() => router.push(`/entry/${t.entry_id}?person=${t.person_id}`)}
-          onClear={() => clear(t.id)}
+          onClear={(type) => clear(t.id, type)}
+          onViewBill={async (path) => {
+            const url = await signedUrl(path);
+            if (url) setViewing(url);
+          }}
         />
       ))}
+
+      <PhotoViewer uri={viewing} onClose={() => setViewing(null)} />
     </View>
   );
 }
@@ -97,11 +109,13 @@ function TicketCard({
   busy,
   onOpen,
   onClear,
+  onViewBill,
 }: {
   ticket: Ticket;
   busy: boolean;
   onOpen: () => void;
-  onClear: () => void;
+  onClear: (type?: 'petty' | 'invoice') => void;
+  onViewBill: (path: string) => void;
 }) {
   const edit = ticket.kind === 'edit';
   const tone = edit ? colors.amberDark : colors.blue;
@@ -175,23 +189,104 @@ function TicketCard({
         </View>
       ) : null}
 
-      <Pressable
-        onPress={onClear}
-        disabled={busy}
-        accessibilityRole="button"
-        accessibilityLabel={`Looks right, ${money(Number(ticket.amount))}`}
-        style={({ pressed }) => [styles.ok, pressed && styles.okPressed]}
-      >
-        {busy ? (
-          <ActivityIndicator color={colors.green} size="small" />
-        ) : (
-          <Ionicons name="checkmark" size={17} color={colors.green} />
-        )}
-        <Txt variant="caption" weight="semibold" color={colors.green}>
-          Looks right
-        </Txt>
-      </Pressable>
+      {/*
+        Where the paper's type is still an open question, it is asked
+        here, over the bill itself. The office was being sent to a
+        second screen to answer it about a photograph it had already
+        looked at once - so the question moved to where the looking
+        happens. Pressing either button says both things at once: this
+        is what the paper is, and I have seen it.
+      */}
+      {ticket.needs_type ? (
+        <View style={styles.typeBox}>
+          {ticket.thumb_path || ticket.storage_path ? (
+            <BillImage
+              path={ticket.storage_path ?? ticket.thumb_path}
+              style={styles.bill}
+              contentFit="cover"
+              onPress={() => onViewBill(ticket.storage_path ?? ticket.thumb_path!)}
+            />
+          ) : null}
+
+          <Txt variant="caption" color={colors.textMuted}>
+            What is this paper? Tap the bill to see it closely.
+          </Txt>
+
+          <View style={styles.typeRow}>
+            <TypeChoice
+              icon="receipt-outline"
+              label="Petty"
+              tone={colors.navy}
+              busy={busy}
+              onPress={() => onClear('petty')}
+            />
+            <TypeChoice
+              icon="document-text-outline"
+              label="Invoice"
+              tone={colors.green}
+              busy={busy}
+              onPress={() => onClear('invoice')}
+            />
+          </View>
+        </View>
+      ) : (
+        <Pressable
+          onPress={() => onClear()}
+          disabled={busy}
+          accessibilityRole="button"
+          accessibilityLabel={`Looks right, ${money(Number(ticket.amount))}`}
+          style={({ pressed }) => [styles.ok, pressed && styles.okPressed]}
+        >
+          {busy ? (
+            <ActivityIndicator color={colors.green} size="small" />
+          ) : (
+            <Ionicons name="checkmark" size={17} color={colors.green} />
+          )}
+          <Txt variant="caption" weight="semibold" color={colors.green}>
+            Looks right
+          </Txt>
+        </Pressable>
+      )}
     </View>
+  );
+}
+
+/** One of the two answers, which is also "I have looked at it". */
+function TypeChoice({
+  icon,
+  label,
+  tone,
+  busy,
+  onPress,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  label: string;
+  tone: string;
+  busy: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={busy}
+      accessibilityRole="button"
+      accessibilityLabel={`${label}, and it looks right`}
+      style={({ pressed }) => [
+        styles.choice,
+        { borderColor: tone },
+        pressed && { backgroundColor: `${tone}14` },
+        busy && styles.choiceBusy,
+      ]}
+    >
+      {busy ? (
+        <ActivityIndicator color={tone} size="small" />
+      ) : (
+        <Ionicons name={icon} size={16} color={tone} />
+      )}
+      <Txt variant="caption" weight="semibold" color={tone}>
+        {label}
+      </Txt>
+    </Pressable>
   );
 }
 
@@ -386,6 +481,29 @@ const styles = StyleSheet.create({
     padding: 10,
   },
   change: { gap: 1 },
+
+  typeBox: {
+    gap: 9,
+    paddingTop: 10,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.line,
+  },
+  // Tall enough to read a figure off, not so tall the list stops being
+  // a list when four of them come in at once.
+  bill: { width: '100%', height: 190, borderRadius: radius.md },
+  typeRow: { flexDirection: 'row', gap: 8 },
+  choice: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 7,
+    height: 42,
+    borderRadius: radius.md,
+    borderWidth: 1.5,
+    backgroundColor: colors.card,
+  },
+  choiceBusy: { opacity: 0.6 },
 
   ok: {
     flexDirection: 'row',
