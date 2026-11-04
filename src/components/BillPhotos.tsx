@@ -60,8 +60,12 @@ export function PhotoPicker({
         <View style={styles.thumbs}>
           {photos.map((p) => (
             <View key={p.key} style={styles.thumbWrap}>
+              {/* The tile stays the small one, but full screen is the
+                  bill itself. Looking the photograph over before saving
+                  is the whole reason anybody taps it, and `preview` is
+                  320 pixels across. */}
               <Pressable
-                onPress={() => setViewing(p.preview)}
+                onPress={() => setViewing(p.uri || `data:image/jpeg;base64,${p.fullBase64}`)}
                 accessibilityRole="imagebutton"
                 accessibilityLabel="Bill photo"
               >
