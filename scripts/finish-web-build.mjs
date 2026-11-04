@@ -55,6 +55,15 @@ const rewrites = [
   ["const PAGE = '/index.html';", `const PAGE = '${at('/index.html')}';`],
   ["const ROOT = '/';", `const ROOT = '${at('/')}';`],
   ["const ICON = '/icons/icon-192.png';", `const ICON = '${at('/icons/icon-192.png')}';`],
+  // The version has to move every build, and it was a constant somebody
+  // had to remember to bump - so it never moved. A browser only installs
+  // a worker whose file has changed; an identical sw.js means no install,
+  // no skipWaiting, no claim, and no reload. Updating a phone then rested
+  // entirely on fetching index.html from the network inside three
+  // seconds, which on a site with one bar it does not. Stamping the build
+  // in here makes every deploy a new worker: it takes over, drops the old
+  // caches, and the page reloads itself once.
+  ["const VERSION = 'kbh-v5';", `const VERSION = 'kbh-${BUILD}';`],
 ];
 for (const [from, to] of rewrites) {
   if (!sw.includes(from)) {
