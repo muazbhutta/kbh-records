@@ -111,6 +111,30 @@ Deno.serve(async (req) => {
     return new Response('Could not look them up', { status: 500 });
   }
 
+  // How many are waiting altogether, so the phone can put the number on
+  // the icon. Everybody told is an Admin or a Sub-admin and they all see
+  // the same tickets, so one figure serves them all.
+  //
+  // Counted the long way round, in two plain queries, because it has to
+  // agree exactly with open_ticket_count() - which skips a ticket whose
+  // entry has since been deleted. A number on the icon that disagrees
+  // with the number in the app is worse than no number.
+  //
+  // If it cannot be read the notification still goes: a missing figure
+  // is a far smaller failure than a missing notification.
+  const waiting = await (async (): Promise<number | undefined> => {
+    const open = await db.from('entry_tickets').select('entry_id').is('seen_at', null);
+    if (open.error || !open.data) return undefined;
+    if (open.data.length === 0) return 0;
+
+    const ids = [...new Set(open.data.map((t) => t.entry_id))];
+    const live = await db.from('entries').select('id').in('id', ids).eq('is_deleted', false);
+    if (live.error || !live.data) return undefined;
+
+    const alive = new Set(live.data.map((e) => e.id));
+    return open.data.filter((t) => alive.has(t.entry_id)).length;
+  })();
+
   const { title, body } = wording(ticket);
   const payload = JSON.stringify({
     title,
@@ -118,6 +142,7 @@ Deno.serve(async (req) => {
     tag: `ticket-${ticket.id}`,
     entryId: ticket.entry_id,
     personId: ticket.person_name,
+    count: typeof waiting === 'number' ? waiting : undefined,
   });
 
   let sent = 0;

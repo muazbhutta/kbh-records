@@ -8,7 +8,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Avatar } from '@/components/Bits';
 import { useIsWide } from '@/components/Screen';
 import { Txt } from '@/components/Txt';
+import { useOpenTicketCount } from '@/api/tickets';
 import { useAuth } from '@/auth/AuthProvider';
+import { showBadge } from '@/lib/appBadge';
 import { ROLE_LABEL } from '@/lib/format';
 import { colors, radius } from '@/theme';
 
@@ -19,6 +21,8 @@ type NavItem = {
   iconActive: keyof typeof Ionicons.glyphMap;
   /** which path prefixes light this item up */
   match: (path: string) => boolean;
+  /** true for the item that carries the count of what is waiting */
+  counted?: boolean;
 };
 
 const HOME: NavItem = {
@@ -27,6 +31,7 @@ const HOME: NavItem = {
   icon: 'home-outline',
   iconActive: 'home',
   match: (p) => p === '/' || p === '',
+  counted: true,
 };
 
 const PEOPLE: NavItem = {
@@ -74,13 +79,23 @@ export default function MainLayout() {
   const wide = useIsWide();
   const insets = useSafeAreaInsets();
 
-  // A head of employees gets Projects too: he files his own people's
-  // expenses against sites, so he needs somewhere to see them.
+  // What is waiting to be looked at. Only the office is ever told, and
+  // the database returns nought to anybody else, so this is safe to ask
+  // from the layout every screen sits inside.
+  const waiting = useOpenTicketCount(canManage);
+  const count = canManage ? Number(waiting.data ?? 0) : 0;
+
+  // On the icon as well as in the app, so a phone face down on a bench
+  // still says there is something to look at.
+  React.useEffect(() => {
+    showBadge(count);
+  }, [count]);
+
+  // The sites belong to the office now, so a head no longer has a
+  // Projects screen to open - he would be shown an empty one.
   const items: NavItem[] = canManage
     ? [HOME, PEOPLE, PROJECTS, REPORTS, SETTINGS]
-    : person?.is_head
-      ? [HOME, KHATA, PROJECTS, SETTINGS]
-      : [HOME, KHATA, SETTINGS];
+    : [HOME, KHATA, SETTINGS];
 
   const content = (
     <Stack
@@ -95,7 +110,7 @@ export default function MainLayout() {
   if (wide) {
     return (
       <View style={styles.wideRoot}>
-        <Sidebar items={items} />
+        <Sidebar items={items} count={count} />
         <View style={styles.wideContent}>{content}</View>
       </View>
     );
@@ -104,13 +119,13 @@ export default function MainLayout() {
   return (
     <View style={styles.narrowRoot}>
       <View style={styles.narrowContent}>{content}</View>
-      <TabBar items={items} bottomInset={insets.bottom} />
+      <TabBar items={items} count={count} bottomInset={insets.bottom} />
     </View>
   );
 }
 
 // ------------------------------------------------------------- sidebar
-function Sidebar({ items }: { items: NavItem[] }) {
+function Sidebar({ items, count }: { items: NavItem[]; count: number }) {
   const router = useRouter();
   const pathname = usePathname();
   const { person, logout } = useAuth();
@@ -160,6 +175,7 @@ function Sidebar({ items }: { items: NavItem[] }) {
               >
                 {item.label}
               </Txt>
+              {item.counted && count > 0 ? <Count n={count} /> : null}
             </Pressable>
           );
         })}
@@ -193,7 +209,15 @@ function Sidebar({ items }: { items: NavItem[] }) {
 }
 
 // ------------------------------------------------------------- tab bar
-function TabBar({ items, bottomInset }: { items: NavItem[]; bottomInset: number }) {
+function TabBar({
+  items,
+  count,
+  bottomInset,
+}: {
+  items: NavItem[];
+  count: number;
+  bottomInset: number;
+}) {
   const router = useRouter();
   const pathname = usePathname();
 
@@ -216,6 +240,7 @@ function TabBar({ items, bottomInset }: { items: NavItem[]; bottomInset: number 
                 size={22}
                 color={active ? colors.navy : colors.textFaint}
               />
+              {item.counted && count > 0 ? <Count n={count} floating /> : null}
             </View>
             <Txt
               variant="label"
@@ -231,8 +256,51 @@ function TabBar({ items, bottomInset }: { items: NavItem[]; bottomInset: number 
   );
 }
 
+/**
+ * How many are waiting.
+ *
+ * Over ninety-nine it says 99+: the exact figure stops being the point
+ * long before then, and a four-digit bubble wrecks the row it sits in.
+ */
+function Count({ n, floating = false }: { n: number; floating?: boolean }) {
+  const label = n > 99 ? '99+' : String(n);
+  return (
+    <View
+      style={[styles.count, floating && styles.countFloating]}
+      accessibilityLabel={`${n} waiting to be looked at`}
+    >
+      <Txt variant="label" weight="bold" color={colors.white} style={styles.countText}>
+        {label}
+      </Txt>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   flex: { flex: 1 },
+
+  count: {
+    minWidth: 20,
+    height: 20,
+    paddingHorizontal: 6,
+    borderRadius: 10,
+    backgroundColor: colors.red,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  // On the tab bar it rides the corner of the icon, the way a badge on
+  // a phone does, rather than pushing the label out of line.
+  countFloating: {
+    position: 'absolute',
+    top: -5,
+    right: -9,
+    borderWidth: 2,
+    borderColor: colors.card,
+    height: 21,
+    minWidth: 21,
+    borderRadius: 11,
+  },
+  countText: { lineHeight: 14 },
   wideRoot: { flex: 1, flexDirection: 'row', backgroundColor: colors.bg },
   wideContent: { flex: 1 },
   narrowRoot: { flex: 1, backgroundColor: colors.bg },

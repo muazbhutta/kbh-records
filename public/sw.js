@@ -152,7 +152,19 @@ self.addEventListener('push', (event) => {
     data: { entryId: data.entryId || null },
   };
 
-  event.waitUntil(self.registration.showNotification(title, options));
+  // The number on the icon, while the app is shut. Without this the
+  // count only moves when somebody opens the app, which is the one
+  // moment he no longer needs telling.
+  const badge = [self.registration.showNotification(title, options)];
+  if (typeof data.count === 'number' && self.navigator && self.navigator.setAppBadge) {
+    badge.push(
+      data.count > 0
+        ? self.navigator.setAppBadge(data.count).catch(function () {})
+        : self.navigator.clearAppBadge().catch(function () {}),
+    );
+  }
+
+  event.waitUntil(Promise.all(badge));
 });
 
 /** Tapping it opens the app - on the entry itself when there is one. */
