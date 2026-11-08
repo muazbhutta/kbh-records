@@ -118,6 +118,8 @@ function TicketCard({
   onViewBill: (path: string) => void;
 }) {
   const edit = ticket.kind === 'edit';
+  // The full photograph, never the list tile. Money given has none.
+  const bill = ticket.storage_path ?? ticket.thumb_path;
   const tone = edit ? colors.amberDark : colors.blue;
   const changes = Object.entries(ticket.changes ?? {});
 
@@ -197,44 +199,58 @@ function TicketCard({
         happens. Pressing either button says both things at once: this
         is what the paper is, and I have seen it.
       */}
-      {ticket.needs_type ? (
-        <View style={styles.typeBox}>
-          {ticket.thumb_path || ticket.storage_path ? (
-            <BillImage
-              path={ticket.storage_path ?? ticket.thumb_path}
-              style={styles.bill}
-              contentFit="cover"
-              onPress={() => onViewBill(ticket.storage_path ?? ticket.thumb_path!)}
-            />
-          ) : null}
-
+      {/*
+        The bill, on every ticket that has one.
+        Whether the question is "is this entry right", "was this edit
+        right", or "what is this paper", it is the same question
+        underneath - and it cannot be answered from a figure and a note.
+        The photograph is the evidence, so it is always on the card and
+        never a screen away.
+      */}
+      {bill ? (
+        <View style={styles.billBox}>
+          <BillImage
+            path={bill}
+            style={styles.bill}
+            contentFit="cover"
+            onPress={() => onViewBill(bill)}
+          />
           <Txt variant="caption" color={colors.textMuted}>
-            What is this paper? Tap the bill to see it closely.
+            {ticket.needs_type
+              ? 'What is this paper? Tap the bill to see it closely.'
+              : 'Tap the bill to see it closely.'}
           </Txt>
+        </View>
+      ) : null}
 
-          <View style={styles.typeRow}>
-            <TypeChoice
-              icon="receipt-outline"
-              label="Petty"
-              tone={colors.navy}
-              busy={busy}
-              onPress={() => onClear('petty')}
-            />
-            <TypeChoice
-              icon="document-text-outline"
-              label="Invoice"
-              tone={colors.green}
-              busy={busy}
-              onPress={() => onClear('invoice')}
-            />
-            <TypeChoice
-              icon="hammer-outline"
-              label="Labour"
-              tone={colors.amberDark}
-              busy={busy}
-              onPress={() => onClear('labour')}
-            />
-          </View>
+      {/*
+        Where the paper's type is still an open question, it is asked
+        here, over the bill. Pressing any of the three says both things
+        at once: this is what the paper is, and I have seen it.
+      */}
+      {ticket.needs_type ? (
+        <View style={styles.typeRow}>
+          <TypeChoice
+            icon="receipt-outline"
+            label="Petty"
+            tone={colors.navy}
+            busy={busy}
+            onPress={() => onClear('petty')}
+          />
+          <TypeChoice
+            icon="document-text-outline"
+            label="Invoice"
+            tone={colors.green}
+            busy={busy}
+            onPress={() => onClear('invoice')}
+          />
+          <TypeChoice
+            icon="hammer-outline"
+            label="Labour"
+            tone={colors.amberDark}
+            busy={busy}
+            onPress={() => onClear('labour')}
+          />
         </View>
       ) : (
         <Pressable
@@ -489,8 +505,8 @@ const styles = StyleSheet.create({
   },
   change: { gap: 1 },
 
-  typeBox: {
-    gap: 9,
+  billBox: {
+    gap: 8,
     paddingTop: 10,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: colors.line,
