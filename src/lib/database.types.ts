@@ -3729,7 +3729,7 @@ export type Database = {
     Enums: {
       bill_scan_state: "not_needed" | "pending" | "done" | "failed"
       entry_type: "money_given" | "transfer" | "expense" | "returned"
-      expense_kind: "petty" | "invoice"
+      expense_kind: "petty" | "invoice" | "labour"
       pay_method: "cash" | "transfer"
       type_source:
         | "auto_qr"
@@ -3870,7 +3870,7 @@ export const Constants = {
     Enums: {
       bill_scan_state: ["not_needed", "pending", "done", "failed"],
       entry_type: ["money_given", "transfer", "expense", "returned"],
-      expense_kind: ["petty", "invoice"],
+      expense_kind: ["petty", "invoice", "labour"],
       pay_method: ["cash", "transfer"],
       type_source: [
         "auto_qr",

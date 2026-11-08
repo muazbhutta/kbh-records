@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { refreshTheBooks } from '@/lib/queryClient';
 import { supabase } from '@/lib/supabase';
-import type { Ticket, WaitingChange } from '@/types';
+import type { ExpenseKind, Ticket, WaitingChange } from '@/types';
 
 /**
  * The tickets: one raised for every entry recorded and every entry
@@ -47,7 +47,7 @@ export function useOpenTicketCount(enabled = true) {
 export function useSettleTicket() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (input: { id: number; type?: 'petty' | 'invoice' }): Promise<void> => {
+    mutationFn: async (input: { id: number; type?: ExpenseKind }): Promise<void> => {
       const { error } = await supabase.rpc('settle_ticket', {
         p_id: input.id,
         p_type: input.type ?? undefined,

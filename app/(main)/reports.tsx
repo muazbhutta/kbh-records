@@ -130,7 +130,10 @@ export default function ReportsScreen() {
   const addsUp =
     !t || !dashboard.data
       ? null
-      : Math.abs(Number(t.petty_total) + Number(t.invoice_total) - Number(t.all_total)) < 0.005;
+      : Math.abs(
+            Number(t.petty_total) + Number(t.invoice_total) + Number(t.labour_total) -
+              Number(t.all_total),
+          ) < 0.005;
   // The dashboard figure is the whole company's spending for the period.
   // It can only be compared against a report of the whole company, so one
   // person or one category means there is nothing to compare it with.
@@ -230,7 +233,13 @@ export default function ReportsScreen() {
           lines: [
             personName ?? 'All people',
             categoryName ?? 'All categories',
-            kind === 'petty' ? 'Petty only' : kind === 'invoice' ? 'Invoices only' : 'Petty and invoices',
+            kind === 'petty'
+              ? 'Petty only'
+              : kind === 'invoice'
+                ? 'Invoices only'
+                : kind === 'labour'
+                  ? 'Labour only'
+                  : 'Every kind of bill',
           ],
           total: Number(t?.all_total ?? 0),
         },
@@ -323,18 +332,27 @@ export default function ReportsScreen() {
       ? Number(t.petty_total)
       : kind === 'invoice'
         ? Number(t.invoice_total)
-        : Number(t.all_total);
+        : kind === 'labour'
+          ? Number(t.labour_total)
+          : Number(t.all_total);
   const shownCount = !t
     ? 0
     : kind === 'petty'
       ? Number(t.petty_count)
       : kind === 'invoice'
         ? Number(t.invoice_count)
-        : Number(t.entry_count);
+        : kind === 'labour'
+          ? Number(t.labour_count)
+          : Number(t.entry_count);
 
   /** "Petty Report (PDF)", or "Fuel - Petty Report (PDF)" when narrowed. */
   const pdfLabel = (k: ReportKind) => {
-    const name = { petty: 'Petty Report', invoice: 'Invoice Report', all: 'All Expenses Report' }[k];
+    const name = {
+      petty: 'Petty Report',
+      invoice: 'Invoice Report',
+      labour: 'Labour Report',
+      all: 'All Expenses Report',
+    }[k];
     return categoryName ? `${categoryName} - ${name} (PDF)` : `${name} (PDF)`;
   };
 
@@ -414,6 +432,7 @@ export default function ReportsScreen() {
             <Card padded={false} style={styles.sumCard}>
               <DetailRow label="Petty" value={money(Number(t.petty_total))} />
               <DetailRow label="Invoice" value={money(Number(t.invoice_total))} />
+              <DetailRow label="Labour" value={money(Number(t.labour_total))} />
               <DetailRow
                 label="All expenses"
                 value={money(Number(t.all_total))}
@@ -427,14 +446,14 @@ export default function ReportsScreen() {
               <Banner
                 tone="error"
                 title="The totals do not agree"
-                message="Petty and Invoice do not add up to the total the app shows. No report will be made until this is sorted out."
+                message="Petty, Invoice and Labour do not add up to the total the app shows. No report will be made until this is sorted out."
               />
             ) : (
               <View style={styles.checkRow}>
                 <Ionicons name="checkmark-circle" size={15} color={colors.green} />
                 <Txt variant="caption" color={colors.green}>
-                  Petty {money(Number(t.petty_total))} + Invoice {money(Number(t.invoice_total))} ={' '}
-                  {money(Number(t.all_total))}
+                  Petty {money(Number(t.petty_total))} + Invoice {money(Number(t.invoice_total))} +
+                  Labour {money(Number(t.labour_total))} = {money(Number(t.all_total))}
                   {matchesApp ? ', and it matches the app' : ''}
                 </Txt>
               </View>
@@ -474,6 +493,18 @@ export default function ReportsScreen() {
             loading={busy === 'invoice'}
             disabled={working && busy !== 'invoice'}
             onPress={() => makePdf('invoice')}
+          />
+        ) : null}
+        {kind === null || kind === 'labour' ? (
+          <Button
+            label={pdfLabel('labour')}
+            icon="hammer-outline"
+            variant="success"
+            size="lg"
+            full
+            loading={busy === 'labour'}
+            disabled={working && busy !== 'labour'}
+            onPress={() => makePdf('labour')}
           />
         ) : null}
         {kind === null ? (

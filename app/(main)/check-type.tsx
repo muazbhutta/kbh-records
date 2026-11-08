@@ -15,7 +15,7 @@ import { useAuth } from '@/auth/AuthProvider';
 import { formatDate } from '@/lib/format';
 import { errorMessage } from '@/lib/supabase';
 import { colors, radius } from '@/theme';
-import type { ExpenseKind, ToCheckRow } from '@/types';
+import { EXPENSE_KIND_LABEL, type ExpenseKind, type ToCheckRow } from '@/types';
 
 /**
  * Everything the app could not decide on its own: old entries that came
@@ -82,7 +82,7 @@ function CheckRow({ row, onDone }: { row: ToCheckRow; onDone: (m: string) => voi
     setError(null);
     try {
       await setType.mutateAsync({ id: row.id, type });
-      onDone(`${row.system_id ?? 'Expense'} saved as ${type === 'petty' ? 'Petty' : 'Invoice'}.`);
+      onDone(`${row.system_id ?? 'Expense'} saved as ${EXPENSE_KIND_LABEL[type]}.`);
     } catch (err) {
       setError(errorMessage(err));
     }
@@ -150,6 +150,15 @@ function CheckRow({ row, onDone }: { row: ToCheckRow; onDone: (m: string) => voi
           variant={row.expense_type === 'invoice' ? 'navy' : 'outline'}
           loading={setType.isPending}
           onPress={() => change('invoice')}
+          style={styles.action}
+        />
+        <Button
+          label="Labour"
+          icon="hammer-outline"
+          size="sm"
+          variant={row.expense_type === 'labour' ? 'navy' : 'outline'}
+          loading={setType.isPending}
+          onPress={() => change('labour')}
           style={styles.action}
         />
         <Button

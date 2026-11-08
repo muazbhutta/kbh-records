@@ -379,7 +379,12 @@ export type StaleCheckPerson = {
 
 // ------------------------------------------- petty / invoice add-on
 
-export type ExpenseKind = 'petty' | 'invoice';
+/**
+ * What the paper is. Labour is the honest third answer: a man paid for
+ * his day, with a chit at best - not a petty cash bill and not a tax
+ * invoice, and far too big an outgoing to be filed as either.
+ */
+export type ExpenseKind = 'petty' | 'invoice' | 'labour';
 
 export type TypeSource =
   | 'auto_qr'
@@ -412,6 +417,7 @@ export const FLAG_LABEL: Record<string, string> = {
 export const EXPENSE_KIND_LABEL: Record<ExpenseKind, string> = {
   petty: 'Petty',
   invoice: 'Invoice',
+  labour: 'Labour',
 };
 
 export const TYPE_SOURCE_LABEL: Record<TypeSource, string> = {
@@ -488,9 +494,11 @@ export type ReportTotals = {
   all_total: number;
   petty_total: number;
   invoice_total: number;
+  labour_total: number;
   entry_count: number;
   petty_count: number;
   invoice_count: number;
+  labour_count: number;
   photo_count: number;
 };
 

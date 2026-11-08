@@ -121,6 +121,15 @@ export function ExpenseTypeAdmin({ entry }: { entry: FeedEntry }) {
             loading={setType.isPending}
             onPress={() => change('invoice')}
           />
+          <Button
+            label="Save as Labour"
+            icon="hammer-outline"
+            variant={entry.expense_type === 'labour' ? 'navy' : 'outline'}
+            size="lg"
+            full
+            loading={setType.isPending}
+            onPress={() => change('labour')}
+          />
           <View style={styles.note}>
             <Ionicons name="information-circle-outline" size={14} color={colors.textFaint} />
             <Txt variant="caption" color={colors.textFaint} style={styles.noteText}>

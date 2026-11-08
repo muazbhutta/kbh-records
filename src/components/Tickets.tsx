@@ -16,7 +16,7 @@ import { signedUrl } from '@/lib/photos';
 import { errorMessage } from '@/lib/supabase';
 import { formatDate, formatDateTime, money } from '@/lib/format';
 import { colors, radius, shadow } from '@/theme';
-import type { Ticket, WaitingChange } from '@/types';
+import type { ExpenseKind, Ticket, WaitingChange } from '@/types';
 
 /**
  * Everything recorded or changed that the office has not looked at yet.
@@ -42,7 +42,7 @@ export function Tickets() {
   const tickets = data ?? [];
   const waiting = changes.data ?? [];
 
-  const clear = (id: number, type?: 'petty' | 'invoice') => {
+  const clear = (id: number, type?: ExpenseKind) => {
     setFailed(null);
     setClearing(id);
     settle.mutate(
@@ -114,7 +114,7 @@ function TicketCard({
   ticket: Ticket;
   busy: boolean;
   onOpen: () => void;
-  onClear: (type?: 'petty' | 'invoice') => void;
+  onClear: (type?: ExpenseKind) => void;
   onViewBill: (path: string) => void;
 }) {
   const edit = ticket.kind === 'edit';
@@ -226,6 +226,13 @@ function TicketCard({
               tone={colors.green}
               busy={busy}
               onPress={() => onClear('invoice')}
+            />
+            <TypeChoice
+              icon="hammer-outline"
+              label="Labour"
+              tone={colors.amberDark}
+              busy={busy}
+              onPress={() => onClear('labour')}
             />
           </View>
         </View>
