@@ -213,9 +213,16 @@ function Side({
         {label.toUpperCase()}
       </Txt>
 
-      {thumb ? (
+      {/*
+        The real photograph, not the list tile. This panel is drawn the
+        full width of its half at three by four - several hundred points
+        tall - and a 320-pixel thumbnail stretched over that is a blur.
+        Reading two bills against each other is the only thing this
+        screen does, so it carries the cost of two full images.
+      */}
+      {full || thumb ? (
         <BillImage
-          path={thumb}
+          path={full ?? thumb}
           style={styles.photo}
           onPress={async () => {
             const url = await signedUrl(full ?? thumb);
