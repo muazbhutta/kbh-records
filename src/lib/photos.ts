@@ -22,9 +22,17 @@ export const MAX_PHOTOS = 5;
  * in to read it, which is the only reason to open a bill at all.
  */
 const FULL_MAX_SIDE = 2000;
-const THUMB_MAX_SIDE = 320;
+/**
+ * 320 was enough for a 48-point tile in a list. The ticket on the home
+ * screen now shows the bill itself, 315 points across, which is 630 on
+ * a phone - and fifty of those at full size is ten megabytes to open
+ * the first screen of the app on a site with one bar. 640 covers the
+ * card properly and costs a twentieth of that; the full photograph is
+ * still one tap away.
+ */
+const THUMB_MAX_SIDE = 640;
 const FULL_QUALITY = 0.85;
-const THUMB_QUALITY = 0.6;
+const THUMB_QUALITY = 0.7;
 
 export type LocalPhoto = {
   /** Local id while the photo only exists on this device. */

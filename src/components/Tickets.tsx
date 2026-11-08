@@ -118,8 +118,11 @@ function TicketCard({
   onViewBill: (path: string) => void;
 }) {
   const edit = ticket.kind === 'edit';
-  // The full photograph, never the list tile. Money given has none.
-  const bill = ticket.storage_path ?? ticket.thumb_path;
+  // The card shows the small one and the tap opens the real one. Fifty
+  // tickets of full-size bills is ten megabytes to open the home
+  // screen, and the card is 315 points wide - it is a look, not a read.
+  const billShown = ticket.thumb_path ?? ticket.storage_path;
+  const billFull = ticket.storage_path ?? ticket.thumb_path;
   const tone = edit ? colors.amberDark : colors.blue;
   const changes = Object.entries(ticket.changes ?? {});
 
@@ -207,13 +210,13 @@ function TicketCard({
         The photograph is the evidence, so it is always on the card and
         never a screen away.
       */}
-      {bill ? (
+      {billShown ? (
         <View style={styles.billBox}>
           <BillImage
-            path={bill}
+            path={billShown}
             style={styles.bill}
             contentFit="cover"
-            onPress={() => onViewBill(bill)}
+            onPress={() => onViewBill(billFull!)}
           />
           <Txt variant="caption" color={colors.textMuted}>
             {ticket.needs_type

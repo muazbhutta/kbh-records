@@ -10,7 +10,7 @@ import { TypeFlags, TypeTag } from '@/components/ExpenseType';
 import { Money } from '@/components/Money';
 import { Header, Screen } from '@/components/Screen';
 import { Txt } from '@/components/Txt';
-import { useClearTypeFlags, useExpensesToCheck, useSetExpenseType } from '@/api/expenseType';
+import { useExpensesToCheck, useSetExpenseType } from '@/api/expenseType';
 import { useAuth } from '@/auth/AuthProvider';
 import { formatDate } from '@/lib/format';
 import { errorMessage } from '@/lib/supabase';
@@ -48,7 +48,7 @@ export default function CheckTypeScreen() {
 
       <Banner
         tone="info"
-        message="These expenses were saved as Petty because nothing could be read off the bill. Open one to see the photo, then set the right type or tick it off."
+        message="These expenses were saved as Petty because nothing could be read off the bill. Open one to see the photo, then say what the paper is."
       />
 
       {isLoading ? (
@@ -75,7 +75,6 @@ export default function CheckTypeScreen() {
 function CheckRow({ row, onDone }: { row: ToCheckRow; onDone: (m: string) => void }) {
   const router = useRouter();
   const setType = useSetExpenseType();
-  const clearFlags = useClearTypeFlags();
   const [error, setError] = useState<string | null>(null);
 
   const change = async (type: ExpenseKind) => {
@@ -159,23 +158,6 @@ function CheckRow({ row, onDone }: { row: ToCheckRow; onDone: (m: string) => voi
           variant={row.expense_type === 'labour' ? 'navy' : 'outline'}
           loading={setType.isPending}
           onPress={() => change('labour')}
-          style={styles.action}
-        />
-        <Button
-          label="Looks right"
-          icon="checkmark"
-          size="sm"
-          variant="ghost"
-          loading={clearFlags.isPending}
-          onPress={async () => {
-            setError(null);
-            try {
-              await clearFlags.mutateAsync(row.id);
-              onDone(`${row.system_id ?? 'Expense'} marked as checked.`);
-            } catch (err) {
-              setError(errorMessage(err));
-            }
-          }}
           style={styles.action}
         />
       </View>
