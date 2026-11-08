@@ -30,9 +30,20 @@ export const BILLS_PER_PART = 100;
 /** How many photographs to pull down at a time. */
 const AT_ONCE = 5;
 
-/** The long side each photograph is cut down to before it goes in. */
-const PAGE_IMAGE_SIDE = 1100;
-const PAGE_IMAGE_QUALITY = 0.72;
+/**
+ * The long side each photograph is cut down to before it goes in.
+ *
+ * A bill prints up to 196mm tall on the page, so 1100 across it was
+ * about 142 dots to the inch - under what it takes to read a date or
+ * a VAT line off paper, and the same hard squeeze that had been
+ * blurring them on screen. 1600 is roughly 210 dots, which reads.
+ *
+ * Measured on eight real bills before changing it: 48KB each at the
+ * old size, 97KB at this one. A hundred bills is 9.5MB rather than
+ * 4.6MB, which still sends, so they are not split into more files.
+ */
+const PAGE_IMAGE_SIDE = 1600;
+const PAGE_IMAGE_QUALITY = 0.82;
 
 export type BillsPdfProgress = { done: number; total: number; part: number; parts: number };
 
