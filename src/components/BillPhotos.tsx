@@ -1,6 +1,6 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Image } from 'expo-image';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Modal,
@@ -163,22 +163,100 @@ function PhotoButton({
 }
 
 // ================================================= showing a saved one
+/**
+ * Has this spot come near the screen yet?
+ *
+ * The home screen holds fifty tickets, each with a bill. Fetching all
+ * fifty photographs to show the first three is ten megabytes to open
+ * the app on a site with one bar - and shrinking the pictures to avoid
+ * it only makes the bill unreadable, which is the whole reason it is
+ * there. So the picture is full size, and it is fetched when it is
+ * about to be looked at.
+ *
+ * A screenful of margin means it is already there by the time it is
+ * scrolled to. Where there is no such thing as a viewport - a phone
+ * build, or an old browser - it simply answers yes and nothing
+ * changes.
+ *
+ * And it gives up quickly. An observer that exists but never reports
+ * is a real thing - the browser this was tested in has one - and a
+ * bill that never arrives is far worse than a bill that costs a little
+ * to fetch. So a short wait, and then load it anyway: the worst this
+ * can do is behave exactly as it did before.
+ */
+const GIVE_UP_AFTER_MS = 1200;
+
+function useNearTheScreen(ref: React.RefObject<unknown>, on: boolean) {
+  const [near, setNear] = useState(!on);
+
+  useEffect(() => {
+    if (!on || near) return;
+    if (Platform.OS !== 'web' || typeof IntersectionObserver === 'undefined') {
+      setNear(true);
+      return;
+    }
+    const node = ref.current as Element | null;
+    if (!node || typeof node.getBoundingClientRect !== 'function') {
+      setNear(true);
+      return;
+    }
+    // The timer is for an observer that never speaks at all, not for
+    // one that says "not yet". The first word it says, whatever it is,
+    // proves it works and the timer is dropped - otherwise every bill
+    // would load a second later and none of this would mean anything.
+    let giveUp: ReturnType<typeof setTimeout> | undefined;
+
+    const watch = new IntersectionObserver(
+      (entries) => {
+        if (giveUp !== undefined) {
+          clearTimeout(giveUp);
+          giveUp = undefined;
+        }
+        if (entries.some((e) => e.isIntersecting)) {
+          setNear(true);
+          watch.disconnect();
+        }
+      },
+      { rootMargin: '800px' },
+    );
+    watch.observe(node);
+
+    giveUp = setTimeout(() => {
+      setNear(true);
+      watch.disconnect();
+    }, GIVE_UP_AFTER_MS);
+
+    return () => {
+      if (giveUp !== undefined) clearTimeout(giveUp);
+      watch.disconnect();
+    };
+  }, [on, near, ref]);
+
+  return near;
+}
+
 /** Loads a private bill photo through a short-lived signed link. */
 export function BillImage({
   path,
   style,
   contentFit = 'cover',
   onPress,
+  lazy = false,
 }: {
   path: string | null | undefined;
   style?: object;
   contentFit?: 'cover' | 'contain';
   onPress?: (url: string) => void;
+  /** Wait until it is nearly on screen. For long lists of bills. */
+  lazy?: boolean;
 }) {
   const [url, setUrl] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
+  const spot = useRef<View>(null);
+  const near = useNearTheScreen(spot, lazy);
 
   useEffect(() => {
+    if (!near) return;
     let alive = true;
     setUrl(null);
     setFailed(false);
@@ -192,17 +270,17 @@ export function BillImage({
     return () => {
       alive = false;
     };
-  }, [path]);
+  }, [path, near]);
 
   const body = url ? (
     <Image source={{ uri: url }} style={[styles.fill, style]} contentFit={contentFit} transition={180} />
   ) : (
-    <View style={[styles.placeholder, style]}>
+    <View ref={spot} style={[styles.placeholder, style]}>
       {failed ? (
         <Ionicons name="image-outline" size={22} color={colors.textFaint} />
-      ) : (
+      ) : near ? (
         <ActivityIndicator color={colors.textFaint} />
-      )}
+      ) : null}
     </View>
   );
 
