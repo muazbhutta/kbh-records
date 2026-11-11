@@ -160,6 +160,15 @@ function CheckRow({ row, onDone }: { row: ToCheckRow; onDone: (m: string) => voi
           onPress={() => change('labour')}
           style={styles.action}
         />
+        <Button
+          label="Transfer"
+          icon="swap-horizontal-outline"
+          size="sm"
+          variant={row.expense_type === 'bank_transfer' ? 'navy' : 'outline'}
+          loading={setType.isPending}
+          onPress={() => change('bank_transfer')}
+          style={styles.action}
+        />
       </View>
     </Card>
   );
@@ -183,6 +192,7 @@ const styles = StyleSheet.create({
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   title: { flex: 1 },
   tags: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  actions: { flexDirection: 'row', gap: 8 },
-  action: { flex: 1 },
+  // Four now, so they wrap rather than shrink to slivers on a phone.
+  actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  action: { flexGrow: 1, flexBasis: '44%' },
 });

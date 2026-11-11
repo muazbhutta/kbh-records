@@ -130,6 +130,15 @@ export function ExpenseTypeAdmin({ entry }: { entry: FeedEntry }) {
             loading={setType.isPending}
             onPress={() => change('labour')}
           />
+          <Button
+            label="Save as Bank Transfer"
+            icon="swap-horizontal-outline"
+            variant={entry.expense_type === 'bank_transfer' ? 'navy' : 'outline'}
+            size="lg"
+            full
+            loading={setType.isPending}
+            onPress={() => change('bank_transfer')}
+          />
           <View style={styles.note}>
             <Ionicons name="information-circle-outline" size={14} color={colors.textFaint} />
             <Txt variant="caption" color={colors.textFaint} style={styles.noteText}>

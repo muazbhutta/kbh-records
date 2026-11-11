@@ -16,6 +16,7 @@ const KINDS: { key: KindChoice; label: string }[] = [
   { key: 'petty', label: 'Petty' },
   { key: 'invoice', label: 'Invoice' },
   { key: 'labour', label: 'Labour' },
+  { key: 'bank_transfer', label: 'Transfer' },
 ];
 
 /**

@@ -18,12 +18,13 @@ import type { ReportRow } from '@/types';
  * right-to-left name sits correctly inside a left-to-right table.
  */
 
-export type ReportKind = 'petty' | 'invoice' | 'labour' | 'all';
+export type ReportKind = 'petty' | 'invoice' | 'labour' | 'bank_transfer' | 'all';
 
 export const REPORT_TITLE: Record<ReportKind, string> = {
   petty: 'Petty Expenses Report',
   invoice: 'Invoice Expenses Report',
   labour: 'Labour Report',
+  bank_transfer: 'Bank Transfer Report',
   all: 'All Expenses Report',
 };
 
@@ -532,7 +533,13 @@ export function reportFileName(
   categoryName?: string | null,
 ): string {
   const part = from && to ? `${from}_to_${to}` : from ? `from_${from}` : to ? `to_${to}` : 'all_time';
-  const name = { petty: 'Petty', invoice: 'Invoice', labour: 'Labour', all: 'All' }[kind];
+  const name = {
+    petty: 'Petty',
+    invoice: 'Invoice',
+    labour: 'Labour',
+    bank_transfer: 'Bank_Transfer',
+    all: 'All',
+  }[kind];
   // A file called "Fuel" next to one called "Material" tells its own story.
   const slice = categoryName
     ? `_${categoryName.replace(/[^\p{L}\p{N}]+/gu, '_').replace(/^_|_$/g, '')}`

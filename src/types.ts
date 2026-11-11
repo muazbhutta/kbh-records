@@ -380,11 +380,15 @@ export type StaleCheckPerson = {
 // ------------------------------------------- petty / invoice add-on
 
 /**
- * What the paper is. Labour is the honest third answer: a man paid for
- * his day, with a chit at best - not a petty cash bill and not a tax
- * invoice, and far too big an outgoing to be filed as either.
+ * What the paper is.
+ *
+ * Labour is the honest third answer: a man paid for his day, with a
+ * chit at best - not a petty cash bill and not a tax invoice, and far
+ * too big an outgoing to be filed as either. A bank transfer is the
+ * fourth: money that never passed through a hand, and comes back as a
+ * transaction receipt rather than a shop's bill.
  */
-export type ExpenseKind = 'petty' | 'invoice' | 'labour';
+export type ExpenseKind = 'petty' | 'invoice' | 'labour' | 'bank_transfer';
 
 export type TypeSource =
   | 'auto_qr'
@@ -418,6 +422,7 @@ export const EXPENSE_KIND_LABEL: Record<ExpenseKind, string> = {
   petty: 'Petty',
   invoice: 'Invoice',
   labour: 'Labour',
+  bank_transfer: 'Bank Transfer',
 };
 
 export const TYPE_SOURCE_LABEL: Record<TypeSource, string> = {
@@ -495,10 +500,12 @@ export type ReportTotals = {
   petty_total: number;
   invoice_total: number;
   labour_total: number;
+  transfer_total: number;
   entry_count: number;
   petty_count: number;
   invoice_count: number;
   labour_count: number;
+  transfer_count: number;
   photo_count: number;
 };
 

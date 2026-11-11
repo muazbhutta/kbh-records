@@ -254,6 +254,13 @@ function TicketCard({
             busy={busy}
             onPress={() => onClear('labour')}
           />
+          <TypeChoice
+            icon="swap-horizontal-outline"
+            label="Transfer"
+            tone={colors.blue}
+            busy={busy}
+            onPress={() => onClear('bank_transfer')}
+          />
         </View>
       ) : (
         <Pressable
@@ -517,9 +524,12 @@ const styles = StyleSheet.create({
   // Tall enough to read a figure off, not so tall the list stops being
   // a list when four of them come in at once.
   bill: { width: '100%', height: 190, borderRadius: radius.md },
-  typeRow: { flexDirection: 'row', gap: 8 },
+  // Four of them. On a phone they fall into two rows of two rather
+  // than four slivers too narrow to read or to hit.
+  typeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   choice: {
-    flex: 1,
+    flexGrow: 1,
+    flexBasis: '44%',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',

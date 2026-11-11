@@ -131,7 +131,10 @@ export default function ReportsScreen() {
     !t || !dashboard.data
       ? null
       : Math.abs(
-            Number(t.petty_total) + Number(t.invoice_total) + Number(t.labour_total) -
+            Number(t.petty_total) +
+              Number(t.invoice_total) +
+              Number(t.labour_total) +
+              Number(t.transfer_total) -
               Number(t.all_total),
           ) < 0.005;
   // The dashboard figure is the whole company's spending for the period.
@@ -239,7 +242,9 @@ export default function ReportsScreen() {
                 ? 'Invoices only'
                 : kind === 'labour'
                   ? 'Labour only'
-                  : 'Every kind of bill',
+                  : kind === 'bank_transfer'
+                    ? 'Bank transfers only'
+                    : 'Every kind of bill',
           ],
           total: Number(t?.all_total ?? 0),
         },
@@ -334,7 +339,9 @@ export default function ReportsScreen() {
         ? Number(t.invoice_total)
         : kind === 'labour'
           ? Number(t.labour_total)
-          : Number(t.all_total);
+          : kind === 'bank_transfer'
+            ? Number(t.transfer_total)
+            : Number(t.all_total);
   const shownCount = !t
     ? 0
     : kind === 'petty'
@@ -343,7 +350,9 @@ export default function ReportsScreen() {
         ? Number(t.invoice_count)
         : kind === 'labour'
           ? Number(t.labour_count)
-          : Number(t.entry_count);
+          : kind === 'bank_transfer'
+            ? Number(t.transfer_count)
+            : Number(t.entry_count);
 
   /** "Petty Report (PDF)", or "Fuel - Petty Report (PDF)" when narrowed. */
   const pdfLabel = (k: ReportKind) => {
@@ -351,6 +360,7 @@ export default function ReportsScreen() {
       petty: 'Petty Report',
       invoice: 'Invoice Report',
       labour: 'Labour Report',
+      bank_transfer: 'Bank Transfer Report',
       all: 'All Expenses Report',
     }[k];
     return categoryName ? `${categoryName} - ${name} (PDF)` : `${name} (PDF)`;
@@ -433,6 +443,7 @@ export default function ReportsScreen() {
               <DetailRow label="Petty" value={money(Number(t.petty_total))} />
               <DetailRow label="Invoice" value={money(Number(t.invoice_total))} />
               <DetailRow label="Labour" value={money(Number(t.labour_total))} />
+              <DetailRow label="Bank transfer" value={money(Number(t.transfer_total))} />
               <DetailRow
                 label="All expenses"
                 value={money(Number(t.all_total))}
@@ -446,14 +457,15 @@ export default function ReportsScreen() {
               <Banner
                 tone="error"
                 title="The totals do not agree"
-                message="Petty, Invoice and Labour do not add up to the total the app shows. No report will be made until this is sorted out."
+                message="The four kinds do not add up to the total the app shows. No report will be made until this is sorted out."
               />
             ) : (
               <View style={styles.checkRow}>
                 <Ionicons name="checkmark-circle" size={15} color={colors.green} />
                 <Txt variant="caption" color={colors.green}>
                   Petty {money(Number(t.petty_total))} + Invoice {money(Number(t.invoice_total))} +
-                  Labour {money(Number(t.labour_total))} = {money(Number(t.all_total))}
+                  Labour {money(Number(t.labour_total))} + Transfer{' '}
+                  {money(Number(t.transfer_total))} = {money(Number(t.all_total))}
                   {matchesApp ? ', and it matches the app' : ''}
                 </Txt>
               </View>
@@ -505,6 +517,18 @@ export default function ReportsScreen() {
             loading={busy === 'labour'}
             disabled={working && busy !== 'labour'}
             onPress={() => makePdf('labour')}
+          />
+        ) : null}
+        {kind === null || kind === 'bank_transfer' ? (
+          <Button
+            label={pdfLabel('bank_transfer')}
+            icon="swap-horizontal-outline"
+            variant="navy"
+            size="lg"
+            full
+            loading={busy === 'bank_transfer'}
+            disabled={working && busy !== 'bank_transfer'}
+            onPress={() => makePdf('bank_transfer')}
           />
         ) : null}
         {kind === null ? (
