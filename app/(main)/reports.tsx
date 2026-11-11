@@ -27,6 +27,7 @@ import { useDashboardSummary } from '@/api/dashboard';
 import { useCategories, usePeopleNames } from '@/api/entries';
 import { useExpensesToCheck } from '@/api/expenseType';
 import { useSuspectedDuplicates } from '@/api/duplicates';
+import { useProjectTotals } from '@/api/projects';
 import { useAuth } from '@/auth/AuthProvider';
 import { periodRange, type Period } from '@/components/KhataList';
 import { buildBillsZip, type ZipProgress } from '@/lib/billsZip';
@@ -85,6 +86,7 @@ export default function ReportsScreen() {
   const [personId, setPersonId] = useState<string | null>(null);
   const [categoryId, setCategoryId] = useState<CategoryChoice>(null);
   const [kind, setKind] = useState<KindChoice>(null);
+  const [projectId, setProjectId] = useState<string | null>(null);
 
   const [busy, setBusy] = useState<string | null>(null);
   const [progress, setProgress] = useState<ZipProgress | null>(null);
@@ -98,8 +100,13 @@ export default function ReportsScreen() {
           ? { from: customFrom, to: customTo }
           : { from: customTo, to: customFrom }
         : periodRange(period);
-    return { ...range, personId, categoryId };
-  }, [period, customFrom, customTo, personId, categoryId]);
+    return { ...range, personId, categoryId, projectId };
+  }, [period, customFrom, customTo, personId, categoryId, projectId]);
+
+  // The Projects screen's own figures for the same stretch of time.
+  // The project report is checked against these before it is made, so
+  // two different queries have to agree about the money.
+  const projectTotals = useProjectTotals({ from: filter.from, to: filter.to });
 
   const { data: people = [] } = usePeopleNames();
   const { data: categories = [] } = useCategories(true);
@@ -124,6 +131,9 @@ export default function ReportsScreen() {
   const categoryName = categoryId
     ? (categories.find((c) => c.id === categoryId)?.name ?? null)
     : null;
+  const projectName = projectId
+    ? (projectTotals.data?.find((pr) => pr.project_id === projectId)?.name ?? null)
+    : null;
 
   // The sums the report would print, against the app's own figure for
   // the same filter. They must agree before anything is made.
@@ -141,7 +151,7 @@ export default function ReportsScreen() {
   // It can only be compared against a report of the whole company, so one
   // person or one category means there is nothing to compare it with.
   const matchesApp =
-    !t || !dashboard.data || personId || categoryId
+    !t || !dashboard.data || personId || categoryId || projectId
       ? null
       : Math.abs(Number(t.all_total) - Number(dashboard.data.expenses)) < 0.005;
 
@@ -156,16 +166,30 @@ export default function ReportsScreen() {
 
     setBusy(kind);
     try {
-      const expenseKind: ExpenseKind | undefined = kind === 'all' ? undefined : kind;
+      const expenseKind: ExpenseKind | undefined =
+        kind === 'all' || kind === 'project' ? undefined : kind;
       const rows = await fetchReportRows(filter, expenseKind);
 
-      const printed = rows.reduce((sum, r) => sum + Number(r.amount), 0);
+      // A project report is about what was spent on the sites, so the
+      // expenses filed against none are left out - that is what the
+      // office asked for, and the report says so on its face.
+      const wanted = kind === 'project' ? rows.filter((r) => r.project_id) : rows;
+
+      const printed = wanted.reduce((sum, r) => sum + Number(r.amount), 0);
       const expected =
         kind === 'petty'
           ? Number(t?.petty_total ?? 0)
           : kind === 'invoice'
             ? Number(t?.invoice_total ?? 0)
-            : Number(t?.all_total ?? 0);
+            : kind === 'labour'
+              ? Number(t?.labour_total ?? 0)
+              : kind === 'bank_transfer'
+                ? Number(t?.transfer_total ?? 0)
+                : kind === 'project'
+                  ? // Counted a second way, by the Projects screen's own
+                    // query, so the two have to agree before it is made.
+                    (projectTotals.data ?? []).reduce((sum, pr) => sum + Number(pr.spent), 0)
+                  : Number(t?.all_total ?? 0);
 
       if (Math.abs(printed - expected) >= 0.005) {
         setError(
@@ -176,12 +200,13 @@ export default function ReportsScreen() {
         return;
       }
 
-      const html = buildReportHtml(rows, {
+      const html = buildReportHtml(wanted, {
         kind,
         from: filter.from,
         to: filter.to,
         personName,
         categoryName,
+        projectName,
         generatedBy: me?.full_name ?? 'Admin',
       });
 
@@ -192,7 +217,7 @@ export default function ReportsScreen() {
       await logDownload.mutateAsync({
         kind: `pdf_${kind}`,
         filter,
-        rows: rows.length,
+        rows: wanted.length,
         total: printed,
       });
       setNotice({
@@ -362,6 +387,7 @@ export default function ReportsScreen() {
       labour: 'Labour Report',
       bank_transfer: 'Bank Transfer Report',
       all: 'All Expenses Report',
+      project: 'Project Report',
     }[k];
     return categoryName ? `${categoryName} - ${name} (PDF)` : `${name} (PDF)`;
   };
@@ -401,6 +427,35 @@ export default function ReportsScreen() {
           <DateField label="To" value={customTo} onChange={setCustomTo} />
         </Card>
       ) : null}
+
+      {/*
+        Which site. "All sites" means every one of them, and the
+        expenses filed against none - the same as not asking.
+
+        The list comes from the Projects screen's own figures rather
+        than the open-projects list, so a site that has been finished
+        can still be reported on. A finished job is the one somebody is
+        most likely to want the bills for.
+      */}
+      <Card style={styles.personCard}>
+        <PersonField
+          label="Project"
+          value={projectId}
+          people={[
+            { id: '', full_name: 'All sites', is_active: true, is_owner: false, is_head: false, head_id: null },
+            ...(projectTotals.data ?? []).map((pr) => ({
+              id: pr.project_id,
+              full_name: pr.is_active ? pr.name : `${pr.name} (finished)`,
+              is_active: true,
+              is_owner: false,
+              is_head: false,
+              head_id: null,
+            })),
+          ]}
+          onChange={(id) => setProjectId(id === '' ? null : id)}
+          placeholder="All sites"
+        />
+      </Card>
 
       <Card style={styles.personCard}>
         <PersonField
@@ -529,6 +584,18 @@ export default function ReportsScreen() {
             loading={busy === 'bank_transfer'}
             disabled={working && busy !== 'bank_transfer'}
             onPress={() => makePdf('bank_transfer')}
+          />
+        ) : null}
+        {kind === null ? (
+          <Button
+            label={pdfLabel('project')}
+            icon="business-outline"
+            variant="outline"
+            size="lg"
+            full
+            loading={busy === 'project'}
+            disabled={working && busy !== 'project'}
+            onPress={() => makePdf('project')}
           />
         ) : null}
         {kind === null ? (

@@ -18,7 +18,7 @@ import type { ReportRow } from '@/types';
  * right-to-left name sits correctly inside a left-to-right table.
  */
 
-export type ReportKind = 'petty' | 'invoice' | 'labour' | 'bank_transfer' | 'all';
+export type ReportKind = 'petty' | 'invoice' | 'labour' | 'bank_transfer' | 'all' | 'project';
 
 export const REPORT_TITLE: Record<ReportKind, string> = {
   petty: 'Petty Expenses Report',
@@ -26,6 +26,7 @@ export const REPORT_TITLE: Record<ReportKind, string> = {
   labour: 'Labour Report',
   bank_transfer: 'Bank Transfer Report',
   all: 'All Expenses Report',
+  project: 'Project Report',
 };
 
 export type ReportMeta = {
@@ -35,6 +36,8 @@ export type ReportMeta = {
   personName: string | null;
   /** Which category the report was narrowed to, or null for all. */
   categoryName?: string | null;
+  /** Which site the report was narrowed to, or null for all of them. */
+  projectName?: string | null;
   generatedBy: string;
   logoDataUri?: string | null;
 };
@@ -77,17 +80,20 @@ function periodText(from?: string, to?: string): string {
 /** The three or four figures that sit across the top of the sheet. */
 function summaryTiles(rows: ReportRow[], kind: ReportKind, total: number): string {
   const photos = rows.reduce((s, r) => s + Number(r.photo_count ?? 0), 0);
-  const petty = rows
-    .filter((r) => r.expense_type !== 'invoice')
-    .reduce((s, r) => s + Number(r.amount), 0);
-  const invoice = total - petty;
+  // Each kind counted by name. This used to read "everything that is
+  // not an invoice is petty", which was true when there were two kinds
+  // and quietly filed labour and bank transfers under Petty once there
+  // were four.
+  const of = (k: string) =>
+    rows.filter((r) => r.expense_type === k).reduce((s, r) => s + Number(r.amount), 0);
 
   const tiles =
     kind === 'all'
       ? [
-          { label: 'Expenses', value: String(rows.length), tone: '' },
-          { label: 'Petty', value: amountOnly(petty), tone: 'petty' },
-          { label: 'Invoice', value: amountOnly(invoice), tone: 'invoice' },
+          { label: 'Petty', value: amountOnly(of('petty')), tone: 'petty' },
+          { label: 'Invoice', value: amountOnly(of('invoice')), tone: 'invoice' },
+          { label: 'Labour', value: amountOnly(of('labour')), tone: '' },
+          { label: 'Transfer', value: amountOnly(of('bank_transfer')), tone: '' },
           { label: 'Total (SAR)', value: amountOnly(total), tone: 'total' },
         ]
       : [
@@ -111,7 +117,10 @@ export function buildReportHtml(rows: ReportRow[], meta: ReportMeta): string {
 
   const byCategory = new Map<string, { total: number; count: number }>();
   for (const row of rows) {
-    const key = row.category_name ?? 'Uncategorised';
+    const key =
+      meta.kind === 'project'
+        ? (row.project_name ?? 'No project')
+        : (row.category_name ?? 'Uncategorised');
     const current = byCategory.get(key) ?? { total: 0, count: 0 };
     current.total += Number(row.amount);
     current.count += 1;
@@ -361,6 +370,7 @@ export function buildReportHtml(rows: ReportRow[], meta: ReportMeta): string {
   <div class="facts">
     <span>Person: <b class="bidi">${escape(meta.personName ?? 'All people')}</b></span>
     <span>Category: <b class="bidi">${escape(meta.categoryName ?? 'All categories')}</b></span>
+    <span>Project: <b class="bidi">${escape(meta.projectName ?? 'All sites')}</b></span>
     <span>Prepared by: <b class="bidi">${escape(meta.generatedBy)}</b></span>
     <span>Generated: <b>${escape(formatDateTime(new Date()))}</b></span>
   </div>
@@ -392,7 +402,7 @@ export function buildReportHtml(rows: ReportRow[], meta: ReportMeta): string {
     ${
       categories.length > 0
         ? `<div class="cats">
-      <h2>By category</h2>
+      <h2>${meta.kind === 'project' ? 'By site' : 'By category'}</h2>
       <table>
         <colgroup><col style="width:52%" /><col style="width:20%" /><col style="width:28%" /></colgroup>
         <thead><tr><th>Category</th><th class="num">Entries</th><th class="num">Total</th></tr></thead>
@@ -539,6 +549,7 @@ export function reportFileName(
     labour: 'Labour',
     bank_transfer: 'Bank_Transfer',
     all: 'All',
+    project: 'Projects',
   }[kind];
   // A file called "Fuel" next to one called "Material" tells its own story.
   const slice = categoryName

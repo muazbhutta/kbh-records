@@ -3317,6 +3317,7 @@ export type Database = {
           p_from?: string
           p_kind?: Database["public"]["Enums"]["expense_kind"]
           p_person_id?: string
+          p_project_id?: string
           p_to?: string
         }
         Returns: {
@@ -3332,6 +3333,8 @@ export type Database = {
           person_id: string
           person_name: string
           photo_count: number
+          project_id: string
+          project_name: string
           qr_seller_name: string
           system_id: string
           type_source: Database["public"]["Enums"]["type_source"]
@@ -3343,6 +3346,7 @@ export type Database = {
           p_category_id?: string
           p_from?: string
           p_person_id?: string
+          p_project_id?: string
           p_to?: string
         }
         Returns: Json
@@ -3540,6 +3544,7 @@ export type Database = {
           p_from?: string
           p_kind?: Database["public"]["Enums"]["expense_kind"]
           p_person_id?: string
+          p_project_id?: string
           p_to?: string
         }
         Returns: {

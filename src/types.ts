@@ -493,6 +493,9 @@ export type ReportRow = {
   vat_number: string | null;
   qr_seller_name: string | null;
   photo_count: number;
+  /** The site it was spent on. Null for an expense filed against none. */
+  project_id: string | null;
+  project_name: string | null;
 };
 
 export type ReportTotals = {

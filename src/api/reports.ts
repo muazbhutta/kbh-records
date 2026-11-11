@@ -17,6 +17,8 @@ export type ReportFilter = {
   personId?: string | null;
   /** Null means every category. */
   categoryId?: string | null;
+  /** Null means every site, and the expenses filed against none. */
+  projectId?: string | null;
 };
 
 const args = (f: ReportFilter) => ({
@@ -24,6 +26,7 @@ const args = (f: ReportFilter) => ({
   p_to: f.to ?? undefined,
   p_person_id: f.personId ?? undefined,
   p_category_id: f.categoryId ?? undefined,
+  p_project_id: f.projectId ?? undefined,
 });
 
 /** The figures shown on the Reports screen before anything is made. */
