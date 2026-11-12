@@ -177,7 +177,7 @@ export function useRecordSalary() {
       personId: string;
       month: string;
       amount: number;
-      kind: 'salary' | 'advance' | 'kafalat';
+      kind: 'salary' | 'advance' | 'kafalat' | 'owing';
       paidOn?: string;
       method?: 'cash' | 'transfer';
       note?: string;

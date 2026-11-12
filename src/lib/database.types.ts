@@ -3811,6 +3811,7 @@ export type Database = {
           on_leave: boolean
           on_leave_since: string
           on_payroll: boolean
+          owing_added: number
           pay_kind: string
           payments: number
           person_id: string

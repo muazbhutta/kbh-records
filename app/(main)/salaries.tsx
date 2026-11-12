@@ -53,7 +53,7 @@ export default function SalariesScreen() {
   const { canPayroll, person: me } = useAuth();
   const [month, setMonth] = useState(monthKey());
   const [sheet, setSheet] = useState<
-    | { kind: 'pay' | 'advance' | 'kafalat'; line: SalaryLine }
+    | { kind: 'pay'; line: SalaryLine }
     | { kind: 'leave'; line: SalaryLine }
     | { kind: 'edit'; line: SalaryLine }
     | { kind: 'remove'; line: SalaryLine }
@@ -454,9 +454,7 @@ export default function SalariesScreen() {
               handed={handedTo.get(line.person_id)}
               onUnpay={(payment) => setSheet({ kind: 'unpay', payment })}
               onPay={() => setSheet({ kind: 'pay', line })}
-              onAdvance={() => setSheet({ kind: 'advance', line })}
               onEdit={() => setSheet({ kind: 'edit', line })}
-              onKafalat={() => setSheet({ kind: 'kafalat', line })}
               onLeave={() => setSheet({ kind: 'leave', line })}
               onSlip={() => makeSlips([line], line.person_id, line.full_name)}
               busy={making === line.person_id}
@@ -496,11 +494,11 @@ export default function SalariesScreen() {
       ) : null}
 
       {/* ------------------------------------------------- the sheets */}
-      {sheet?.kind === 'pay' || sheet?.kind === 'advance' || sheet?.kind === 'kafalat' ? (
+      {sheet?.kind === 'pay' ? (
         <PaySheet
           line={sheet.line}
           month={month}
-          kind={sheet.kind === 'pay' ? 'salary' : sheet.kind}
+          kind="salary"
           onClose={() => setSheet(null)}
         />
       ) : null}
@@ -593,9 +591,7 @@ function SalaryCard({
   onUnpay,
   past = false,
   onPay,
-  onAdvance,
   onEdit,
-  onKafalat,
   onLeave,
   onSlip,
   busy = false,
@@ -607,10 +603,7 @@ function SalaryCard({
   onUnpay?: (payment: SalaryPayment) => void;
   past?: boolean;
   onPay?: () => void;
-  onAdvance?: () => void;
   onEdit?: () => void;
-  /** The company's own money, laid out for a man who is away. */
-  onKafalat?: () => void;
   /** Going home, or coming back. */
   onLeave?: () => void;
   /** His own month on his own page, for when one man asks for his. */
@@ -645,10 +638,6 @@ function SalaryCard({
               {line.full_name}
             </Txt>
             {done ? <Badge label="Paid" tone="green" style={styles.badgeMid} /> : null}
-            {line.on_leave_since ? (
-              <Badge label="On leave" tone="amber" style={styles.badgeMid} />
-            ) : null}
-            {owesBack ? <Badge label="Took extra" tone="red" style={styles.badgeMid} /> : null}
             {past ? <Badge label="Off salary" tone="grey" style={styles.badgeMid} /> : null}
           </View>
           <Txt variant="caption" color={colors.textMuted} numberOfLines={2}>
@@ -731,13 +720,13 @@ function SalaryCard({
           onPress={onLeave}
           disabled={!onLeave}
           accessibilityRole="button"
-          accessibilityLabel={`${line.full_name} is on leave. Mark him back.`}
+          accessibilityLabel={`${line.full_name} is off salary. Mark him back.`}
           style={({ pressed }) => [styles.away, pressed && onLeave && styles.awayPressed]}
         >
           <Ionicons name="home" size={15} color={colors.amberDark} />
           <View style={styles.flex}>
             <Txt variant="caption" weight="bold" color={colors.amberDark} numberOfLines={1}>
-              On leave since {formatDate(line.on_leave_since)}
+              Off salary since {formatDate(line.on_leave_since)}
             </Txt>
             <Txt variant="caption" color={colors.amberDark} numberOfLines={1}>
               Earning nothing. Tap when he is back.
@@ -771,6 +760,18 @@ function SalaryCard({
             {carried > 0
               ? `${money(carried)} brought from before`
               : `${money(Math.abs(carried))} taken extra before`}
+          </Txt>
+        </View>
+      ) : null}
+
+      {Number(line.owing_added) > 0 ? (
+        <View style={styles.daysRow}>
+          <Ionicons name="alert-circle" size={14} color={colors.red} />
+          <Txt variant="caption" weight="semibold" color={colors.red} numberOfLines={1}>
+            {money(Number(line.owing_added))} owed
+          </Txt>
+          <Txt variant="caption" color={colors.textFaint} numberOfLines={1}>
+            · written down this month
           </Txt>
         </View>
       ) : null}
@@ -905,26 +906,42 @@ function SalaryCard({
 
       {!past ? (
         <View style={[styles.actions, wide && styles.actionsWide]}>
-          <Small icon="cash-outline" label="Pay" tone={colors.green} onPress={onPay} />
-          <Small icon="time-outline" label="Advance" tone={colors.amberDark} onPress={onAdvance} />
+          {/*
+            One button for money, not three.
+            
+            Salary, advance, kafalat and what he owes are four kinds of
+            the same entry, and the kind is asked inside the sheet where
+            the amount is typed anyway. Three of them side by side on
+            every card made seven buttons on a man.
+          */}
           <Small
-            icon="shield-outline"
-            label="Kafalat"
-            tone={colors.amberDark}
-            onPress={onKafalat}
+            icon="cash-outline"
+            label="Money"
+            tone={colors.green}
+            onPress={onPay}
+            third={daily}
           />
           <Small
             icon="document-text-outline"
             label={busy ? 'Making…' : 'Slip'}
             onPress={onSlip}
+            third={daily}
           />
-          <Small
-            icon={line.on_leave_since ? 'home' : 'home-outline'}
-            label={line.on_leave_since ? 'Back' : 'Leave'}
-            tone={line.on_leave_since ? colors.amberDark : colors.navy}
-            onPress={onLeave}
-          />
-          <Small icon="create-outline" label="Edit" onPress={onEdit} />
+          {/*
+            Off salary - which is what the office calls a man who has
+            gone home. Only the monthly staff: a daily man is paid for
+            the days he turns up and simply stops turning up, so there
+            is nothing to stop and nothing to say.
+          */}
+          {!daily ? (
+            <Small
+              icon={line.on_leave_since ? 'home' : 'home-outline'}
+              label={line.on_leave_since ? 'Back' : 'Off salary'}
+              tone={line.on_leave_since ? colors.amberDark : colors.navy}
+              onPress={onLeave}
+            />
+          ) : null}
+          <Small icon="create-outline" label="Edit" onPress={onEdit} third={daily} />
         </View>
       ) : null}
     </View>
@@ -936,17 +953,31 @@ function Small({
   label,
   tone = colors.navy,
   onPress,
+  third = false,
 }: {
   icon: keyof typeof Ionicons.glyphMap;
   label: string;
   tone?: string;
   onPress?: () => void;
+  /**
+   * Three to a row rather than two.
+   *
+   * A daily man has three of these and a monthly one four. At a third
+   * each the three fill their row; at a half each the four make two
+   * even rows. Either way nothing is left stranded across the bottom
+   * of the card on its own.
+   */
+  third?: boolean;
 }) {
   return (
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
-      style={({ pressed }) => [styles.small, pressed && styles.smallPressed]}
+      style={({ pressed }) => [
+        styles.small,
+        third && styles.smallThird,
+        pressed && styles.smallPressed,
+      ]}
     >
       <Ionicons name={icon} size={15} color={tone} />
       <Txt variant="caption" weight="semibold" color={tone}>
@@ -1087,7 +1118,7 @@ const styles = StyleSheet.create({
   actionsWide: { flexWrap: 'nowrap' },
   small: {
     flexGrow: 1,
-    flexBasis: '30%',
+    flexBasis: '44%',
     minWidth: 0,
     flexDirection: 'row',
     alignItems: 'center',
@@ -1100,6 +1131,7 @@ const styles = StyleSheet.create({
     borderColor: colors.line,
     backgroundColor: colors.card,
   },
+  smallThird: { flexBasis: '30%' },
   smallPressed: { backgroundColor: colors.navyTint },
 
   addTile: {

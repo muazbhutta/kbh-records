@@ -95,6 +95,7 @@ function statement(slip: SalarySlip, month: string): string {
   const paid = Number(line.salary_paid);
   const carried = Number(line.carried_in);
   const kafalat = Number(line.kafalat_paid);
+  const owing = Number(line.owing_added);
   const left = Number(line.remaining);
 
   const rows: { label: string; note: string; value: number; tone?: string }[] = [];
@@ -117,7 +118,7 @@ function statement(slip: SalarySlip, month: string): string {
           }
         : {
             label: 'Pichhle mahine zyada liya',
-            note: 'Us mahine kamai se itna zyada liya tha - is mahine kat raha hai',
+            note: 'Us mahine kamai se zyada liya tha - ab kat raha hai',
             value: carried,
             tone: 'owes',
           },
@@ -189,7 +190,7 @@ function statement(slip: SalarySlip, month: string): string {
       </tr>
       <tr class="less">
         <td class="s-l">Advance liya<span class="s-n">${
-          advance > 0 ? 'Tankhwah se pehle liya - upar har din ke samne likha hai' : 'Kuch nahi liya'
+          advance > 0 ? 'Tankhwah se pehle liya - upar din ke samne hai' : 'Kuch nahi liya'
         }</span></td>
         <td class="num">&minus;&thinsp;${escape(amountOnly(advance))}</td>
       </tr>
@@ -202,8 +203,16 @@ function statement(slip: SalarySlip, month: string): string {
         kafalat > 0
           ? `
       <tr class="less kaf">
-        <td class="s-l">Kafalat<span class="s-n">Company ne aap ki taraf se di - ye paisa aap ko nahi mila, magar dena hai</span></td>
+        <td class="s-l">Kafalat<span class="s-n">Company ne di - aap ko nahi mili, magar dena hai</span></td>
         <td class="num">&minus;&thinsp;${escape(amountOnly(kafalat))}</td>
+      </tr>`
+          : ''
+      }${
+        owing > 0
+          ? `
+      <tr class="less owes">
+        <td class="s-l">Pehle ka hisaab<span class="s-n">Jo pehle se dena tha</span></td>
+        <td class="num">&minus;&thinsp;${escape(amountOnly(owing))}</td>
       </tr>`
           : ''
       }
@@ -288,14 +297,18 @@ function slipPage(slip: SalarySlip, meta: SalarySlipMeta): string {
             ? 'Advance'
             : pay.kind === 'kafalat'
               ? 'Kafalat'
-              : 'Tankhwah'
+              : pay.kind === 'owing'
+                ? 'Pehle ka hisaab'
+                : 'Tankhwah'
         } ${escape(amountOnly(Number(pay.amount)))}</span><span class="why bidi">${escape(
           pay.note ||
             (pay.kind === 'advance'
               ? 'Wajah nahi likhi'
               : pay.kind === 'kafalat'
                 ? 'Company ne aap ki taraf se di'
-                : 'Mahine ki tankhwah'),
+                : pay.kind === 'owing'
+                  ? 'Pehle se jo dena tha'
+                  : 'Mahine ki tankhwah'),
         )}${pay.entered_by_name ? ` &middot; likha: ${escape(pay.entered_by_name)}` : ''}</span></div>`,
       )
       .join('');
@@ -568,7 +581,7 @@ export function buildSalarySlipsHtml(slips: SalarySlip[], meta: SalarySlipMeta):
   /* The reason sits under the amount, on the day's own line. */
   .took-c { padding-right: 4px; }
   .took-l + .took-l { margin-top: 2px; }
-  .reg .why { display: block; color: #5B6B7F; font-size: 8.7px; line-height: 1.3; margin-top: 0.5px; }
+  .reg .why { display: block; color: #5B6B7F; font-size: 8.7px; line-height: 1.2; margin-top: 0.5px; }
 
   .m { font-size: 9px; font-weight: 700; letter-spacing: 0.2px; }
   .m.in { color: #157347; }
@@ -594,7 +607,8 @@ export function buildSalarySlipsHtml(slips: SalarySlip[], meta: SalarySlipMeta):
     font-variant-numeric: tabular-nums;
   }
   .took.advance { background: #FFF5DF; color: #A8730B; }
-  .took.kafalat { background: #EFEAF8; color: #5B3FA8; }
+  .took.kafalat { background: #E6F1F7; color: #0B6493; }
+  .took.owing { background: #FDEEEC; color: #B3261E; }
   .took.salary { background: #E7F6EE; color: #157347; }
 
   .empty {

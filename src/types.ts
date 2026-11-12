@@ -744,7 +744,12 @@ export type SalaryLine = {
   on_leave: boolean;
   /** The day he went, when he is away now. */
   on_leave_since: string | null;
+  /** Money he already owed, written down by hand against this month. */
+  owing_added: number;
 };
+
+/** The four things an entry against a man's month can be. */
+export type PayKindChoice = 'salary' | 'advance' | 'kafalat' | 'owing';
 
 /** One man on one day, and whether he turned up. */
 export type AttendanceRow = {
@@ -809,7 +814,7 @@ export type SalaryPayment = {
    * salary: wages handed over. advance: cash drawn early. kafalat: the
    * company paid his sponsorship, and he owes it back.
    */
-  kind: 'salary' | 'advance' | 'kafalat';
+  kind: 'salary' | 'advance' | 'kafalat' | 'owing';
   paid_on: string;
   method: PayMethod;
   note: string | null;
