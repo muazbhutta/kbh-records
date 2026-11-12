@@ -1,7 +1,7 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
 import React, { useMemo, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Platform, Pressable, StyleSheet, View } from 'react-native';
 
 import { Avatar, Badge, Banner, EmptyState, Loading, SectionTitle } from '@/components/Bits';
 import { ShareBar } from '@/components/Breakdown';
@@ -17,12 +17,16 @@ import { Txt } from '@/components/Txt';
 import {
   monthKey,
   useAttendanceDayTotal,
+  useAttendanceSheet,
   useSalaryMonth,
   useSalaryMonthTotal,
   useSalaryPayments,
 } from '@/api/salaries';
+import { useLogDownload } from '@/api/reports';
 import { useAuth } from '@/auth/AuthProvider';
 import { formatDate, money, monthName, shiftMonth, todayInRiyadh } from '@/lib/format';
+import { makeAndSharePdf } from '@/lib/reportPdf';
+import { buildSalarySlipsHtml, salarySlipFileName, slipFor } from '@/lib/salarySlipPdf';
 import { colors, radius, shadow } from '@/theme';
 import type { SalaryLine, SalaryPayment } from '@/types';
 
@@ -45,7 +49,7 @@ import type { SalaryLine, SalaryPayment } from '@/types';
  * does.
  */
 export default function SalariesScreen() {
-  const { canPayroll } = useAuth();
+  const { canPayroll, person: me } = useAuth();
   const [month, setMonth] = useState(monthKey());
   const [sheet, setSheet] = useState<
     | { kind: 'pay' | 'advance'; line: SalaryLine }
@@ -58,6 +62,11 @@ export default function SalariesScreen() {
 
   const router = useRouter();
   const lines = useSalaryMonth(month, canPayroll);
+  const register = useAttendanceSheet(month, canPayroll);
+  const logDownload = useLogDownload();
+  const [making, setMaking] = useState<string | null>(null);
+  const [made, setMade] = useState<string | null>(null);
+  const [failed, setFailed] = useState<string | null>(null);
   const attendance = useAttendanceDayTotal(todayInRiyadh(), canPayroll);
   const total = useSalaryMonthTotal(month, canPayroll);
   const payments = useSalaryPayments(month, canPayroll);
@@ -107,6 +116,88 @@ export default function SalariesScreen() {
   }, [payments.data]);
 
 
+  // Moving to another month puts away whatever the last one said. A
+  // notice reading "3 slips for October are ready" over November's
+  // figures is a notice about the wrong month.
+  const goMonth = (m: string) => {
+    setMonth(m);
+    setMade(null);
+    setFailed(null);
+  };
+
+  // Whose month is on the screen, in the order it is read. What is shown
+  // is what gets downloaded, so the button can never quietly include a
+  // man the segmented control is hiding.
+  const shown = useMemo(() => [...onPayroll, ...alsoPaid], [onPayroll, alsoPaid]);
+
+  /**
+   * The month's slips: one page a man, each starting a new sheet so the
+   * office can tear them apart and hand them out.
+   *
+   * The figures are the screen's own - the same salary_month rows the
+   * cards above are drawn from - so a sheet can never disagree with the
+   * card it was made from. The register and the payments are cut per man
+   * here rather than fetched per man, which would be thirty trips to the
+   * database for thirty men.
+   *
+   * Nothing is made while either is still coming. A slip built from an
+   * empty register would look finished and say a man worked no days,
+   * which is the one mistake a wage sheet must not make.
+   */
+  const makeSlips = async (who: SalaryLine[], what: string, oneName: string | null) => {
+    if (who.length === 0 || making) return;
+    setMade(null);
+    setFailed(null);
+
+    if (register.isLoading || payments.isLoading) {
+      setFailed('The month is still loading. Try again in a moment.');
+      return;
+    }
+    if (register.error || payments.error) {
+      setFailed((register.error ?? payments.error)?.message ?? 'The month could not be read.');
+      return;
+    }
+
+    setMaking(what);
+    try {
+      const days = register.data ?? [];
+      const paid = payments.data ?? [];
+      const slips = who.map((line) => slipFor(line, days, paid));
+
+      const html = buildSalarySlipsHtml(slips, {
+        month,
+        generatedBy: me?.full_name ?? 'Admin',
+      });
+      await makeAndSharePdf(html, salarySlipFileName(month, oneName));
+
+      const earned = who.reduce((sum, l) => sum + Number(l.earned), 0);
+      await logDownload.mutateAsync({
+        kind: 'pdf_salary_slips',
+        filter: { from: month, to: lastOfMonth(month) },
+        rows: who.length,
+        total: earned,
+        note: oneName
+          ? `Salary slip: ${oneName}, ${monthName(month)}`
+          : `${who.length} salary slips, ${monthName(month)}`,
+      });
+
+      const what_ = oneName
+        ? `${oneName}'s slip for ${monthName(month)} is ready.`
+        : `${who.length} ${who.length === 1 ? 'slip' : 'slips'} for ${monthName(month)}, one page each.`;
+      setMade(
+        `${what_} ${
+          Platform.OS === 'web'
+            ? 'Choose "Save as PDF" in the window that just opened.'
+            : 'Saved to this phone - pick where to send it.'
+        }`,
+      );
+    } catch (e) {
+      setFailed((e as Error).message);
+    } finally {
+      setMaking(null);
+    }
+  };
+
   if (!canPayroll) {
     return (
       <Screen>
@@ -126,7 +217,7 @@ export default function SalariesScreen() {
       {/* ------------------------------------------------ the month */}
       <View style={styles.monthRow}>
         <Pressable
-          onPress={() => setMonth(shiftMonth(month, -1))}
+          onPress={() => goMonth(shiftMonth(month, -1))}
           accessibilityRole="button"
           accessibilityLabel="The month before"
           style={({ pressed }) => [styles.arrow, pressed && styles.arrowPressed]}
@@ -139,7 +230,7 @@ export default function SalariesScreen() {
             {monthName(month)}
           </Txt>
           {month !== thisMonth ? (
-            <Pressable onPress={() => setMonth(thisMonth)} accessibilityRole="button">
+            <Pressable onPress={() => goMonth(thisMonth)} accessibilityRole="button">
               <Txt variant="caption" weight="semibold" color={colors.blue}>
                 Back to this month
               </Txt>
@@ -152,7 +243,7 @@ export default function SalariesScreen() {
         </View>
 
         <Pressable
-          onPress={() => setMonth(shiftMonth(month, 1))}
+          onPress={() => goMonth(shiftMonth(month, 1))}
           disabled={month >= thisMonth}
           accessibilityRole="button"
           accessibilityLabel="The month after"
@@ -263,6 +354,53 @@ export default function SalariesScreen() {
         />
       </View>
 
+      {/*
+        The month's slips, under the track that decides who is in them.
+        Put here on purpose: what is shown is what is downloaded, and the
+        two sit together so that is plain without reading a word.
+      */}
+      {shown.length > 0 ? (
+        <Pressable
+          onPress={() => makeSlips(shown, 'everyone', null)}
+          disabled={!!making}
+          accessibilityRole="button"
+          accessibilityLabel={`Download ${shown.length} salary slips for ${monthName(month)}`}
+          style={({ pressed }) => [
+            styles.slipRow,
+            pressed && !making && styles.slipPressed,
+            !!making && styles.slipBusy,
+          ]}
+        >
+          <View style={styles.slipIcon}>
+            <Ionicons name="document-text-outline" size={18} color={colors.navy} />
+          </View>
+          <View style={styles.flex}>
+            <Txt variant="subtitle" weight="semibold" color={colors.navy} numberOfLines={1}>
+              {making === 'everyone' ? 'Making the slips…' : 'Download salary slips'}
+            </Txt>
+            <Txt variant="caption" color={colors.textMuted} numberOfLines={2}>
+              {show === 'all'
+                ? 'Everyone shown'
+                : show === 'daily'
+                  ? 'The Dehaari shown'
+                  : 'The employees shown'}
+              {' · '}
+              {shown.length} {shown.length === 1 ? 'page' : 'pages'}, one each
+              {' · '}
+              {monthName(month)}
+            </Txt>
+          </View>
+          {making === 'everyone' ? (
+            <ActivityIndicator size="small" color={colors.navy} />
+          ) : (
+            <Ionicons name="download-outline" size={19} color={colors.navy} />
+          )}
+        </Pressable>
+      ) : null}
+
+      {made ? <Banner tone="success" message={made} /> : null}
+      {failed ? <Banner tone="error" message={failed} /> : null}
+
       {lines.isLoading ? (
         <Loading />
       ) : lines.error ? (
@@ -303,6 +441,8 @@ export default function SalariesScreen() {
               onAdvance={() => setSheet({ kind: 'advance', line })}
               onEdit={() => setSheet({ kind: 'edit', line })}
               onRemove={() => setSheet({ kind: 'remove', line })}
+              onSlip={() => makeSlips([line], line.person_id, line.full_name)}
+              busy={making === line.person_id}
             />
           ))}
         </View>
@@ -363,6 +503,19 @@ export default function SalariesScreen() {
   );
 }
 
+/**
+ * The last day of a month.
+ *
+ * Built in UTC on purpose: day 0 of the month after is the last day of
+ * this one, and reading it back in local time would slide it a day
+ * either side of midnight depending on where the phone is standing.
+ */
+function lastOfMonth(month: string): string {
+  const [y, m] = month.split('-').map(Number);
+  const at = new Date(Date.UTC(y, m, 0));
+  return at.toISOString().slice(0, 10);
+}
+
 /** One segment of the track: a list to show, and how many are in it. */
 function KindTab({
   label,
@@ -419,6 +572,8 @@ function SalaryCard({
   onAdvance,
   onEdit,
   onRemove,
+  onSlip,
+  busy = false,
 }: {
   line: SalaryLine;
   wide: boolean;
@@ -430,6 +585,9 @@ function SalaryCard({
   onAdvance?: () => void;
   onEdit?: () => void;
   onRemove?: () => void;
+  /** His own month on his own page, for when one man asks for his. */
+  onSlip?: () => void;
+  busy?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const rows = given ?? [];
@@ -627,8 +785,13 @@ function SalaryCard({
 
       {!past ? (
         <View style={[styles.actions, wide && styles.actionsWide]}>
-          <Small icon="cash-outline" label="Pay salary" tone={colors.green} onPress={onPay} />
+          <Small icon="cash-outline" label="Pay" tone={colors.green} onPress={onPay} />
           <Small icon="time-outline" label="Advance" tone={colors.amberDark} onPress={onAdvance} />
+          <Small
+            icon="document-text-outline"
+            label={busy ? 'Making…' : 'Slip'}
+            onPress={onSlip}
+          />
           <Small icon="create-outline" label="Edit" onPress={onEdit} />
           <Small icon="person-remove-outline" label="Remove" tone={colors.red} onPress={onRemove} />
         </View>
@@ -679,6 +842,30 @@ const styles = StyleSheet.create({
   monthName: { flex: 1, alignItems: 'center', gap: 1 },
 
   legend: { marginTop: 8, marginBottom: 6 },
+
+  // The month's slips. Outlined, not filled: it is a thing to take away,
+  // not the thing on this screen that has to be done today.
+  slipRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 11,
+    padding: 11,
+    marginBottom: 12,
+    borderRadius: radius.md,
+    borderWidth: 1.5,
+    borderColor: colors.navyTint,
+    backgroundColor: colors.card,
+  },
+  slipPressed: { backgroundColor: colors.navyTint },
+  slipBusy: { opacity: 0.6 },
+  slipIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: radius.sm,
+    backgroundColor: colors.navyTint,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 
   cards: { gap: 10 },
 
@@ -757,7 +944,8 @@ const styles = StyleSheet.create({
   actionsWide: { flexWrap: 'nowrap' },
   small: {
     flexGrow: 1,
-    flexBasis: '44%',
+    flexBasis: '30%',
+    minWidth: 0,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',

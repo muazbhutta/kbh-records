@@ -746,6 +746,23 @@ export type AttendanceRow = {
   marked_at: string | null;
 };
 
+/**
+ * One marked day on a man's own register.
+ *
+ * Only days somebody answered for are here - a day nobody said anything
+ * about has no row, and the sheet fills the gaps itself.
+ */
+export type AttendanceSheetRow = {
+  person_id: string;
+  on_date: string;
+  present: boolean;
+  /** What the day was worth to him then. Null for a man on a monthly wage. */
+  rate: number | null;
+  is_friday: boolean;
+  note: string | null;
+  marked_by_name: string | null;
+};
+
 /** The day in one line. */
 export type AttendanceDayTotal = {
   people: number;

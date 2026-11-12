@@ -59,6 +59,10 @@ const DOWNLOAD_LABEL: Record<string, string> = {
   pdf_petty: 'Petty Expenses report (PDF)',
   pdf_invoice: 'Invoice Expenses report (PDF)',
   pdf_all: 'All Expenses report (PDF)',
+  pdf_labour: 'Labour report (PDF)',
+  pdf_bank_transfer: 'Bank Transfer report (PDF)',
+  pdf_project: 'Project report (PDF)',
+  pdf_salary_slips: 'Salary & attendance slips (PDF)',
   zip_bills: 'Bill photos (ZIP)',
 };
 

@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase';
 import type {
   AttendanceDayTotal,
   AttendanceRow,
+  AttendanceSheetRow,
   PayKind,
   SalaryCandidate,
   SalaryLine,
@@ -226,6 +227,24 @@ export function useAttendanceDay(day: string, enabled = true) {
       const { data, error } = await supabase.rpc('attendance_day', { p_on_date: day });
       if (error) throw new Error(error.message);
       return (data ?? []) as AttendanceRow[];
+    },
+  });
+}
+
+/**
+ * A whole month's register, for everybody, day by day.
+ *
+ * The day screens ask about one day; a man's own report asks about all
+ * of them at once, and asking thirty times over would be thirty trips.
+ */
+export function useAttendanceSheet(month: string, enabled = true) {
+  return useQuery({
+    queryKey: ['attendance', 'sheet', month],
+    enabled,
+    queryFn: async (): Promise<AttendanceSheetRow[]> => {
+      const { data, error } = await supabase.rpc('attendance_sheet', { p_month: month });
+      if (error) throw new Error(error.message);
+      return (data ?? []) as AttendanceSheetRow[];
     },
   });
 }

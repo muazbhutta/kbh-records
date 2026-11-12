@@ -3230,6 +3230,18 @@ export type Database = {
           wages: number
         }[]
       }
+      attendance_sheet: {
+        Args: { p_month?: string }
+        Returns: {
+          is_friday: boolean
+          marked_by_name: string
+          note: string
+          on_date: string
+          person_id: string
+          present: boolean
+          rate: number
+        }[]
+      }
       audit_noise_keys: { Args: never; Returns: string[] }
       axvera_authorised: {
         Args: { p_group_id: string; p_secret: string }
