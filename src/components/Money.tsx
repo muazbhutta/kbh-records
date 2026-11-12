@@ -12,11 +12,20 @@ export function Money({
   tone = 'auto',
   size = 'md',
   showSign = false,
+  currency = true,
 }: {
   amount: number;
   tone?: 'auto' | 'in' | 'out' | 'plain';
   size?: 'sm' | 'md' | 'lg' | 'xl';
   showSign?: boolean;
+  /**
+   * Whether to print "SAR" in front of the figure.
+   *
+   * Off where a row of tiles is plainly all in one currency and saying
+   * it three times costs four characters each - enough, in a tile a
+   * third of a phone wide, to make the figures shrink or be cut.
+   */
+  currency?: boolean;
 }) {
   const color =
     tone === 'in'
@@ -30,7 +39,16 @@ export function Money({
             : colors.text;
 
   const sizes = { sm: 14, md: 17, lg: 22, xl: 38 } as const;
-  const fontSize = sizes[size];
+  // A long figure in a narrow box used to be cut: "SAR 78,531.50" came
+  // out "SAR 78,53...", which on a money screen is not a smaller figure
+  // but a wrong one. The same rule the cash card uses - shrink the
+  // digits until they fit - rather than hide the end of them.
+  const text = currency
+    ? showSign
+      ? `SAR ${amountOnly(Math.abs(amount))}`
+      : money(amount)
+    : amountOnly(showSign ? Math.abs(amount) : amount);
+  const fontSize = fitFigure(text, sizes[size]);
   const letterSpacing = size === 'xl' ? -1 : -0.3;
 
   // Every size here is bigger than the body text this component inherits
@@ -45,8 +63,9 @@ export function Money({
         color={color}
         style={{ fontSize, lineHeight, letterSpacing }}
         numberOfLines={1}
+        adjustsFontSizeToFit
       >
-        {money(amount)}
+        {text}
       </Txt>
     );
   }
@@ -72,8 +91,9 @@ export function Money({
         color={color}
         style={{ fontSize, lineHeight, letterSpacing }}
         numberOfLines={1}
+        adjustsFontSizeToFit
       >
-        {`SAR ${amountOnly(Math.abs(amount))}`}
+        {text}
       </Txt>
     </View>
   );
@@ -120,6 +140,16 @@ export function CashCard({
   onPress?: () => void;
 }) {
   const owed = balance < 0;
+  /*
+   * Amber, not red.
+   *
+   * A man being owed ninety riyals is the ordinary end of a month, not
+   * a fault - he paid for something out of his own pocket and will be
+   * paid back. In red, under an alarm bell, it read as an accusation,
+   * and the man it reads that way to is the one who did nothing wrong.
+   * Amber says "this needs settling" without saying "this is broken".
+   */
+  const owedTone = colors.amber;
   // "Should be holding SAR 1,560" over a minus figure sends a person off to
   // count money that is not there. When it has gone the other way the card
   // has to say so in the heading, not in the small print.
@@ -128,7 +158,7 @@ export function CashCard({
   const body = (
     <>
       <View style={styles.cashTop}>
-        <Txt variant="label" color={owed ? colors.red : colors.onDarkMuted} style={styles.upper}>
+        <Txt variant="label" color={owed ? owedTone : colors.onDarkMuted} style={styles.upper}>
           {heading}
         </Txt>
         <View style={styles.cashTopRight}>
@@ -143,10 +173,16 @@ export function CashCard({
         </View>
       </View>
 
+      {/*
+        adjustsFontSizeToFit is an iOS and Android prop; on the web, which
+        is what the installed app actually runs, it does nothing. So the
+        big figure is sized by the same rule as the small ones - a long
+        balance steps down rather than losing its last digits.
+      */}
       <Txt
         weight="bold"
-        color={owed ? colors.red : colors.white}
-        style={styles.cashAmount}
+        color={owed ? owedTone : colors.white}
+        style={[styles.cashAmount, cashAmountSize(money(Math.abs(balance)))]}
         numberOfLines={1}
         adjustsFontSizeToFit
       >
@@ -155,8 +191,8 @@ export function CashCard({
 
       {owed ? (
         <View style={styles.owes}>
-          <Ionicons name="alert-circle" size={14} color={colors.red} />
-          <Txt variant="caption" weight="semibold" color={colors.red}>
+          <Ionicons name="arrow-undo" size={13} color={owedTone} />
+          <Txt variant="caption" weight="semibold" color={owedTone}>
             {owedNote}
           </Txt>
         </View>
@@ -182,6 +218,12 @@ export function CashCard({
       {body}
     </Pressable>
   );
+}
+
+/** The big balance, stepped down far enough that it cannot be cut. */
+function cashAmountSize(text: string) {
+  const fontSize = fitFigure(text, 38);
+  return { fontSize, lineHeight: Math.round(fontSize * 1.26) };
 }
 
 /**

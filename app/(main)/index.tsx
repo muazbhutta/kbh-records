@@ -3,8 +3,7 @@ import { useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import { Avatar, Badge, Card, EmptyState, Loading, SectionTitle } from '@/components/Bits';
-import { BigActionButton } from '@/components/Button';
+import { Avatar, Card, EmptyState, Loading, SectionTitle } from '@/components/Bits';
 import { EntryRow } from '@/components/EntryRow';
 import { CashCard, Money } from '@/components/Money';
 import { Header, Screen } from '@/components/Screen';
@@ -64,14 +63,33 @@ function EmployeeHome() {
         </>
       )}
 
-      <View style={styles.bigActions}>
-        <BigActionButton
-          label="Add Expense"
-          icon="receipt"
-          tint={colors.red}
-          onPress={() => router.push('/entry/new?type=expense')}
-        />
-      </View>
+      {/*
+        The one thing a man comes to this app to do.
+        
+        It used to be a white card the height of a postcard with a small
+        pink square in the middle of it - large, but not loud, and
+        mostly empty. Filled and laid across, it is half the height and
+        twice as plainly the thing to press.
+      */}
+      <Pressable
+        onPress={() => router.push('/entry/new?type=expense')}
+        accessibilityRole="button"
+        accessibilityLabel="Add an expense"
+        style={({ pressed }) => [styles.addRow, pressed && styles.addPressed]}
+      >
+        <View style={styles.addIcon}>
+          <Ionicons name="receipt" size={21} color={colors.white} />
+        </View>
+        <View style={styles.flex}>
+          <Txt variant="subtitle" weight="bold" color={colors.white} numberOfLines={1}>
+            Add an expense
+          </Txt>
+          <Txt variant="caption" color={colors.onDarkMuted} numberOfLines={1}>
+            A bill, a receipt, money paid out
+          </Txt>
+        </View>
+        <Ionicons name="add-circle" size={24} color={colors.white} />
+      </Pressable>
 
       {/*
         The wages, where the man who was handed them will look for
@@ -105,7 +123,14 @@ function MoneyInSplit({ totals }: { totals: Totals }) {
 
   return (
     <>
-      <SectionTitle title="What you were given, and what you spent" />
+      <SectionTitle
+        title="What you were given, and what you spent"
+        action={
+          <Txt variant="label" color={colors.textFaint}>
+            SAR
+          </Txt>
+        }
+      />
       <View style={styles.splitRow}>
         <SplitTile icon="cash-outline" label="Cash in hand" amount={cash} tint={colors.green} />
         <SplitTile icon="card-outline" label="Bank transfer" amount={bank} tint={colors.blue} />
@@ -134,7 +159,7 @@ function SplitTile({
       <Txt variant="caption" color={colors.textMuted} numberOfLines={1}>
         {label}
       </Txt>
-      <Money amount={amount} size="sm" tone="plain" />
+      <Money amount={amount} size="sm" tone="plain" currency={false} />
     </View>
   );
 }
@@ -209,13 +234,19 @@ function TeamStrip() {
       {isLoading ? (
         <Loading />
       ) : team.length === 0 ? (
-        <Card>
-          <EmptyState
-            icon="people-outline"
-            title="Nobody under you yet"
-            message="An Admin decides who works under you."
-          />
-        </Card>
+        /*
+         * A quiet line, not a hoarding.
+         *
+         * A full empty-state card - big faded icon, heading, message -
+         * at the foot of a man's own home screen filled a third of it
+         * to say that nothing is there. One line says the same.
+         */
+        <View style={styles.noTeam}>
+          <Ionicons name="people-outline" size={17} color={colors.textFaint} />
+          <Txt variant="caption" color={colors.textMuted} numberOfLines={2}>
+            Nobody works under you yet. An Admin decides who does.
+          </Txt>
+        </View>
       ) : (
         <Card padded={false} style={styles.feedCard}>
           {team.map((member, i) => (
@@ -320,15 +351,16 @@ function RecentList({
   );
 }
 
+/*
+ * The role used to be said twice: once under the greeting, and again
+ * in a chip an inch to its right. Two labels a centimetre apart, both
+ * reading "Employee", is the sort of thing that makes a screen feel
+ * unconsidered. The greeting keeps it; the chip is gone.
+ */
 function LogoutButton() {
-  const { logout, person } = useAuth();
+  const { logout } = useAuth();
   return (
     <View style={styles.headerRight}>
-      <Badge
-        label={person?.is_owner ? 'Owner' : (ROLE_LABEL[person?.role ?? ''] ?? '')}
-        tone={person?.is_owner ? 'amber' : person?.role === 'employee' ? 'grey' : 'navy'}
-        style={styles.midBadge}
-      />
       <Pressable
         onPress={logout}
         accessibilityRole="button"
@@ -374,9 +406,38 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   // Level with the log-out button beside it.
-  midBadge: { alignSelf: 'center' },
   cashSkeleton: { minHeight: 150, justifyContent: 'center' },
-  bigActions: { flexDirection: 'row', gap: 10, marginTop: 16, marginBottom: 6 },
+  addRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: colors.navy,
+    borderRadius: radius.lg,
+    paddingVertical: 13,
+    paddingHorizontal: 14,
+    marginTop: 16,
+    marginBottom: 6,
+  },
+  addPressed: { opacity: 0.9, transform: [{ scale: 0.99 }] },
+  noTeam: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 9,
+    paddingVertical: 13,
+    paddingHorizontal: 14,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.line,
+    backgroundColor: colors.card,
+  },
+  addIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: radius.md,
+    backgroundColor: 'rgba(255,255,255,0.14)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   splitRow: { flexDirection: 'row', gap: 8 },
   splitTile: {
     flex: 1,

@@ -116,50 +116,6 @@ export function Button({
 }
 
 /**
- * The big square action button on the home screen: large icon on top,
- * short label underneath. Easy to hit and easy to understand.
- */
-export function BigActionButton({
-  label,
-  icon,
-  onPress,
-  tint = colors.navy,
-  background = colors.card,
-  disabled,
-}: {
-  label: string;
-  icon: keyof typeof Ionicons.glyphMap;
-  onPress?: () => void;
-  tint?: string;
-  background?: string;
-  disabled?: boolean;
-}) {
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      onPress={disabled ? undefined : onPress}
-      style={({ pressed }) => [
-        styles.big,
-        shadow.card,
-        {
-          backgroundColor: background,
-          opacity: disabled ? 0.45 : pressed ? 0.92 : 1,
-          transform: [{ scale: pressed && !disabled ? 0.98 : 1 }],
-        },
-      ]}
-    >
-      <View style={[styles.bigIcon, { backgroundColor: `${tint}14` }]}>
-        <Ionicons name={icon} size={28} color={tint} />
-      </View>
-      <Txt variant="heading" center numberOfLines={2}>
-        {label}
-      </Txt>
-    </Pressable>
-  );
-}
-
-/**
  * The dashboard version of a main action: the same big tap target, but
  * laid out across instead of down, so four of them do not take over the
  * screen next to the folded-up sections.
@@ -214,22 +170,6 @@ const styles = StyleSheet.create({
   },
   full: { alignSelf: 'stretch' },
   row: { flexDirection: 'row', alignItems: 'center', gap: 9, minWidth: 0, flexShrink: 1 },
-  big: {
-    flex: 1,
-    minWidth: 140,
-    borderRadius: radius.lg,
-    paddingVertical: 20,
-    paddingHorizontal: 12,
-    alignItems: 'center',
-    gap: 12,
-  },
-  bigIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: radius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   tile: {
     flex: 1,
     flexDirection: 'row',
