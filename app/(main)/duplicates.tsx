@@ -223,6 +223,7 @@ function Side({
       {full || thumb ? (
         <BillImage
           path={full ?? thumb}
+          thumb={thumb}
           style={styles.photo}
           onPress={async () => {
             const url = await signedUrl(full ?? thumb);

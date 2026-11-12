@@ -1,6 +1,13 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import React, { useEffect, useState } from 'react';
-import { Modal, Pressable, StyleSheet, View } from 'react-native';
+import {
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  useWindowDimensions,
+  View,
+} from 'react-native';
 
 import { Banner, useBackdrop } from '@/components/Bits';
 import { Button } from '@/components/Button';
@@ -50,10 +57,18 @@ function Sheet({
   children: React.ReactNode;
 }) {
   const backdrop = useBackdrop('center');
+  const { height } = useWindowDimensions();
   return (
     <Modal visible transparent animationType="fade" onRequestClose={onClose}>
       <View style={backdrop}>
-        <View style={[styles.sheet, shadow.raised]}>
+        {/*
+          The panel is as tall as it needs to be, up to most of the
+          screen, and then it scrolls. Adding a new man opened a panel
+          taller than a phone and the button at the foot of it could
+          not be reached at all - worse with the keyboard up, which is
+          exactly when it is being used.
+        */}
+        <View style={[styles.sheet, { maxHeight: height * 0.86 }, shadow.raised]}>
           <View style={styles.head}>
             <View style={styles.flex}>
               <Txt variant="heading">{title}</Txt>
@@ -72,7 +87,15 @@ function Sheet({
               <Ionicons name="close" size={22} color={colors.textMuted} />
             </Pressable>
           </View>
-          {children}
+          <ScrollView
+            style={styles.body}
+            contentContainerStyle={styles.bodyInner}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+            bounces={false}
+          >
+            {children}
+          </ScrollView>
         </View>
       </View>
     </Modal>
@@ -529,6 +552,10 @@ const styles = StyleSheet.create({
     padding: 20,
     gap: 12,
   },
+  // The head stays put and the rest of the panel scrolls under it, so
+  // the title and the close never go out of reach.
+  body: { flexShrink: 1 },
+  bodyInner: { gap: 12, paddingBottom: 2 },
   head: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 },
   flex: { flex: 1, gap: 2 },
   kindRow: { flexDirection: 'row', gap: 8 },

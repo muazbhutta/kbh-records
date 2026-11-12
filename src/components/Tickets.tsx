@@ -213,6 +213,7 @@ function TicketCard({
         <View style={styles.billBox}>
           <BillImage
             path={bill}
+            thumb={ticket.thumb_path}
             style={styles.bill}
             contentFit="cover"
             lazy

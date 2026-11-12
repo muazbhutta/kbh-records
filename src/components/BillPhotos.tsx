@@ -238,12 +238,19 @@ function useNearTheScreen(ref: React.RefObject<unknown>, on: boolean) {
 /** Loads a private bill photo through a short-lived signed link. */
 export function BillImage({
   path,
+  thumb,
   style,
   contentFit = 'cover',
   onPress,
   lazy = false,
 }: {
   path: string | null | undefined;
+  /**
+   * The small copy, shown at once while the real one is still coming.
+   * A bill is 200KB and a phone on site is slow: without this the card
+   * sat empty for seconds and looked broken.
+   */
+  thumb?: string | null;
   style?: object;
   contentFit?: 'cover' | 'contain';
   onPress?: (url: string) => void;
@@ -251,6 +258,7 @@ export function BillImage({
   lazy?: boolean;
 }) {
   const [url, setUrl] = useState<string | null>(null);
+  const [thumbUrl, setThumbUrl] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
   const spot = useRef<View>(null);
   const near = useNearTheScreen(spot, lazy);
@@ -259,7 +267,17 @@ export function BillImage({
     if (!near) return;
     let alive = true;
     setUrl(null);
+    setThumbUrl(null);
     setFailed(false);
+
+    // The small one first and on its own, so it can be drawn the
+    // moment it lands rather than waiting on the big one beside it.
+    if (thumb && thumb !== path) {
+      signedUrl(thumb)
+        .then((u) => alive && u && setThumbUrl(u))
+        .catch(() => {});
+    }
+
     signedUrl(path)
       .then((u) => {
         if (!alive) return;
@@ -270,10 +288,25 @@ export function BillImage({
     return () => {
       alive = false;
     };
-  }, [path, near]);
+  }, [path, thumb, near]);
 
   const body = url ? (
-    <Image source={{ uri: url }} style={[styles.fill, style]} contentFit={contentFit} transition={180} />
+    <Image
+      source={{ uri: url }}
+      // Shown until the real one has decoded, then crossed over to.
+      placeholder={thumbUrl ? { uri: thumbUrl } : undefined}
+      placeholderContentFit={contentFit}
+      style={[styles.fill, style]}
+      contentFit={contentFit}
+      transition={180}
+    />
+  ) : thumbUrl ? (
+    <Image
+      source={{ uri: thumbUrl }}
+      style={[styles.fill, style]}
+      contentFit={contentFit}
+      transition={120}
+    />
   ) : (
     <View ref={spot} style={[styles.placeholder, style]}>
       {failed ? (
@@ -284,10 +317,14 @@ export function BillImage({
     </View>
   );
 
-  if (!onPress || !url) return body;
+  // Tappable as soon as there is something to look at. Waiting for the
+  // full one meant a tap on a card that was plainly showing a bill did
+  // nothing at all, which reads as a broken screen.
+  const shown = url ?? thumbUrl;
+  if (!onPress || !shown) return body;
 
   return (
-    <Pressable onPress={() => onPress(url)} accessibilityRole="imagebutton" accessibilityLabel="Bill photo">
+    <Pressable onPress={() => onPress(shown)} accessibilityRole="imagebutton" accessibilityLabel="Bill photo">
       {body}
     </Pressable>
   );

@@ -227,6 +227,7 @@ export default function EntryScreen() {
                     is actually trying to read one. */}
                 <BillImage
                   path={p.storage_path ?? p.thumb_path}
+                  thumb={p.thumb_path}
                   style={styles.photo}
                   onPress={async () => {
                     const url = await signedUrl(p.storage_path);
