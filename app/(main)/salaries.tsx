@@ -236,6 +236,12 @@ export default function SalariesScreen() {
       {/* ------------------------------------------------- the people */}
       <SectionTitle title="Who is on salary" />
 
+      {/*
+        One track with three segments rather than three loose pills.
+        Three fat buttons, two of them carrying an icon the third did
+        not, each with a little grey bubble of its own inside, read as
+        clutter where this is only a question of which list to show.
+      */}
       <View style={styles.kindRow}>
         <KindTab
           label="Everyone"
@@ -244,14 +250,12 @@ export default function SalariesScreen() {
           onPress={() => setShow('all')}
         />
         <KindTab
-          icon="calendar-outline"
           label="Employees"
           count={counts.monthly}
           chosen={show === 'monthly'}
           onPress={() => setShow('monthly')}
         />
         <KindTab
-          icon="today-outline"
           label="Dehaari"
           count={counts.daily}
           chosen={show === 'daily'}
@@ -359,15 +363,13 @@ export default function SalariesScreen() {
   );
 }
 
-/** One of the two sorts of man, or both at once. */
+/** One segment of the track: a list to show, and how many are in it. */
 function KindTab({
-  icon,
   label,
   count,
   chosen,
   onPress,
 }: {
-  icon?: keyof typeof Ionicons.glyphMap;
   label: string;
   count: number;
   chosen: boolean;
@@ -385,17 +387,17 @@ function KindTab({
         pressed && !chosen && styles.kindTabPressed,
       ]}
     >
-      {icon ? (
-        <Ionicons name={icon} size={15} color={chosen ? colors.white : colors.textMuted} />
-      ) : null}
-      <Txt variant="caption" weight="bold" color={chosen ? colors.white : colors.textMuted}>
-        {label}
-      </Txt>
-      <View style={[styles.kindCount, chosen && styles.kindCountOn]}>
-        <Txt variant="label" weight="bold" color={chosen ? colors.white : colors.textFaint}>
+      <Txt
+        variant="caption"
+        weight="bold"
+        color={chosen ? colors.white : colors.textMuted}
+        numberOfLines={1}
+      >
+        {label}{' '}
+        <Txt variant="caption" weight="bold" color={chosen ? colors.onDarkMuted : colors.textFaint}>
           {count}
         </Txt>
-      </View>
+      </Txt>
     </Pressable>
   );
 }
@@ -680,32 +682,28 @@ const styles = StyleSheet.create({
 
   cards: { gap: 10 },
 
-  kindRow: { flexDirection: 'row', gap: 7, marginBottom: 12 },
+  // One track, three equal segments, the chosen one filled.
+  kindRow: {
+    flexDirection: 'row',
+    gap: 3,
+    padding: 3,
+    borderRadius: radius.md,
+    backgroundColor: colors.bg,
+    borderWidth: 1,
+    borderColor: colors.line,
+    marginBottom: 12,
+  },
   kindTab: {
     flexGrow: 1,
     flexBasis: 0,
-    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 5,
-    paddingVertical: 10,
-    paddingHorizontal: 8,
-    borderRadius: radius.md,
-    borderWidth: 1.5,
-    borderColor: colors.line,
-    backgroundColor: colors.card,
+    paddingVertical: 9,
+    paddingHorizontal: 4,
+    borderRadius: radius.sm,
   },
-  kindTabOn: { backgroundColor: colors.navy, borderColor: colors.navy },
+  kindTabOn: { backgroundColor: colors.navy },
   kindTabPressed: { backgroundColor: colors.navyTint },
-  kindCount: {
-    minWidth: 20,
-    paddingHorizontal: 5,
-    paddingVertical: 1,
-    borderRadius: 9,
-    backgroundColor: colors.bg,
-    alignItems: 'center',
-  },
-  kindCountOn: { backgroundColor: 'rgba(255,255,255,0.18)' },
 
   attend: {
     flexDirection: 'row',
