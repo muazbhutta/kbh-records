@@ -1,4 +1,5 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { useRouter } from 'expo-router';
 import React, { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
@@ -15,12 +16,13 @@ import { Header, Screen, useIsWide } from '@/components/Screen';
 import { Txt } from '@/components/Txt';
 import {
   monthKey,
+  useAttendanceDayTotal,
   useSalaryMonth,
   useSalaryMonthTotal,
   useSalaryPayments,
 } from '@/api/salaries';
 import { useAuth } from '@/auth/AuthProvider';
-import { formatDate, money, monthName, shiftMonth } from '@/lib/format';
+import { formatDate, money, monthName, shiftMonth, todayInRiyadh } from '@/lib/format';
 import { colors, radius, shadow } from '@/theme';
 import type { SalaryLine, SalaryPayment } from '@/types';
 
@@ -53,7 +55,9 @@ export default function SalariesScreen() {
     | null
   >(null);
 
+  const router = useRouter();
   const lines = useSalaryMonth(month, canManage);
+  const attendance = useAttendanceDayTotal(todayInRiyadh(), canManage);
   const total = useSalaryMonthTotal(month, canManage);
   const payments = useSalaryPayments(month, canManage);
   const wide = useIsWide();
@@ -168,6 +172,46 @@ export default function SalariesScreen() {
           </Txt>
         </View>
       ) : null}
+
+      {/*
+        Today's attendance, at the top, because it is the one thing on
+        this screen that has to be done today. A daily man's month is
+        wrong until somebody has said whether he turned up, so the
+        button carries the count of who is still waiting on an answer.
+      */}
+      <Pressable
+        onPress={() => router.push('/attendance')}
+        accessibilityRole="button"
+        accessibilityLabel="Today's attendance"
+        style={({ pressed }) => [styles.attend, pressed && styles.attendPressed]}
+      >
+        <View style={styles.attendIcon}>
+          <Ionicons name="calendar-number-outline" size={21} color={colors.white} />
+        </View>
+        <View style={styles.flex}>
+          <Txt variant="subtitle" weight="bold" color={colors.white}>
+            Today&rsquo;s attendance
+          </Txt>
+          <Txt variant="caption" color={colors.onDarkMuted} numberOfLines={1}>
+            {attendance.data
+              ? attendance.data.not_marked > 0
+                ? `${attendance.data.not_marked} still to answer for · ${attendance.data.present} in`
+                : `${attendance.data.present} in · ${attendance.data.absent} out · ${money(
+                    Number(attendance.data.wages),
+                  )} in wages`
+              : 'Who turned up today'}
+          </Txt>
+        </View>
+        {attendance.data && attendance.data.not_marked > 0 ? (
+          <View style={styles.attendCount}>
+            <Txt variant="label" weight="bold" color={colors.white}>
+              {attendance.data.not_marked}
+            </Txt>
+          </View>
+        ) : (
+          <Ionicons name="chevron-forward" size={20} color={colors.onDarkMuted} />
+        )}
+      </Pressable>
 
       {/* ------------------------------------------------- the people */}
       <SectionTitle title="Who is on salary" />
@@ -290,9 +334,13 @@ function SalaryCard({
   const [open, setOpen] = useState(false);
   const rows = given ?? [];
   const handed = Number(line.advance_paid) + Number(line.salary_paid);
-  const monthly = Number(line.monthly_amount);
+  const daily = line.pay_kind === 'daily';
+  // What the month is worth to him: his monthly wage, or the days he
+  // turned up at what each was worth. The bar and the "all paid" mark
+  // both read off this, so they mean the same thing for both sorts.
+  const earned = Number(line.earned);
   const left = Number(line.remaining);
-  const done = monthly > 0 && left === 0;
+  const done = earned > 0 && left === 0;
 
   return (
     <View style={[styles.card, shadow.card, past && styles.cardPast]}>
@@ -308,7 +356,11 @@ function SalaryCard({
           </View>
           <Txt variant="caption" color={colors.textMuted} numberOfLines={1}>
             {line.job_title ? `${line.job_title} · ` : ''}
-            {monthly > 0 ? `${money(monthly)} a month` : 'No monthly figure set'}
+            {daily
+              ? `${money(Number(line.daily_rate))} a day`
+              : Number(line.monthly_amount) > 0
+                ? `${money(Number(line.monthly_amount))} a month`
+                : 'No monthly figure set'}
           </Txt>
         </View>
         {!past ? (
@@ -322,13 +374,31 @@ function SalaryCard({
         )}
       </View>
 
-      {monthly > 0 ? (
+      {/* A daily man's days, which are what his month is made of. The
+          figure is wrong until somebody has marked them, so the card
+          says how many were answered for, not just how many he worked. */}
+      {daily ? (
+        <View style={styles.daysRow}>
+          <Ionicons name="calendar-outline" size={14} color={colors.navy} />
+          <Txt variant="caption" weight="semibold" color={colors.navy}>
+            {line.days_present} {line.days_present === 1 ? 'day' : 'days'} worked
+          </Txt>
+          <Txt variant="caption" color={colors.textFaint} numberOfLines={1}>
+            · {money(earned)} earned
+            {line.days_marked > line.days_present
+              ? ` · ${line.days_marked - line.days_present} off`
+              : ''}
+          </Txt>
+        </View>
+      ) : null}
+
+      {earned > 0 ? (
         <View style={styles.barRow}>
           {/* The bar fills what is left over; a stretched bar put beside
               bare text pushes the text off the card. */}
           <View style={styles.barFlex}>
             <ShareBar
-              fraction={monthly > 0 ? handed / monthly : 0}
+              fraction={earned > 0 ? handed / earned : 0}
               tone={done ? colors.green : colors.navy}
               stretch
             />
@@ -337,6 +407,10 @@ function SalaryCard({
             {done ? 'all paid' : `${money(left)} left`}
           </Txt>
         </View>
+      ) : daily ? (
+        <Txt variant="caption" color={colors.amberDark} numberOfLines={1}>
+          No days marked yet this month.
+        </Txt>
       ) : null}
 
       {rows.length === 0 ? (
@@ -482,6 +556,36 @@ const styles = StyleSheet.create({
   legend: { marginTop: 8, marginBottom: 6 },
 
   cards: { gap: 10 },
+
+  attend: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: colors.navy,
+    borderRadius: radius.lg,
+    padding: 14,
+    marginBottom: 14,
+  },
+  attendPressed: { opacity: 0.9 },
+  attendIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: radius.md,
+    backgroundColor: 'rgba(255,255,255,0.14)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  attendCount: {
+    minWidth: 26,
+    height: 26,
+    paddingHorizontal: 7,
+    borderRadius: 13,
+    backgroundColor: colors.amberDark,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  flex: { flex: 1 },
+  daysRow: { flexDirection: 'row', alignItems: 'center', gap: 5, flexWrap: 'wrap' },
   card: {
     backgroundColor: colors.card,
     borderRadius: radius.lg,

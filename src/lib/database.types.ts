@@ -144,6 +144,72 @@ export type Database = {
           },
         ]
       }
+      attendance: {
+        Row: {
+          marked_at: string
+          marked_by: string | null
+          note: string | null
+          on_date: string
+          person_id: string
+          present: boolean
+          rate: number | null
+        }
+        Insert: {
+          marked_at?: string
+          marked_by?: string | null
+          note?: string | null
+          on_date: string
+          person_id: string
+          present: boolean
+          rate?: number | null
+        }
+        Update: {
+          marked_at?: string
+          marked_by?: string | null
+          note?: string | null
+          on_date?: string
+          person_id?: string
+          present?: boolean
+          rate?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attendance_marked_by_fkey"
+            columns: ["marked_by"]
+            isOneToOne: false
+            referencedRelation: "app_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_marked_by_fkey"
+            columns: ["marked_by"]
+            isOneToOne: false
+            referencedRelation: "people_list"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_marked_by_fkey"
+            columns: ["marked_by"]
+            isOneToOne: false
+            referencedRelation: "people_names"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_marked_by_fkey"
+            columns: ["marked_by"]
+            isOneToOne: false
+            referencedRelation: "team_summary"
+            referencedColumns: ["head_id"]
+          },
+          {
+            foreignKeyName: "attendance_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "salary_people"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_log: {
         Row: {
           action: string
@@ -1487,27 +1553,33 @@ export type Database = {
         Row: {
           added_at: string
           added_by: string | null
+          daily_rate: number | null
           is_active: boolean
-          monthly_amount: number
+          monthly_amount: number | null
           note: string | null
+          pay_kind: Database["public"]["Enums"]["pay_kind"]
           person_id: string
           since: string
         }
         Insert: {
           added_at?: string
           added_by?: string | null
+          daily_rate?: number | null
           is_active?: boolean
-          monthly_amount: number
+          monthly_amount?: number | null
           note?: string | null
+          pay_kind?: Database["public"]["Enums"]["pay_kind"]
           person_id: string
           since?: string
         }
         Update: {
           added_at?: string
           added_by?: string | null
+          daily_rate?: number | null
           is_active?: boolean
-          monthly_amount?: number
+          monthly_amount?: number | null
           note?: string | null
+          pay_kind?: Database["public"]["Enums"]["pay_kind"]
           person_id?: string
           since?: string
         }
@@ -3127,6 +3199,29 @@ export type Database = {
         }
         Returns: undefined
       }
+      attendance_day: {
+        Args: { p_on_date?: string }
+        Returns: {
+          daily_rate: number
+          full_name: string
+          job_title: string
+          marked_at: string
+          marked_by_name: string
+          pay_kind: string
+          person_id: string
+          present: boolean
+        }[]
+      }
+      attendance_day_total: {
+        Args: { p_on_date?: string }
+        Returns: {
+          absent: number
+          not_marked: number
+          people: number
+          present: number
+          wages: number
+        }[]
+      }
       audit_noise_keys: { Args: never; Returns: string[] }
       axvera_authorised: {
         Args: { p_group_id: string; p_secret: string }
@@ -3216,6 +3311,10 @@ export type Database = {
           p_sha?: string[]
         }
         Returns: Json
+      }
+      clear_attendance: {
+        Args: { p_on_date: string; p_person_id: string }
+        Returns: undefined
       }
       clear_type_flags: { Args: { p_id: string }; Returns: string }
       close_project: { Args: { p_id: string }; Returns: undefined }
@@ -3398,6 +3497,15 @@ export type Database = {
           p_rows?: number
           p_to?: string
           p_total?: number
+        }
+        Returns: undefined
+      }
+      mark_attendance: {
+        Args: {
+          p_note?: string
+          p_on_date: string
+          p_person_id: string
+          p_present: boolean
         }
         Returns: undefined
       }
@@ -3592,10 +3700,15 @@ export type Database = {
         Args: { p_month?: string }
         Returns: {
           advance_paid: number
+          daily_rate: number
+          days_marked: number
+          days_present: number
+          earned: number
           full_name: string
           job_title: string
           monthly_amount: number
           on_payroll: boolean
+          pay_kind: string
           payments: number
           person_id: string
           remaining: number
@@ -3659,6 +3772,7 @@ export type Database = {
         Args: {
           p_amount?: number
           p_note?: string
+          p_pay_kind?: Database["public"]["Enums"]["pay_kind"]
           p_person_id?: string
           p_since?: string
           p_user_id?: string
@@ -3735,6 +3849,7 @@ export type Database = {
       bill_scan_state: "not_needed" | "pending" | "done" | "failed"
       entry_type: "money_given" | "transfer" | "expense" | "returned"
       expense_kind: "petty" | "invoice" | "labour" | "bank_transfer"
+      pay_kind: "monthly" | "daily"
       pay_method: "cash" | "transfer"
       type_source:
         | "auto_qr"
@@ -3876,6 +3991,7 @@ export const Constants = {
       bill_scan_state: ["not_needed", "pending", "done", "failed"],
       entry_type: ["money_given", "transfer", "expense", "returned"],
       expense_kind: ["petty", "invoice", "labour", "bank_transfer"],
+      pay_kind: ["monthly", "daily"],
       pay_method: ["cash", "transfer"],
       type_source: [
         "auto_qr",

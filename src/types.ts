@@ -697,17 +697,51 @@ export type SalaryCandidate = {
 };
 
 /** One person's standing for one month. */
+/** Paid a fixed wage each month, or paid for the days he turned up. */
+export type PayKind = 'monthly' | 'daily';
+
 export type SalaryLine = {
   person_id: string;
   full_name: string;
   job_title: string | null;
+  pay_kind: PayKind;
+  /** A month's wage. Nought for a daily man. */
   monthly_amount: number;
+  /** One day's wage. Nought for a monthly man. */
+  daily_rate: number;
+  days_present: number;
+  days_marked: number;
+  /** What the month has earned him, whichever way he is paid. */
+  earned: number;
   advance_paid: number;
   salary_paid: number;
   remaining: number;
   payments: number;
   /** False for somebody paid this month who has since come off the payroll. */
   on_payroll: boolean;
+};
+
+/** One man on one day, and whether he turned up. */
+export type AttendanceRow = {
+  person_id: string;
+  full_name: string;
+  job_title: string | null;
+  pay_kind: PayKind;
+  daily_rate: number | null;
+  /** True, false, or null where nobody has said yet. */
+  present: boolean | null;
+  marked_by_name: string | null;
+  marked_at: string | null;
+};
+
+/** The day in one line. */
+export type AttendanceDayTotal = {
+  people: number;
+  present: number;
+  absent: number;
+  not_marked: number;
+  /** What the day costs in daily wages. */
+  wages: number;
 };
 
 /** The month in one line. */

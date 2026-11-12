@@ -2,7 +2,15 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { refreshTheBooks } from '@/lib/queryClient';
 import { supabase } from '@/lib/supabase';
-import type { SalaryCandidate, SalaryLine, SalaryMonthTotal, SalaryPayment } from '@/types';
+import type {
+  AttendanceDayTotal,
+  AttendanceRow,
+  PayKind,
+  SalaryCandidate,
+  SalaryLine,
+  SalaryMonthTotal,
+  SalaryPayment,
+} from '@/types';
 
 /**
  * The salaries.
@@ -121,6 +129,8 @@ export function useSetPayroll() {
       personId?: string | null;
       userId?: string | null;
       amount: number;
+      /** A month's wage, or one day's. Defaults to a month's. */
+      payKind?: PayKind;
       since?: string;
       note?: string;
     }): Promise<string> => {
@@ -128,6 +138,7 @@ export function useSetPayroll() {
         p_person_id: input.personId ?? undefined,
         p_user_id: input.userId ?? undefined,
         p_amount: input.amount,
+        p_pay_kind: input.payKind ?? 'monthly',
         p_since: input.since ?? undefined,
         p_note: input.note ?? undefined,
       });
@@ -190,6 +201,81 @@ export function useRemoveSalaryPayment() {
       const { error } = await supabase.rpc('remove_salary_payment', {
         p_id: input.id,
         p_reason: input.reason ?? undefined,
+      });
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => refreshTheBooks(qc),
+  });
+}
+
+/**
+ * Attendance.
+ *
+ * Kept for everybody on the payroll. For a daily man it is what his
+ * wage is made of; for a monthly man it changes nothing he is owed and
+ * is kept because the office wants the record.
+ */
+export function useAttendanceDay(day: string, enabled = true) {
+  return useQuery({
+    queryKey: ['attendance', 'day', day],
+    enabled,
+    queryFn: async (): Promise<AttendanceRow[]> => {
+      const { data, error } = await supabase.rpc('attendance_day', { p_on_date: day });
+      if (error) throw new Error(error.message);
+      return (data ?? []) as AttendanceRow[];
+    },
+  });
+}
+
+export function useAttendanceDayTotal(day: string, enabled = true) {
+  return useQuery({
+    queryKey: ['attendance', 'total', day],
+    enabled,
+    queryFn: async (): Promise<AttendanceDayTotal> => {
+      const { data, error } = await supabase.rpc('attendance_day_total', { p_on_date: day });
+      if (error) throw new Error(error.message);
+      const row = (data ?? [])[0];
+      return {
+        people: Number(row?.people ?? 0),
+        present: Number(row?.present ?? 0),
+        absent: Number(row?.absent ?? 0),
+        not_marked: Number(row?.not_marked ?? 0),
+        wages: Number(row?.wages ?? 0),
+      };
+    },
+  });
+}
+
+/** Say whether a man turned up. Saying it again just corrects it. */
+export function useMarkAttendance() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: {
+      personId: string;
+      day: string;
+      present: boolean;
+      note?: string;
+    }): Promise<void> => {
+      const { error } = await supabase.rpc('mark_attendance', {
+        p_person_id: input.personId,
+        p_on_date: input.day,
+        p_present: input.present,
+        p_note: input.note ?? undefined,
+      });
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => refreshTheBooks(qc),
+  });
+}
+
+/** Take the mark off a day nobody should have answered for. */
+export function useClearAttendance() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: { personId: string; day: string }): Promise<void> => {
+      const { error } = await supabase.rpc('clear_attendance', {
+        p_person_id: input.personId,
+        p_on_date: input.day,
       });
       if (error) throw new Error(error.message);
     },

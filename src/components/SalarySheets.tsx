@@ -20,6 +20,7 @@ import { errorMessage } from '@/lib/supabase';
 import { money, monthName, todayInRiyadh } from '@/lib/format';
 import { colors, radius, shadow } from '@/theme';
 import type {
+  PayKind,
   PayMethod,
   PersonName,
   SalaryCandidate,
@@ -197,9 +198,13 @@ export function PayrollSheet({
   const candidates = useSalaryCandidates(!existing);
   const [personId, setPersonId] = useState<string | null>(existing?.person_id ?? null);
   const [adding, setAdding] = useState(false);
-  const [amount, setAmount] = useState(
-    existing && existing.monthly_amount > 0 ? String(existing.monthly_amount) : '',
-  );
+  const [amount, setAmount] = useState(() => {
+    if (!existing) return '';
+    const held =
+      existing.pay_kind === 'daily' ? existing.daily_rate : existing.monthly_amount;
+    return held > 0 ? String(held) : '';
+  });
+  const [payKind, setPayKind] = useState<PayKind>(existing?.pay_kind ?? 'monthly');
   const [since, setSince] = useState(todayInRiyadh());
   const [error, setError] = useState<string | null>(null);
 
@@ -212,7 +217,11 @@ export function PayrollSheet({
   const save = async () => {
     if (!personId) return setError('Choose who this is for.');
     if (!Number.isFinite(value) || value <= 0) {
-      return setError('Enter a monthly salary bigger than zero.');
+      return setError(
+        payKind === 'daily'
+          ? 'Enter a daily wage bigger than zero.'
+          : 'Enter a monthly salary bigger than zero.',
+      );
     }
     setError(null);
     // One of the app's people carries his account id, not a roster id,
@@ -224,6 +233,7 @@ export function PayrollSheet({
         personId: asUser ? null : personId,
         userId: asUser ? personId : null,
         amount: value,
+        payKind,
         since,
       });
       onClose();
@@ -270,6 +280,30 @@ export function PayrollSheet({
         )
       ) : null}
 
+      {/*
+        Which sort of man this is. It decides what the figure below
+        means, so it is asked above it rather than after.
+      */}
+      <Txt variant="label" color={colors.textMuted}>
+        HOW IS HE PAID?
+      </Txt>
+      <View style={styles.kindRow}>
+        <KindChoice
+          icon="calendar-outline"
+          label="Monthly"
+          hint="A fixed wage"
+          chosen={payKind === 'monthly'}
+          onPress={() => setPayKind('monthly')}
+        />
+        <KindChoice
+          icon="today-outline"
+          label="Daily"
+          hint="Paid per day"
+          chosen={payKind === 'daily'}
+          onPress={() => setPayKind('daily')}
+        />
+      </View>
+
       <AmountField
         value={amount}
         onChangeText={(v) => {
@@ -278,7 +312,9 @@ export function PayrollSheet({
         }}
       />
       <Txt variant="caption" color={colors.textMuted}>
-        A month's salary. What is already paid for past months does not change.
+        {payKind === 'daily'
+          ? "One day's wage. What he earns is this times the days he turns up, and attendance is where those days are marked."
+          : "A month's salary. What is already paid for past months does not change."}
       </Txt>
 
       <DateField label="From when" value={since} onChange={setSince} />
@@ -380,6 +416,43 @@ function NewSalaryPersonBox({
   );
 }
 
+/** Monthly or daily: the one choice that decides what the figure means. */
+function KindChoice({
+  icon,
+  label,
+  hint,
+  chosen,
+  onPress,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  label: string;
+  hint: string;
+  chosen: boolean;
+  onPress: () => void;
+}) {
+  const tone = chosen ? colors.navy : colors.textMuted;
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityState={{ selected: chosen }}
+      style={({ pressed }) => [
+        styles.kind,
+        chosen && styles.kindOn,
+        pressed && !chosen && styles.kindPressed,
+      ]}
+    >
+      <Ionicons name={icon} size={18} color={tone} />
+      <Txt variant="caption" weight="bold" color={tone}>
+        {label}
+      </Txt>
+      <Txt variant="caption" color={chosen ? colors.navy : colors.textFaint}>
+        {hint}
+      </Txt>
+    </Pressable>
+  );
+}
+
 /**
  * The picker speaks in app people, so lend the roster that shape. None
  * of the flags below mean anything on a payroll; it only draws names.
@@ -458,6 +531,20 @@ const styles = StyleSheet.create({
   },
   head: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 },
   flex: { flex: 1, gap: 2 },
+  kindRow: { flexDirection: 'row', gap: 8 },
+  kind: {
+    flex: 1,
+    alignItems: 'center',
+    gap: 2,
+    paddingVertical: 11,
+    borderRadius: radius.md,
+    borderWidth: 1.5,
+    borderColor: colors.line,
+    backgroundColor: colors.card,
+  },
+  kindOn: { borderColor: colors.navy, backgroundColor: colors.navyTint },
+  kindPressed: { backgroundColor: colors.navyTint },
+
   newBox: {
     gap: 10,
     backgroundColor: colors.bg,
