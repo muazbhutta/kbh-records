@@ -11,6 +11,7 @@ import { Txt } from '@/components/Txt';
 import {
   useAddSalaryPerson,
   useCameBack,
+  useEditSalaryPayment,
   useGoOnLeave,
   useRecordSalary,
   useRemoveFromPayroll,
@@ -172,14 +173,18 @@ export function PaySheet({
   line,
   month,
   kind,
+  existing,
   onClose,
 }: {
   line: SalaryLine;
   month: string;
   kind: PayKindChoice;
+  /** An entry already written down, being put right. */
+  existing?: SalaryPayment;
   onClose: () => void;
 }) {
   const record = useRecordSalary();
+  const change = useEditSalaryPayment();
   /*
    * Which of the four this entry is.
    *
@@ -188,7 +193,7 @@ export function PaySheet({
    * button now, and the question asked here, where the amount is being
    * typed anyway.
    */
-  const [chosen, setChosen] = useState<PayKindChoice>(kind);
+  const [chosen, setChosen] = useState<PayKindChoice>(existing?.kind ?? kind);
   const advance = chosen === 'advance';
   /*
    * The company's own money, laid out for a man who is away.
@@ -202,11 +207,15 @@ export function PaySheet({
   const owing = chosen === 'owing';
 
   const [amount, setAmount] = useState(
-    kind === 'salary' && line.remaining > 0 ? String(line.remaining) : '',
+    existing
+      ? String(Number(existing.amount))
+      : kind === 'salary' && line.remaining > 0
+        ? String(line.remaining)
+        : '',
   );
-  const [paidOn, setPaidOn] = useState(todayInRiyadh());
-  const [method, setMethod] = useState<PayMethod>('cash');
-  const [note, setNote] = useState('');
+  const [paidOn, setPaidOn] = useState(existing?.paid_on ?? todayInRiyadh());
+  const [method, setMethod] = useState<PayMethod>(existing?.method ?? 'cash');
+  const [note, setNote] = useState(existing?.note ?? '');
   const [error, setError] = useState<string | null>(null);
 
   const value = Number(amount);
@@ -216,15 +225,26 @@ export function PaySheet({
     if (!ok) return setError('Enter an amount bigger than zero.');
     setError(null);
     try {
-      await record.mutateAsync({
-        personId: line.person_id,
-        month,
-        amount: value,
-        kind: chosen,
-        paidOn,
-        method: method === 'transfer' ? 'transfer' : 'cash',
-        note: note.trim() || undefined,
-      });
+      if (existing) {
+        await change.mutateAsync({
+          id: existing.id,
+          amount: value,
+          paidOn,
+          note: note.trim() || undefined,
+          kind: chosen,
+          method: method === 'transfer' ? 'transfer' : 'cash',
+        });
+      } else {
+        await record.mutateAsync({
+          personId: line.person_id,
+          month,
+          amount: value,
+          kind: chosen,
+          paidOn,
+          method: method === 'transfer' ? 'transfer' : 'cash',
+          note: note.trim() || undefined,
+        });
+      }
       onClose();
     } catch (err) {
       setError(errorMessage(err));
@@ -233,7 +253,7 @@ export function PaySheet({
 
   return (
     <Sheet
-      title={PAY_KIND[chosen].title}
+      title={existing ? 'Change this entry' : PAY_KIND[chosen].title}
       subtitle={`${line.full_name} · ${monthName(month)}`}
       onClose={onClose}
     >
@@ -347,11 +367,11 @@ export function PaySheet({
       {error ? <Banner tone="error" message={error} /> : null}
 
       <Button
-        label={PAY_KIND[chosen].button}
+        label={existing ? 'Save the change' : PAY_KIND[chosen].button}
         icon="checkmark"
         size="lg"
         full
-        loading={record.isPending}
+        loading={record.isPending || change.isPending}
         onPress={save}
       />
       <Button label="Cancel" variant="ghost" full onPress={onClose} />

@@ -204,7 +204,9 @@ export function DateField({
             numberOfLines={1}
             style={styles.flexShrink}
           >
-            {safeValue !== today && safeValue !== yesterday ? formatDate(safeValue) : 'Pick a date'}
+            {safeValue !== today && safeValue !== yesterday
+              ? formatDate(safeValue).replace(/\s\d{4}$/, '')
+              : 'Pick a date'}
           </Txt>
         </Pressable>
       </View>

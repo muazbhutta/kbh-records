@@ -7,6 +7,7 @@ import type {
   AttendanceRow,
   AttendanceSheetRow,
   PayKind,
+  PayMethod,
   SalaryCandidate,
   SalaryLine,
   SalaryMonthTotal,
@@ -228,6 +229,39 @@ export function useAttendanceDay(day: string, enabled = true) {
       if (error) throw new Error(error.message);
       return (data ?? []) as AttendanceRow[];
     },
+  });
+}
+
+/**
+ * Putting an entry right.
+ *
+ * The old one is struck out and a new one takes its place, which is
+ * how this table has always worked: nothing in it is ever really
+ * removed, and a wage sheet that can be edited without trace is not a
+ * record of anything.
+ */
+export function useEditSalaryPayment() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: {
+      id: number;
+      amount: number;
+      paidOn: string;
+      note?: string;
+      kind?: string;
+      method?: PayMethod;
+    }) => {
+      const { error } = await supabase.rpc('edit_salary_payment', {
+        p_id: input.id,
+        p_amount: input.amount,
+        p_paid_on: input.paidOn,
+        p_note: input.note,
+        p_kind: input.kind,
+        p_method: input.method,
+      });
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => refreshTheBooks(qc),
   });
 }
 

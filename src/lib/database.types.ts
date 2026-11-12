@@ -3502,6 +3502,17 @@ export type Database = {
         Returns: string
       }
       delete_project: { Args: { p_id: string }; Returns: undefined }
+      edit_salary_payment: {
+        Args: {
+          p_amount: number
+          p_id: number
+          p_kind?: string
+          p_method?: Database["public"]["Enums"]["pay_method"]
+          p_note?: string
+          p_paid_on?: string
+        }
+        Returns: number
+      }
       expense_report: {
         Args: {
           p_category_id?: string

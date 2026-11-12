@@ -59,6 +59,7 @@ export default function SalariesScreen() {
     | { kind: 'remove'; line: SalaryLine }
     | { kind: 'add' }
     | { kind: 'unpay'; payment: SalaryPayment }
+    | { kind: 'editpay'; line: SalaryLine; payment: SalaryPayment }
     | null
   >(null);
 
@@ -453,6 +454,7 @@ export default function SalariesScreen() {
               wide={wide}
               handed={handedTo.get(line.person_id)}
               onUnpay={(payment) => setSheet({ kind: 'unpay', payment })}
+              onEditPayment={(payment) => setSheet({ kind: 'editpay', line, payment })}
               onPay={() => setSheet({ kind: 'pay', line })}
               onEdit={() => setSheet({ kind: 'edit', line })}
               onLeave={() => setSheet({ kind: 'leave', line })}
@@ -486,6 +488,7 @@ export default function SalariesScreen() {
                 wide={wide}
                 handed={handedTo.get(line.person_id)}
                 onUnpay={(payment) => setSheet({ kind: 'unpay', payment })}
+                onEditPayment={(payment) => setSheet({ kind: 'editpay', line, payment })}
                 past
               />
             ))}
@@ -517,6 +520,15 @@ export default function SalariesScreen() {
       ) : null}
       {sheet?.kind === 'remove' ? (
         <RemoveFromPayrollSheet line={sheet.line} onClose={() => setSheet(null)} />
+      ) : null}
+      {sheet?.kind === 'editpay' ? (
+        <PaySheet
+          line={sheet.line}
+          month={month}
+          kind="salary"
+          existing={sheet.payment}
+          onClose={() => setSheet(null)}
+        />
       ) : null}
       {sheet?.kind === 'unpay' ? (
         <RemovePaymentSheet payment={sheet.payment} onClose={() => setSheet(null)} />
@@ -589,6 +601,7 @@ function SalaryCard({
   wide,
   handed: given,
   onUnpay,
+  onEditPayment,
   past = false,
   onPay,
   onEdit,
@@ -601,6 +614,8 @@ function SalaryCard({
   /** What this man was handed this month, his own entries and nobody else's. */
   handed?: SalaryPayment[];
   onUnpay?: (payment: SalaryPayment) => void;
+  /** Tapping an entry opens it to be put right. */
+  onEditPayment?: (payment: SalaryPayment) => void;
   past?: boolean;
   onPay?: () => void;
   onEdit?: () => void;
@@ -851,7 +866,17 @@ function SalaryCard({
           {open ? (
             <View style={styles.entries}>
               {rows.map((p) => (
-                <View key={p.id} style={styles.entry}>
+                <Pressable
+                  key={p.id}
+                  onPress={onEditPayment ? () => onEditPayment(p) : undefined}
+                  disabled={!onEditPayment}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Change this ${p.kind} of ${money(Number(p.amount))}`}
+                  style={({ pressed }) => [
+                    styles.entry,
+                    pressed && onEditPayment && styles.openPressed,
+                  ]}
+                >
                   <View
                     style={[
                       styles.payIcon,
@@ -897,8 +922,14 @@ function SalaryCard({
                       <Ionicons name="close" size={15} color={colors.textFaint} />
                     </Pressable>
                   ) : null}
-                </View>
+                </Pressable>
               ))}
+              {/* A row that can be pressed should say so once. */}
+              {onEditPayment ? (
+                <Txt variant="caption" color={colors.textFaint} numberOfLines={1}>
+                  Tap an entry to change it
+                </Txt>
+              ) : null}
             </View>
           ) : null}
         </>
