@@ -180,9 +180,27 @@ export function CategoryDonut({
             <Txt variant="label" color={colors.textFaint}>
               {focus ? focus.name.toUpperCase() : 'TOTAL'}
             </Txt>
-            <Txt variant="heading" color={colors.navy} numberOfLines={1}>
-              {money(focus ? Number(focus.total) : total)}
-            </Txt>
+            {/*
+              The hole in the middle of a ring is a fixed, narrow box,
+              and a long figure came out of it with its end missing.
+              The size is read off the room there actually is, so the
+              whole number always shows however big the company gets.
+            */}
+            {(() => {
+              const shown = money(focus ? Number(focus.total) : total);
+              const room = size * 0.62;
+              const fits = Math.floor(room / (shown.length * 0.58));
+              return (
+                <Txt
+                  variant="heading"
+                  color={colors.navy}
+                  numberOfLines={1}
+                  style={{ fontSize: Math.max(11, Math.min(17, fits)) }}
+                >
+                  {shown}
+                </Txt>
+              );
+            })()}
             {focus ? (
               <Txt variant="caption" color={colors.textMuted}>
                 {Math.round(focus.share * 100)}%

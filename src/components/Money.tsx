@@ -184,14 +184,35 @@ export function CashCard({
   );
 }
 
+/**
+ * A figure must never be cut.
+ *
+ * "SAR 267,660.00" wanted 143 points in the 138 a half-width tile
+ * gives it, so it came out as "SAR 267,660...." - a number with its
+ * end missing, which is worse than a small number. Long figures step
+ * down a size or two instead; short ones are left bold and big.
+ */
+export function fitFigure(text: string, big: number): number {
+  if (text.length <= 12) return big;
+  if (text.length <= 14) return Math.round(big * 0.88);
+  if (text.length <= 16) return Math.round(big * 0.78);
+  return Math.round(big * 0.68);
+}
+
 function CashBit({ label, value, tone }: { label: string; value: number; tone: string }) {
+  const shown = amountOnly(value);
   return (
     <View style={styles.cashBit}>
       <Txt variant="caption" color={colors.onDarkMuted}>
         {label}
       </Txt>
-      <Txt weight="semibold" color={tone} style={styles.cashBitValue} numberOfLines={1}>
-        {amountOnly(value)}
+      <Txt
+        weight="semibold"
+        color={tone}
+        style={[styles.cashBitValue, { fontSize: fitFigure(shown, 17) }]}
+        numberOfLines={1}
+      >
+        {shown}
       </Txt>
     </View>
   );
@@ -227,7 +248,12 @@ export function Figure({
       <Txt variant="caption" color={colors.textMuted}>
         {label}
       </Txt>
-      <Txt weight="bold" color={tone} style={styles.figureValue} numberOfLines={1}>
+      <Txt
+        weight="bold"
+        color={tone}
+        style={[styles.figureValue, { fontSize: fitFigure(money(value), 18) }]}
+        numberOfLines={1}
+      >
         {money(value)}
       </Txt>
     </>

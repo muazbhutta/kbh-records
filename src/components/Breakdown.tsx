@@ -5,6 +5,7 @@ import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'rea
 import { useIsWide } from '@/components/Screen';
 import { Txt } from '@/components/Txt';
 import { money } from '@/lib/format';
+import { fitFigure } from '@/components/Money';
 import { colors, radius } from '@/theme';
 
 /**
@@ -37,7 +38,14 @@ export function TotalCard({
       <Txt variant="label" color={colors.textMuted}>
         {label}
       </Txt>
-      <Txt weight="bold" color={tone} style={styles.totalValue} numberOfLines={1}>
+      {/* Stepped down rather than cut: a number with its end missing
+          is worse than a smaller number. */}
+      <Txt
+        weight="bold"
+        color={tone}
+        style={[styles.totalValue, { fontSize: fitFigure(money(total), 30) }]}
+        numberOfLines={1}
+      >
         {money(total)}
       </Txt>
       <Txt variant="caption" color={colors.textMuted}>

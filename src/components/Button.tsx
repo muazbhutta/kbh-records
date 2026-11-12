@@ -98,7 +98,12 @@ export function Button({
         <View style={styles.row}>
           {icon ? <Ionicons name={icon} size={dim.icon} color={tone.fg} /> : null}
           <Txt
-            style={{ fontSize: dim.font, fontFamily: fonts.semibold, color: tone.fg }}
+            style={{
+              fontSize: dim.font,
+              fontFamily: fonts.semibold,
+              color: tone.fg,
+              flexShrink: 1,
+            }}
             numberOfLines={1}
           >
             {label}
@@ -203,9 +208,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',
+    // A label longer than the button used to run straight out of it
+    // and across whatever sat beside it. It is cut now, not spilled.
+    overflow: 'hidden',
   },
   full: { alignSelf: 'stretch' },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 9 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 9, minWidth: 0, flexShrink: 1 },
   big: {
     flex: 1,
     minWidth: 140,

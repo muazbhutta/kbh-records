@@ -452,7 +452,7 @@ function SalaryCard({
             {done ? <Badge label="Paid" tone="green" style={styles.badgeMid} /> : null}
             {past ? <Badge label="Off salary" tone="grey" style={styles.badgeMid} /> : null}
           </View>
-          <Txt variant="caption" color={colors.textMuted} numberOfLines={1}>
+          <Txt variant="caption" color={colors.textMuted} numberOfLines={2}>
             {line.job_title ? `${line.job_title} · ` : ''}
             {daily
               ? `${money(Number(line.daily_rate))} a day`
@@ -745,8 +745,11 @@ const styles = StyleSheet.create({
     gap: 9,
   },
   cardPast: { backgroundColor: colors.bg },
+  // Top of the card: a name and his terms on the left, the figure on
+  // the right. The left shrinks and wraps; the figure never does,
+  // because a half-printed amount of money is worse than none.
   cardTop: { flexDirection: 'row', alignItems: 'center', gap: 11 },
-  cardWho: { flex: 1, gap: 2 },
+  cardWho: { flex: 1, gap: 2, minWidth: 0 },
   nameLine: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   badgeMid: { alignSelf: 'center' },
   barRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
@@ -755,11 +758,14 @@ const styles = StyleSheet.create({
   actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 7 },
   actionsWide: { flexWrap: 'nowrap' },
   small: {
+    flexGrow: 1,
+    flexBasis: '44%',
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: 5,
     paddingHorizontal: 11,
-    height: 36,
+    height: 40,
     borderRadius: radius.pill,
     borderWidth: 1.5,
     borderColor: colors.line,

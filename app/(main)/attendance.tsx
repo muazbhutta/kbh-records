@@ -170,23 +170,32 @@ export default function AttendanceScreen() {
 
       {error ? <Banner tone="error" message={error} /> : null}
 
+      {/* The count is on the tile above twice over, so these say only
+          what they do. "Mark the other 10 present" wanted 186 points of
+          label in the 104 a half-width button gives it. */}
       {waiting > 0 ? (
-        <View style={styles.restRow}>
-          <Button
-            label={`Mark the other ${waiting} present`}
-            icon="checkmark-done-outline"
-            variant="success"
-            onPress={() => markRest(true)}
-            style={styles.restButton}
-          />
-          <Button
-            label="All absent"
-            icon="close-outline"
-            variant="outline"
-            onPress={() => markRest(false)}
-            style={styles.restButton}
-          />
-        </View>
+        <>
+          <Txt variant="caption" color={colors.textMuted} style={styles.restHint}>
+            {waiting} {waiting === 1 ? 'man has' : 'men have'} no answer yet. Settle them in one
+            go, then change any that differ.
+          </Txt>
+          <View style={styles.restRow}>
+            <Button
+              label="All present"
+              icon="checkmark-done-outline"
+              variant="success"
+              onPress={() => markRest(true)}
+              style={styles.restButton}
+            />
+            <Button
+              label="All absent"
+              icon="close-outline"
+              variant="outline"
+              onPress={() => markRest(false)}
+              style={styles.restButton}
+            />
+          </View>
+        </>
       ) : null}
 
       {/* -------------------------------------------------- the people */}
@@ -427,6 +436,7 @@ const styles = StyleSheet.create({
   },
   tileWide: { flexBasis: '100%' },
 
+  restHint: { marginBottom: 7 },
   restRow: { flexDirection: 'row', gap: 8, marginBottom: 12 },
   restButton: { flexGrow: 1, flexBasis: '44%' },
 
