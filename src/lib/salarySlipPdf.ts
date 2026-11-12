@@ -46,7 +46,7 @@ const escape = (value: unknown): string =>
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
 
-const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const DAY_NAMES = ['Itwar', 'Peer', 'Mangal', 'Budh', 'Jumerat', 'JUMA', 'Hafta'];
 
 /**
  * The days of a month, as plain 'YYYY-MM-DD' strings.
@@ -67,50 +67,78 @@ function daysOfMonth(month: string): { date: string; dow: number }[] {
   return out;
 }
 
-/** How the man is paid, said the way the office says it. */
+/** How the man is paid, in the words he is told it in. */
 function terms(line: SalaryLine): string {
   if (line.pay_kind === 'daily') {
-    return `${money(Number(line.daily_rate))} a day`;
+    return `${money(Number(line.daily_rate))} roz ka`;
   }
   const wage = Number(line.monthly_amount) > 0
-    ? `${money(Number(line.monthly_amount))} a month`
-    : 'No monthly figure set';
+    ? `${money(Number(line.monthly_amount))} mahana`
+    : 'Mahana tankhwah abhi tay nahi';
   return Number(line.friday_bonus) > 0
-    ? `${wage} · ${money(Number(line.friday_bonus))} for every Friday worked`
+    ? `${wage} · har Juma kaam kiya to ${money(Number(line.friday_bonus))}`
     : wage;
 }
 
-/** The statement at the foot: how the figure at the end was arrived at. */
+/**
+ * The sum at the foot: how the last figure on the page was arrived at.
+ *
+ * Read down, in order, the way a man would ask it: what was left over
+ * from last month, what this month came to, what he has taken against
+ * it, and what that leaves. The words are the ones he is paid in.
+ */
 function statement(slip: SalarySlip, month: string): string {
   const { line } = slip;
   const daily = line.pay_kind === 'daily';
   const earned = Number(line.earned);
   const advance = Number(line.advance_paid);
   const paid = Number(line.salary_paid);
+  const carried = Number(line.carried_in);
   const left = Number(line.remaining);
 
   const rows: { label: string; note: string; value: number; tone?: string }[] = [];
 
+  /*
+   * Last month, before anything of this one.
+   *
+   * It is first because it is the thing a man argues about, and
+   * burying it under the month's own figures is how an office ends up
+   * explaining the same 200 riyals every payday.
+   */
+  if (Math.abs(carried) >= 0.005) {
+    rows.push(
+      carried > 0
+        ? {
+            label: 'Pichhle mahine ka baqi',
+            note: 'Company ne pichhle mahine ka itna dena tha',
+            value: carried,
+            tone: 'carry',
+          }
+        : {
+            label: 'Pichhle mahine zyada liya',
+            note: 'Us mahine kamai se itna zyada liya tha - is mahine kat raha hai',
+            value: carried,
+            tone: 'owes',
+          },
+    );
+  }
+
   if (daily) {
     rows.push({
-      label: 'Days worked',
-      note: `${line.days_present} ${line.days_present === 1 ? 'day' : 'days'} at ${money(
-        Number(line.daily_rate),
-      )}`,
+      label: 'Dehaari',
+      note: `${line.days_present} din kaam kiya, har din ${money(Number(line.daily_rate))}`,
       value: earned,
     });
   } else {
     rows.push({
-      label: 'Monthly salary',
+      label: 'Mahane ki tankhwah',
       note: monthName(month),
       value: Number(line.monthly_amount),
     });
     if (Number(line.friday_bonus) > 0) {
       rows.push({
-        label: 'Friday bonus',
-        note: `${line.bonus_days} ${line.bonus_days === 1 ? 'Friday' : 'Fridays'} worked at ${money(
-          Number(line.friday_bonus),
-        )}`,
+        label: 'Juma bonus',
+        note: `${line.bonus_days} Juma kaam kiya, har Juma ${money(Number(line.friday_bonus))}`,
         value: Number(line.bonus_total),
         tone: 'bonus',
       });
@@ -123,10 +151,15 @@ function statement(slip: SalarySlip, month: string): string {
         <td class="s-l">${escape(r.label)}${
           r.tone === 'bonus' ? '<span class="star">&#9733;</span>' : ''
         }<span class="s-n">${escape(r.note)}</span></td>
-        <td class="num">${escape(amountOnly(r.value))}</td>
+        <td class="num">${r.value < 0 ? '&minus;&thinsp;' : ''}${escape(
+          amountOnly(Math.abs(r.value)),
+        )}</td>
       </tr>`,
     )
     .join('');
+
+  const owesBack = left < -0.005;
+  const settled = Math.abs(left) < 0.005;
 
   return `
   <table class="state">
@@ -134,27 +167,37 @@ function statement(slip: SalarySlip, month: string): string {
     <tbody>
       ${lines}
       <tr class="rule">
-        <td class="s-l">Earned this month<span class="s-n">What the month is worth to him</span></td>
-        <td class="num strong">${escape(amountOnly(earned))}</td>
+        <td class="s-l">Kul bana<span class="s-n">${
+          Math.abs(carried) >= 0.005
+            ? 'Pichhle mahine ka milakar'
+            : 'Is mahine ki kul kamai'
+        }</span></td>
+        <td class="num strong">${escape(amountOnly(carried + earned))}</td>
       </tr>
       <tr class="less">
-        <td class="s-l">Less advance taken<span class="s-n">${
-          advance > 0 ? 'Drawn before payday, shown on the register' : 'Nothing drawn early'
+        <td class="s-l">Advance liya<span class="s-n">${
+          advance > 0 ? 'Tankhwah se pehle liya - upar har din ke samne likha hai' : 'Kuch nahi liya'
         }</span></td>
         <td class="num">&minus;&thinsp;${escape(amountOnly(advance))}</td>
       </tr>
       <tr class="less">
-        <td class="s-l">Less salary paid<span class="s-n">${
-          paid > 0 ? 'Handed over by the company' : 'Nothing handed over yet'
+        <td class="s-l">Tankhwah mili<span class="s-n">${
+          paid > 0 ? 'Company ne di' : 'Abhi nahi mili'
         }</span></td>
         <td class="num">&minus;&thinsp;${escape(amountOnly(paid))}</td>
       </tr>
     </tbody>
   </table>
-  <div class="owed ${left === 0 && earned > 0 ? 'settled' : ''}">
-    <div class="owed-l">${left === 0 && earned > 0 ? 'Fully paid' : 'Still owed to him'}</div>
-    <div class="owed-v">${escape(money(left))}</div>
-    <div class="owed-n">Paid by the company so far: ${escape(money(advance + paid))}</div>
+  <div class="owed ${owesBack ? 'owes' : settled ? 'settled' : ''}">
+    <div class="owed-l">${
+      owesBack ? 'Aap ne zyada liya hai' : settled ? 'Hisaab poora ho gaya' : 'Baqi - company aap ko degi'
+    }</div>
+    <div class="owed-v">${escape(money(Math.abs(left)))}</div>
+    <div class="owed-n">${
+      owesBack
+        ? 'Itna agle mahine ki tankhwah se kaat liya jayega'
+        : `Company ab tak de chuki: ${money(advance + paid)}`
+    }</div>
   </div>`;
 }
 
@@ -166,7 +209,11 @@ function slipPage(slip: SalarySlip, meta: SalarySlipMeta): string {
   // Nothing left to pay, on a month that was worth something. Said the
   // same way on the tile and on the block at the foot, so the top of the
   // page and the bottom of it cannot seem to disagree.
-  const settled = Number(line.remaining) === 0 && Number(line.earned) > 0;
+  const settled = Math.abs(Number(line.remaining)) < 0.005;
+  // He has drawn more than he has earned. Not an error, and not his
+  // fault - but the one thing on the page that must not read like good
+  // news, because it comes off next month.
+  const owesBack = Number(line.remaining) < -0.005;
 
   const marked = new Map(slip.days.map((d) => [d.on_date, d]));
   const drawn = new Map<string, SalaryPayment[]>();
@@ -208,24 +255,24 @@ function slipPage(slip: SalarySlip, meta: SalarySlipMeta): string {
     const bonus = !daily && dow === 5 && worth > 0;
 
     const mark = !a
-      ? '<span class="m none">Not said</span>'
+      ? '<span class="m none">Likha nahi</span>'
       : a.present
-        ? '<span class="m in">Present</span>'
-        : '<span class="m out">Absent</span>';
+        ? '<span class="m in">Hazir</span>'
+        : '<span class="m out">Chhutti</span>';
 
     const took = here
       .map(
         (pay) => `<div class="took-l"><span class="took ${pay.kind}">${
-          pay.kind === 'advance' ? 'Advance' : 'Salary'
+          pay.kind === 'advance' ? 'Advance' : 'Tankhwah'
         } ${escape(amountOnly(Number(pay.amount)))}</span><span class="why bidi">${escape(
-          pay.note || (pay.kind === 'advance' ? 'No reason given' : 'Salary for the month'),
-        )}${pay.entered_by_name ? ` &middot; by ${escape(pay.entered_by_name)}` : ''}</span></div>`,
+          pay.note || (pay.kind === 'advance' ? 'Wajah nahi likhi' : 'Mahine ki tankhwah'),
+        )}${pay.entered_by_name ? ` &middot; likha: ${escape(pay.entered_by_name)}` : ''}</span></div>`,
       )
       .join('');
 
     return `<tr class="${bonus ? 'fri' : ''}${a ? '' : ' quiet'}">
       <td class="dt"><b>${Number(date.slice(8))}</b> <span class="dw">${DAY_NAMES[dow]}</span></td>
-      <td>${mark}${bonus ? '<span class="fri-tag">&#9733; Friday bonus</span>' : ''}</td>
+      <td>${mark}${bonus ? '<span class="fri-tag">&#9733; Juma bonus</span>' : ''}</td>
       <td class="num small">${worth > 0 ? escape(amountOnly(worth)) : ''}</td>
       <td class="took-c">${took}</td>
     </tr>`;
@@ -238,7 +285,7 @@ function slipPage(slip: SalarySlip, meta: SalarySlipMeta): string {
     </colgroup>
     <thead>
       <tr>
-        <th>Date</th><th>Attendance</th><th class="num">Worth</th><th>Taken that day</th>
+        <th>Tareekh</th><th>Hazri</th><th class="num">Us din ka</th><th>Us din liya</th>
       </tr>
     </thead>
     <tbody>${cells.join('')}</tbody>
@@ -257,9 +304,9 @@ function slipPage(slip: SalarySlip, meta: SalarySlipMeta): string {
       <div class="place">Jeddah, Saudi Arabia</div>
     </div>
     <div class="right">
-      <div class="title">Salary &amp; Attendance</div>
+      <div class="title">Tankhwah aur Hazri</div>
       <div class="period">${escape(monthName(meta.month))}${
-        line.slip_no > 0 ? ` &middot; Slip #${String(line.slip_no).padStart(2, '0')}` : ''
+        line.slip_no > 0 ? ` &middot; Parchi #${String(line.slip_no).padStart(2, '0')}` : ''
       }</div>
     </div>
   </div>
@@ -267,10 +314,10 @@ function slipPage(slip: SalarySlip, meta: SalarySlipMeta): string {
   <div class="who">
     <div class="who-l">
       <div class="who-n bidi">${escape(line.full_name)}</div>
-      <div class="who-j bidi">${escape(line.job_title ?? 'No work written down')}</div>
+      <div class="who-j bidi">${escape(line.job_title ?? 'Kaam likha nahi')}</div>
     </div>
     <div class="who-r">
-      <span class="kind ${daily ? 'daily' : 'monthly'}">${daily ? 'Daily wage · Dehaari' : 'Monthly staff'}</span>
+      <span class="kind ${daily ? 'daily' : 'monthly'}">${daily ? 'Dehaari mazdoor' : 'Mahana mulazim'}</span>
       <div class="who-t">${escape(terms(line))}</div>
     </div>
   </div>
@@ -278,54 +325,56 @@ function slipPage(slip: SalarySlip, meta: SalarySlipMeta): string {
   <div class="tiles">
     <div class="tile">
       <div class="tile-v">${line.days_present}</div>
-      <div class="tile-l">Days worked</div>
+      <div class="tile-l">Kaam ke din</div>
     </div>
     <div class="tile">
       <div class="tile-v">${Math.max(0, Number(line.days_marked) - Number(line.days_present))}</div>
-      <div class="tile-l">Days off</div>
+      <div class="tile-l">Chhutti</div>
     </div>
     ${
       daily
         ? `<div class="tile">
             <div class="tile-v">${escape(amountOnly(Number(line.daily_rate)))}</div>
-            <div class="tile-l">A day</div>
+            <div class="tile-l">Roz ka</div>
           </div>`
         : `<div class="tile bonus">
             <div class="tile-v">${line.bonus_days}</div>
-            <div class="tile-l">Fridays worked</div>
+            <div class="tile-l">Juma kaam kiya</div>
           </div>`
     }
     <div class="tile">
       <div class="tile-v">${escape(amountOnly(Number(line.earned)))}</div>
-      <div class="tile-l">Earned (SAR)</div>
+      <div class="tile-l">Is mahine bana</div>
     </div>
-    <div class="tile owed-tile${settled ? ' settled' : ''}">
-      <div class="tile-v">${escape(amountOnly(Number(line.remaining)))}</div>
-      <div class="tile-l">${settled ? 'Fully paid' : 'Still owed'}</div>
+    <div class="tile owed-tile${settled ? ' settled' : ''}${owesBack ? ' owes' : ''}">
+      <div class="tile-v">${escape(amountOnly(Math.abs(Number(line.remaining))))}</div>
+      <div class="tile-l">${
+        owesBack ? 'Zyada liya' : settled ? 'Hisaab poora' : 'Baqi'
+      }</div>
     </div>
   </div>
 
-  <h2>The month, day by day</h2>
+  <h2>Mahine ka hisaab, din ba din</h2>
   ${
     slip.days.length === 0 && slip.payments.length === 0
-      ? '<div class="empty">No attendance was marked for him this month, and nothing was handed over.</div>'
+      ? '<div class="empty">Is mahine na hazri lagi, na kuch diya gaya.</div>'
       : register
   }
 
   <div class="close">
     <div class="close-l">
-      <h2>Signed</h2>
+      <h2>Dastkhat</h2>
       <div class="sign">
-        <div>Received by &nbsp;________________________</div>
-        <div>Paid by &nbsp;________________________</div>
+        <div>Lene wala &nbsp;________________________</div>
+        <div>Dene wala &nbsp;________________________</div>
       </div>
       <div class="says">
-        Every advance and every payment is shown above against the day it
-        was taken, with the reason given at the time.
+        Har advance aur har tankhwah upar usi din ke samne likhi hai jis
+        din li gayi, wajah ke saath.
       </div>
     </div>
     <div class="close-r">
-      <h2>How it adds up</h2>
+      <h2>Hisaab</h2>
       ${statement(slip, meta.month)}
     </div>
   </div>
@@ -336,8 +385,8 @@ function slipPage(slip: SalarySlip, meta: SalarySlipMeta): string {
     <div class="foot-line bidi">${escape(line.full_name)} &middot; ${escape(
       monthName(meta.month),
     )}${
-      line.slip_no > 0 ? ` &middot; Slip #${String(line.slip_no).padStart(2, '0')}` : ''
-    } &middot; Prepared by ${escape(meta.generatedBy)} &middot; Taken ${escape(
+      line.slip_no > 0 ? ` &middot; Parchi #${String(line.slip_no).padStart(2, '0')}` : ''
+    } &middot; Banayi: ${escape(meta.generatedBy)} &middot; ${escape(
       formatDateTime(new Date()),
     )}</div>
   </div>
@@ -352,7 +401,7 @@ export function buildSalarySlipsHtml(slips: SalarySlip[], meta: SalarySlipMeta):
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Salary &amp; Attendance &mdash; ${escape(monthName(meta.month))}</title>
+<title>Tankhwah aur Hazri &mdash; ${escape(monthName(meta.month))}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Naskh+Arabic:wght@400;600;700&display=swap" rel="stylesheet" />
@@ -378,7 +427,7 @@ export function buildSalarySlipsHtml(slips: SalarySlip[], meta: SalarySlipMeta):
   }
 
   /* One man, one sheet. Each starts a new page so they can be torn apart. */
-  .person { padding: 11mm 10mm 9mm; break-after: page; page-break-after: always; }
+  .person { padding: 10mm 10mm 7mm; break-after: page; page-break-after: always; }
   .person:last-child { break-after: auto; page-break-after: auto; }
 
   /* ----------------------------------------------------- the head band */
@@ -431,6 +480,8 @@ export function buildSalarySlipsHtml(slips: SalarySlip[], meta: SalarySlipMeta):
   .tile.owed-tile { background: #0E2340; border-color: #0E2340; }
   .tile.owed-tile.settled { background: #126E45; border-color: #126E45; }
   .tile.owed-tile.settled .tile-l { color: #BFE3CF; }
+  .tile.owed-tile.owes { background: #B3261E; border-color: #B3261E; }
+  .tile.owed-tile.owes .tile-l { color: #F6CFCC; }
   .tile.owed-tile .tile-v { color: #fff; }
   .tile.owed-tile .tile-l { color: #A9BBD0; }
 
@@ -460,7 +511,7 @@ export function buildSalarySlipsHtml(slips: SalarySlip[], meta: SalarySlipMeta):
   /* Two columns of days, so a whole month fits the sheet it belongs on. */
   .reg-two { display: flex; gap: 9px; align-items: flex-start; }
   .reg-col { flex: 1; min-width: 0; }
-  .reg td { padding: 2.2px 5px; font-size: 10px; line-height: 1.3; }
+  .reg td { padding: 1.7px 5px; font-size: 10px; line-height: 1.28; }
   .reg th { padding: 4px 5px; font-size: 7.6px; }
   /* A day nobody answered for is there, but it does not shout. */
   .reg .quiet td { color: #AAB6C4; background: #FDFDFE; }
@@ -511,12 +562,17 @@ export function buildSalarySlipsHtml(slips: SalarySlip[], meta: SalarySlipMeta):
   .close, .sign, .state, .owed { break-inside: avoid; page-break-inside: avoid; }
 
   .state { border: 1px solid #E3E8EF; border-radius: 9px 9px 0 0; overflow: hidden; }
-  .state td { border-bottom: 1px solid #EEF1F6; padding: 6px 10px; }
+  .state td { border-bottom: 1px solid #EEF1F6; padding: 4px 10px; }
   .state tr:last-child td { border-bottom: 0; }
   .state .s-l { font-weight: 600; font-size: 10px; }
   .state .s-n { display: block; font-weight: 400; font-size: 8.6px; color: #8A99AB; }
   .state tr.bonus td { background: #FFF9EC; }
   .state tr.bonus .s-l, .state tr.bonus .num { color: #A8730B; }
+  /* What last month left behind, in its own colour either way. */
+  .state tr.carry td { background: #EFF6FB; }
+  .state tr.carry .s-l, .state tr.carry .num { color: #0B6493; }
+  .state tr.owes td { background: #FDEEEC; }
+  .state tr.owes .s-l, .state tr.owes .num { color: #B3261E; }
   .state .star { color: #E0A80D; margin-left: 4px; }
   .state tr.rule td { border-top: 1.5px solid #CBD5E1; background: #F8FAFC; }
   .state tr.rule .num.strong { font-size: 13px; font-weight: 700; }
@@ -524,9 +580,11 @@ export function buildSalarySlipsHtml(slips: SalarySlip[], meta: SalarySlipMeta):
 
   .owed {
     background: #0E2340; color: #fff; border-radius: 0 0 9px 9px;
-    padding: 10px 12px 11px;
+    padding: 9px 12px 10px;
   }
   .owed.settled { background: #126E45; }
+  .owed.owes { background: #B3261E; }
+  .owed.owes .owed-l, .owed.owes .owed-n { color: #F6CFCC; }
   .owed-l {
     font-size: 8px; text-transform: uppercase; letter-spacing: 0.8px; color: #A9BBD0;
     font-weight: 700;
@@ -538,7 +596,7 @@ export function buildSalarySlipsHtml(slips: SalarySlip[], meta: SalarySlipMeta):
   .owed-n { font-size: 8.8px; color: #A9BBD0; margin-top: 2px; }
   .owed.settled .owed-l, .owed.settled .owed-n { color: #BFE3CF; }
 
-  .sign { display: flex; flex-direction: column; gap: 17px; margin-top: 10px; }
+  .sign { display: flex; flex-direction: column; gap: 15px; margin-top: 8px; }
   .sign div { border-top: 1px solid #CBD5E1; padding-top: 5px; color: #8A99AB; font-size: 9px; }
   .says {
     margin-top: 15px; color: #8A99AB; font-size: 8.6px; line-height: 1.4;
@@ -576,9 +634,9 @@ export function buildSalarySlipsHtml(slips: SalarySlip[], meta: SalarySlipMeta):
 <body>
 ${
   slips.length === 0
-    ? `<section class="person"><div class="empty">Nobody was on salary in ${escape(
+    ? `<section class="person"><div class="empty">${escape(
         monthName(meta.month),
-      )}.</div></section>`
+      )} mein koi tankhwah par nahi tha.</div></section>`
     : pages
 }
 </body>

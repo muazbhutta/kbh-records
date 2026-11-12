@@ -128,7 +128,16 @@ export default function SalariesScreen() {
   // Whose month is on the screen, in the order it is read. What is shown
   // is what gets downloaded, so the button can never quietly include a
   // man the segmented control is hiding.
-  const shown = useMemo(() => [...onPayroll, ...alsoPaid], [onPayroll, alsoPaid]);
+  const shown = useMemo(
+    () =>
+      [...onPayroll, ...alsoPaid].filter(
+        // A man nobody marked, who was handed nothing and owes nothing,
+        // has no month to report. This month's list still shows him so
+        // the office can act; his slip would be a blank page.
+        (l) => l.days_marked > 0 || l.payments > 0 || Number(l.carried_in) !== 0,
+      ),
+    [onPayroll, alsoPaid],
+  );
 
   /**
    * The month's slips: one page a man, each starting a new sheet so the
@@ -276,8 +285,8 @@ export default function SalariesScreen() {
           spent={t.salary_paid}
           returned={t.advance_paid}
           spentLabel="Paid"
-          owedTitle="Fully paid"
-          owedNote="Nothing is owed for this month"
+          owedTitle="Taken more than earned"
+          owedNote="The staff owe this back - it comes off next month"
         />
       ) : null}
 
@@ -602,7 +611,14 @@ function SalaryCard({
   // turned up at what each was worth. The bar and the "all paid" mark
   // both read off this, so they mean the same thing for both sorts.
   const earned = Number(line.earned);
+  const carried = Number(line.carried_in);
+  /*
+   * What is owed right now, carry and all. It can go below nought: a
+   * man who drew more than his month was worth owes it back, and the
+   * card has to say so rather than round it away to "nothing left".
+   */
   const left = Number(line.remaining);
+  const owesBack = left < 0;
   const done = earned > 0 && left === 0;
 
   return (
@@ -615,6 +631,7 @@ function SalaryCard({
               {line.full_name}
             </Txt>
             {done ? <Badge label="Paid" tone="green" style={styles.badgeMid} /> : null}
+            {owesBack ? <Badge label="Took extra" tone="red" style={styles.badgeMid} /> : null}
             {past ? <Badge label="Off salary" tone="grey" style={styles.badgeMid} /> : null}
           </View>
           <Txt variant="caption" color={colors.textMuted} numberOfLines={2}>
@@ -627,8 +644,12 @@ function SalaryCard({
           </Txt>
         </View>
         {!past ? (
-          <Txt weight="bold" color={done ? colors.green : colors.red} numberOfLines={1}>
-            {done ? money(handed) : money(left)}
+          <Txt
+            weight="bold"
+            color={done ? colors.green : owesBack ? colors.red : colors.navy}
+            numberOfLines={1}
+          >
+            {done ? money(handed) : money(Math.abs(left))}
           </Txt>
         ) : (
           <Txt weight="bold" color={colors.textMuted}>
@@ -680,6 +701,32 @@ function SalaryCard({
         </View>
       ) : null}
 
+      {/*
+        What last month left behind. Shown on the card, not only on the
+        slip, because it is the figure that makes this month's total
+        look wrong to anybody who adds up the wage and the bonus
+        themselves.
+      */}
+      {carried !== 0 ? (
+        <View style={styles.daysRow}>
+          <Ionicons
+            name={carried > 0 ? 'arrow-forward-circle' : 'alert-circle'}
+            size={14}
+            color={carried > 0 ? colors.blue : colors.red}
+          />
+          <Txt
+            variant="caption"
+            weight="semibold"
+            color={carried > 0 ? colors.blue : colors.red}
+            numberOfLines={1}
+          >
+            {carried > 0
+              ? `${money(carried)} brought from before`
+              : `${money(Math.abs(carried))} taken extra before`}
+          </Txt>
+        </View>
+      ) : null}
+
       {earned > 0 ? (
         <View style={styles.barRow}>
           {/* The bar fills what is left over; a stretched bar put beside
@@ -691,8 +738,16 @@ function SalaryCard({
               stretch
             />
           </View>
-          <Txt variant="caption" color={colors.textFaint} numberOfLines={1}>
-            {done ? 'all paid' : `${money(left)} left`}
+          <Txt
+            variant="caption"
+            color={owesBack ? colors.red : colors.textFaint}
+            numberOfLines={1}
+          >
+            {done
+              ? 'all paid'
+              : owesBack
+                ? `${money(Math.abs(left))} to come off next month`
+                : `${money(left)} left`}
           </Txt>
         </View>
       ) : daily ? (

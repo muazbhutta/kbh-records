@@ -3724,6 +3724,7 @@ export type Database = {
           advance_paid: number
           bonus_days: number
           bonus_total: number
+          carried_in: number
           daily_rate: number
           days_marked: number
           days_present: number

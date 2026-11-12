@@ -731,6 +731,13 @@ export type SalaryLine = {
   on_payroll: boolean;
   /** Which of his own months this is: his first is 1. */
   slip_no: number;
+  /**
+   * What he brought into this month from every month before it.
+   *
+   * Plus means the company still owed him; minus means he had drawn
+   * more than he earned and it comes off this month.
+   */
+  carried_in: number;
 };
 
 /** One man on one day, and whether he turned up. */
