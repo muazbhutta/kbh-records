@@ -61,86 +61,95 @@ export function EntryRow({
       accessibilityLabel={`${lineTitle(entry)} ${entry.amount}`}
       style={({ pressed }) => [styles.row, pressed && styles.pressed]}
     >
-      {thumbUrl ? (
-        <Image source={{ uri: thumbUrl }} style={styles.thumb} contentFit="cover" transition={150} />
-      ) : (
-        <View style={[styles.icon, { backgroundColor: `${tone}14` }]}>
-          <Ionicons name={lineIcon(entry)} size={20} color={tone} />
-        </View>
-      )}
-
-      <View style={styles.main}>
-        <Txt variant="subtitle" weight="semibold" numberOfLines={1}>
-          {lineTitle(entry)}
-        </Txt>
-
-        <Txt variant="caption" color={colors.textMuted} numberOfLines={1}>
-          {formatDate(entry.bill_date)}
-          {showOwner && entry.owner_name ? ` · ${entry.owner_name}` : ''}
-          {entry.note ? ` · ${entry.note}` : ''}
-        </Txt>
-
-        {entry.entered_for_someone_else ||
-        entry.photo_count > 0 ||
-        entry.expense_type ||
-        entry.project_name ||
-        entry.pay_method ? (
-          <View style={styles.flags}>
-            {entry.type === 'expense' ? (
-              <TypeTag
-                type={entry.expense_type}
-                scanState={entry.bill_scan_state}
-                enteredAt={entry.entered_at}
-                small
-              />
-            ) : (
-              <PayMethodTag method={entry.pay_method} short />
-            )}
-            {entry.project_name ? (
-              <Badge label={entry.project_name} tone="navy" icon="business-outline" />
-            ) : null}
-            {entry.entered_for_someone_else ? (
-              <Badge
-                label={`Entered by ${firstName(entry.entered_by_name) || 'someone else'}`}
-                tone="blue"
-                icon="person-outline"
-              />
-            ) : null}
-            {entry.photo_count > 0 ? (
-              <Badge
-                label={entry.photo_count === 1 ? '1 bill' : `${entry.photo_count} bills`}
-                tone="grey"
-                icon="image-outline"
-              />
-            ) : null}
+      <View style={styles.top}>
+        {thumbUrl ? (
+          <Image
+            source={{ uri: thumbUrl }}
+            style={styles.thumb}
+            contentFit="cover"
+            transition={150}
+          />
+        ) : (
+          <View style={[styles.icon, { backgroundColor: `${tone}14` }]}>
+            <Ionicons name={lineIcon(entry)} size={20} color={tone} />
           </View>
-        ) : null}
+        )}
+
+        <View style={styles.main}>
+          <Txt variant="subtitle" weight="semibold" numberOfLines={1}>
+            {lineTitle(entry)}
+          </Txt>
+
+          <Txt variant="caption" color={colors.textMuted} numberOfLines={1}>
+            {formatDate(entry.bill_date)}
+            {showOwner && entry.owner_name ? ` · ${entry.owner_name}` : ''}
+            {entry.note ? ` · ${entry.note}` : ''}
+          </Txt>
+        </View>
+
+        <View style={styles.end}>
+          <Money amount={entry.amount} tone={meta.positive ? 'in' : 'out'} size="md" showSign />
+          <Ionicons name="chevron-forward" size={16} color={colors.textFaint} />
+        </View>
       </View>
 
-      <View style={styles.end}>
-        <Money
-          amount={entry.amount}
-          tone={meta.positive ? 'in' : 'out'}
-          size="md"
-          showSign
-        />
-        <Ionicons name="chevron-forward" size={16} color={colors.textFaint} />
-      </View>
+      {/*
+        The chips go under the lot, not beside the figure.
+        
+        Squeezed into the middle column they had about a third of the
+        screen between the picture and the amount, which turned
+        "Invoice (not checked)" into "Invoice (n...". Underneath they
+        have the whole width, and the one thing the office must see at
+        a glance - whether a bill has been checked - is readable.
+      */}
+      {entry.entered_for_someone_else ||
+      entry.photo_count > 0 ||
+      entry.expense_type ||
+      entry.project_name ||
+      entry.pay_method ? (
+        <View style={styles.flags}>
+          {entry.type === 'expense' ? (
+            <TypeTag
+              type={entry.expense_type}
+              scanState={entry.bill_scan_state}
+              enteredAt={entry.entered_at}
+              small
+            />
+          ) : (
+            <PayMethodTag method={entry.pay_method} short />
+          )}
+          {entry.project_name ? (
+            <Badge label={entry.project_name} tone="navy" icon="business-outline" />
+          ) : null}
+          {entry.entered_for_someone_else ? (
+            <Badge
+              label={`Entered by ${firstName(entry.entered_by_name) || 'someone else'}`}
+              tone="blue"
+              icon="person-outline"
+            />
+          ) : null}
+          {entry.photo_count > 0 ? (
+            <Badge
+              label={entry.photo_count === 1 ? '1 bill' : `${entry.photo_count} bills`}
+              tone="grey"
+              icon="image-outline"
+            />
+          ) : null}
+        </View>
+      ) : null}
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
     paddingVertical: 12,
     paddingHorizontal: 14,
     backgroundColor: colors.card,
     borderBottomWidth: 1,
     borderBottomColor: colors.line,
   },
+  top: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   pressed: { backgroundColor: colors.navyTint },
   icon: {
     width: 44,
@@ -151,6 +160,17 @@ const styles = StyleSheet.create({
   },
   thumb: { width: 44, height: 44, borderRadius: radius.md, backgroundColor: colors.navyTint },
   main: { flex: 1, gap: 2, minWidth: 0 },
-  flags: { flexDirection: 'row', flexWrap: 'wrap', gap: 5, marginTop: 3, maxWidth: '100%' },
+  flags: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: 5,
+    // Under the picture as well as the words: the chips are about the
+    // whole entry, not about the name at the top of it.
+    marginTop: 8,
+    maxWidth: '100%',
+    // So a chip inside it can be told to shrink at all.
+    minWidth: 0,
+  },
   end: { flexDirection: 'row', alignItems: 'center', gap: 4, flexShrink: 0 },
 });

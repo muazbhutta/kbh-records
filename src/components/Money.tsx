@@ -63,7 +63,6 @@ export function Money({
         color={color}
         style={{ fontSize, lineHeight, letterSpacing }}
         numberOfLines={1}
-        adjustsFontSizeToFit
       >
         {text}
       </Txt>
@@ -91,7 +90,6 @@ export function Money({
         color={color}
         style={{ fontSize, lineHeight, letterSpacing }}
         numberOfLines={1}
-        adjustsFontSizeToFit
       >
         {text}
       </Txt>

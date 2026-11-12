@@ -49,7 +49,7 @@ export function TypeTag({
     return (
       <View style={[styles.tag, styles.tagChecking, small && styles.tagSmall]}>
         <ActivityIndicator size="small" color={colors.textMuted} />
-        <Txt variant="label" color={colors.textMuted}>
+        <Txt variant="label" color={colors.textMuted} numberOfLines={1} style={styles.tagText}>
           Checking bill...
         </Txt>
       </View>
@@ -81,7 +81,12 @@ export function TypeTag({
         size={small ? 11 : 12}
         color={invoice ? colors.navy : colors.amberDark}
       />
-      <Txt variant="label" color={invoice ? colors.navy : colors.amberDark}>
+      <Txt
+        variant="label"
+        color={invoice ? colors.navy : colors.amberDark}
+        numberOfLines={1}
+        style={styles.tagText}
+      >
         {label}
       </Txt>
     </View>
@@ -176,7 +181,20 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: radius.pill,
     alignSelf: 'flex-start',
+    /*
+     * A tag keeps inside the box it is given.
+     *
+     * "Invoice (not checked)" is wider than the middle column of an
+     * entry row, and without these it simply drew past the end of it,
+     * over the figure on the right. Badge has had these from the
+     * start, which is why the project and "Entered by" chips beside
+     * this one shortened themselves properly and this one did not.
+     */
+    flexShrink: 1,
+    minWidth: 0,
+    maxWidth: '100%',
   },
+  tagText: { flexShrink: 1 },
   tagSmall: { paddingHorizontal: 7, paddingVertical: 3, gap: 4 },
   tagChecking: { backgroundColor: '#EDF1F6' },
   flags: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
