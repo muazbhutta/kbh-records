@@ -10,6 +10,11 @@ export type Person = {
   job_title: string | null;
   is_head: boolean;
   head_id: string | null;
+  /**
+   * Trusted with the wages: the Salaries section and attendance, and
+   * nothing else. An Admin always has it; anybody else is given it.
+   */
+  can_payroll: boolean;
   created_at: string;
 };
 
@@ -709,8 +714,13 @@ export type SalaryLine = {
   monthly_amount: number;
   /** One day's wage. Nought for a monthly man. */
   daily_rate: number;
+  /** What one worked Friday is worth to a monthly man. */
+  friday_bonus: number;
   days_present: number;
   days_marked: number;
+  /** Fridays he came in, and what they came to. Monthly staff only. */
+  bonus_days: number;
+  bonus_total: number;
   /** What the month has earned him, whichever way he is paid. */
   earned: number;
   advance_paid: number;
@@ -728,6 +738,8 @@ export type AttendanceRow = {
   job_title: string | null;
   pay_kind: PayKind;
   daily_rate: number | null;
+  /** What this day is worth to him: a day's wage, or a Friday bonus. */
+  day_worth: number;
   /** True, false, or null where nobody has said yet. */
   present: boolean | null;
   marked_by_name: string | null;
@@ -740,8 +752,10 @@ export type AttendanceDayTotal = {
   present: number;
   absent: number;
   not_marked: number;
-  /** What the day costs in daily wages. */
+  /** What the day costs: daily wages, and Friday bonuses owed. */
   wages: number;
+  /** True when working today earns the monthly staff their bonus. */
+  is_friday: boolean;
 };
 
 /** The month in one line. */

@@ -11,9 +11,10 @@ import { Header, Screen } from '@/components/Screen';
 import { Txt } from '@/components/Txt';
 import { Dashboard } from '@/components/Dashboard';
 import { useRecentEntries, useTotals } from '@/api/entries';
+import { useAttendanceDayTotal } from '@/api/salaries';
 import { useMyTeam } from '@/api/team';
 import { useAuth } from '@/auth/AuthProvider';
-import { firstName, money, ROLE_LABEL } from '@/lib/format';
+import { firstName, money, ROLE_LABEL, todayInRiyadh } from '@/lib/format';
 import { signedUrls } from '@/lib/photos';
 import { colors, radius } from '@/theme';
 import type { Totals } from '@/types';
@@ -35,7 +36,7 @@ export default function HomeScreen() {
 
 // ------------------------------------------------------- employee home
 function EmployeeHome() {
-  const { person } = useAuth();
+  const { person, canPayroll } = useAuth();
   const router = useRouter();
   const { data: totals, isLoading } = useTotals(person?.id);
   const recent = useRecentEntries({ personId: person?.id }, 6, !!person?.id);
@@ -71,6 +72,13 @@ function EmployeeHome() {
           onPress={() => router.push('/entry/new?type=expense')}
         />
       </View>
+
+      {/*
+        The wages, where the man who was handed them will look for
+        them. He has no dashboard to put a card on, so it sits on his
+        own home screen between his cash and his entries.
+      */}
+      {canPayroll ? <WagesCard /> : null}
 
       {isHead ? <TeamStrip /> : null}
 
@@ -135,6 +143,53 @@ function SplitTile({
  * A head sees the people under him: what each is holding and what each
  * has spent. They still cannot see one another.
  */
+/**
+ * The wages, for the man who was handed them.
+ *
+ * One card, in his own colours, saying what is still waiting: a day
+ * nobody has answered for is the thing that makes the month wrong, so
+ * that is the figure on it.
+ */
+function WagesCard() {
+  const router = useRouter();
+  const attendance = useAttendanceDayTotal(todayInRiyadh());
+  const waiting = attendance.data?.not_marked ?? 0;
+
+  return (
+    <Pressable
+      onPress={() => router.push('/salaries')}
+      accessibilityRole="button"
+      accessibilityLabel="Salaries and attendance"
+      style={({ pressed }) => [styles.wages, pressed && styles.wagesPressed]}
+    >
+      <View style={styles.wagesIcon}>
+        <Ionicons name="people-circle-outline" size={22} color={colors.white} />
+      </View>
+      <View style={styles.wagesText}>
+        <Txt variant="subtitle" weight="bold" color={colors.white}>
+          Salaries &amp; attendance
+        </Txt>
+        <Txt variant="caption" color={colors.onDarkMuted} numberOfLines={1}>
+          {attendance.data
+            ? waiting > 0
+              ? `${waiting} still to answer for today`
+              : `${attendance.data.present} present today`
+            : 'Mark today, and see the month'}
+        </Txt>
+      </View>
+      {waiting > 0 ? (
+        <View style={styles.wagesCount}>
+          <Txt variant="label" weight="bold" color={colors.white}>
+            {waiting}
+          </Txt>
+        </View>
+      ) : (
+        <Ionicons name="chevron-forward" size={20} color={colors.onDarkMuted} />
+      )}
+    </Pressable>
+  );
+}
+
 function TeamStrip() {
   const router = useRouter();
   const { data: team = [], isLoading } = useMyTeam();
@@ -289,6 +344,35 @@ function LogoutButton() {
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
+
+  wages: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: colors.navy,
+    borderRadius: radius.lg,
+    padding: 14,
+    marginTop: 14,
+  },
+  wagesPressed: { opacity: 0.9 },
+  wagesIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: radius.md,
+    backgroundColor: 'rgba(255,255,255,0.14)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  wagesText: { flex: 1, gap: 1 },
+  wagesCount: {
+    minWidth: 26,
+    height: 26,
+    paddingHorizontal: 7,
+    borderRadius: 13,
+    backgroundColor: colors.amberDark,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   // Level with the log-out button beside it.
   midBadge: { alignSelf: 'center' },
   cashSkeleton: { minHeight: 150, justifyContent: 'center' },

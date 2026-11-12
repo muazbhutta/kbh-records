@@ -228,6 +228,9 @@ export function PayrollSheet({
     return held > 0 ? String(held) : '';
   });
   const [payKind, setPayKind] = useState<PayKind>(existing?.pay_kind ?? 'monthly');
+  const [bonus, setBonus] = useState(
+    existing ? String(existing.friday_bonus ?? 150) : '150',
+  );
   const [since, setSince] = useState(todayInRiyadh());
   const [error, setError] = useState<string | null>(null);
 
@@ -257,6 +260,7 @@ export function PayrollSheet({
         userId: asUser ? personId : null,
         amount: value,
         payKind,
+        fridayBonus: payKind === 'monthly' ? Number(bonus || 0) : 0,
         since,
       });
       onClose();
@@ -339,6 +343,25 @@ export function PayrollSheet({
           ? "One day's wage. What he earns is this times the days he turns up, and attendance is where those days are marked."
           : "A month's salary. What is already paid for past months does not change."}
       </Txt>
+
+      {/* Only a monthly man can earn it: a daily one is paid for the
+          day, Friday or not, and already has been. */}
+      {payKind === 'monthly' ? (
+        <>
+          <Field
+            label="Friday bonus"
+            value={bonus}
+            onChangeText={(v) => setBonus(v.replace(/[^0-9.]/g, '').slice(0, 9))}
+            placeholder="150"
+            icon="star-outline"
+            keyboardType="decimal-pad"
+          />
+          <Txt variant="caption" color={colors.textMuted}>
+            Friday is the day off. Mark him present on one and this is added to his month, on
+            top of his wage. Leave it empty for none.
+          </Txt>
+        </>
+      ) : null}
 
       <DateField label="From when" value={since} onChange={setSince} />
 

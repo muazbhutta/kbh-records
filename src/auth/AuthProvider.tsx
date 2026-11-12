@@ -24,6 +24,11 @@ type AuthValue = {
   session: Session | null;
   /** True for Admin and Sub-admin. */
   canManage: boolean;
+  /**
+   * May work the Salaries section: an Admin, or somebody the office has
+   * handed the wages to. It opens that section and nothing else.
+   */
+  canPayroll: boolean;
   login: (mobile: string, pin: string) => Promise<void>;
   createOwner: (input: {
     fullName: string;
@@ -39,7 +44,7 @@ type AuthValue = {
 const AuthContext = createContext<AuthValue | null>(null);
 
 const PERSON_COLUMNS =
-  'id, full_name, mobile, role, is_owner, is_active, job_title, is_head, head_id, created_at';
+  'id, full_name, mobile, role, is_owner, is_active, job_title, is_head, head_id, can_payroll, created_at';
 
 /** Last known profile, so a phone with no signal still opens the app. */
 const PERSON_CACHE_KEY = 'kbh-person';
@@ -267,6 +272,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       person,
       session,
       canManage: isManager(person?.role),
+      canPayroll: isManager(person?.role) || !!person?.can_payroll,
       login,
       createOwner,
       logout,

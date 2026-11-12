@@ -39,12 +39,13 @@ import type { SalaryLine, SalaryPayment } from '@/types';
  * carries all four figures together: what he is on, what he took in
  * advance, what he has been paid, and what is left.
  *
- * Only an Admin and a Sub-admin can open it. What a man earns is not his
+ * Only the office, or somebody the office has handed the wages to, can
+ * open it. What a man earns is not his
  * workmates' business, and the database refuses them whatever the screen
  * does.
  */
 export default function SalariesScreen() {
-  const { canManage } = useAuth();
+  const { canPayroll } = useAuth();
   const [month, setMonth] = useState(monthKey());
   const [sheet, setSheet] = useState<
     | { kind: 'pay' | 'advance'; line: SalaryLine }
@@ -56,10 +57,10 @@ export default function SalariesScreen() {
   >(null);
 
   const router = useRouter();
-  const lines = useSalaryMonth(month, canManage);
-  const attendance = useAttendanceDayTotal(todayInRiyadh(), canManage);
-  const total = useSalaryMonthTotal(month, canManage);
-  const payments = useSalaryPayments(month, canManage);
+  const lines = useSalaryMonth(month, canPayroll);
+  const attendance = useAttendanceDayTotal(todayInRiyadh(), canPayroll);
+  const total = useSalaryMonthTotal(month, canPayroll);
+  const payments = useSalaryPayments(month, canPayroll);
   const wide = useIsWide();
 
   // The two sorts of man are paid on different rules and read on
@@ -106,11 +107,11 @@ export default function SalariesScreen() {
   }, [payments.data]);
 
 
-  if (!canManage) {
+  if (!canPayroll) {
     return (
       <Screen>
         <Header title="Salaries" back />
-        <Banner tone="error" message="Only an Admin or a Sub-admin can see the salaries." />
+        <Banner tone="error" message="You have not been given the wages to look after." />
       </Screen>
     );
   }
@@ -214,8 +215,8 @@ export default function SalariesScreen() {
           <Txt variant="caption" color={colors.onDarkMuted} numberOfLines={1}>
             {attendance.data
               ? attendance.data.not_marked > 0
-                ? `${attendance.data.not_marked} still to answer for · ${attendance.data.present} in`
-                : `${attendance.data.present} in · ${attendance.data.absent} out · ${money(
+                ? `${attendance.data.not_marked} still to answer for · ${attendance.data.present} present`
+                : `${attendance.data.present} present · ${attendance.data.absent} absent · ${money(
                     Number(attendance.data.wages),
                   )} in wages`
               : 'Who turned up today'}
@@ -485,6 +486,31 @@ function SalaryCard({
             {line.days_marked > line.days_present
               ? ` · ${line.days_marked - line.days_present} off`
               : ''}
+          </Txt>
+        </View>
+      ) : null}
+
+      {/* Fridays he came in, which is the only thing that moves a
+          monthly man's figure off his wage. Shown even at nought, so
+          the line is not a surprise the month it appears. */}
+      {!daily && Number(line.friday_bonus) > 0 ? (
+        <View style={styles.daysRow}>
+          <Ionicons
+            name="star"
+            size={13}
+            color={line.bonus_days > 0 ? colors.amberDark : colors.textFaint}
+          />
+          <Txt
+            variant="caption"
+            weight="semibold"
+            color={line.bonus_days > 0 ? colors.amberDark : colors.textFaint}
+          >
+            {line.bonus_days} {line.bonus_days === 1 ? 'Friday' : 'Fridays'} worked
+          </Txt>
+          <Txt variant="caption" color={colors.textFaint} numberOfLines={1}>
+            {line.bonus_days > 0
+              ? `· ${money(Number(line.monthly_amount))} + ${money(Number(line.bonus_total))} bonus`
+              : `· ${money(Number(line.friday_bonus))} each`}
           </Txt>
         </View>
       ) : null}

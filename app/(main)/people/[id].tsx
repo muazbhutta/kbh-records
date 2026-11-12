@@ -80,6 +80,8 @@ export default function PersonScreen() {
     setHeadId(person.head_id ?? null);
   }, [person]);
 
+
+
   if (!canManage) {
     return (
       <Screen>

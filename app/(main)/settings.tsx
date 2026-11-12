@@ -73,6 +73,12 @@ export default function SettingsScreen() {
               label="Expense Categories"
               hint="Add, rename or hide what expenses are filed under"
               onPress={() => router.push('/categories')}
+            />
+            <LinkRow
+              icon="wallet"
+              label="Who looks after the wages"
+              hint="Let somebody work Salaries and attendance, and nothing else"
+              onPress={() => router.push('/wages')}
               last
             />
           </Card>

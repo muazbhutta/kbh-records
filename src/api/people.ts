@@ -150,3 +150,46 @@ export function useSetActive() {
     onSuccess: (person) => invalidate(person.id),
   });
 }
+
+/**
+ * Everybody who has been handed the wages.
+ *
+ * Asked of app_users on its own rather than added to the people_list
+ * view: that view is long and shared, and rewriting it to carry one
+ * flag is a wide change for a narrow need.
+ */
+export function usePayrollKeepers(enabled = true) {
+  return useQuery({
+    queryKey: ['payroll-keepers'],
+    enabled,
+    queryFn: async (): Promise<Set<string>> => {
+      const { data, error } = await supabase
+        .from('app_users')
+        .select('id')
+        .eq('can_payroll', true);
+      if (error) throw new Error(error.message);
+      return new Set((data ?? []).map((r) => r.id as string));
+    },
+  });
+}
+
+/**
+ * Hand the wages to somebody, or take them back.
+ *
+ * It opens the Salaries section and attendance for them and nothing
+ * else - not the khatas, not the reports, not the people. Only an
+ * Admin may, and never to themselves.
+ */
+export function useSetPayrollRight() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: { userId: string; can: boolean }): Promise<void> => {
+      const { error } = await supabase.rpc('set_payroll_right', {
+        p_user_id: input.userId,
+        p_can: input.can,
+      });
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => refreshTheBooks(qc),
+  });
+}

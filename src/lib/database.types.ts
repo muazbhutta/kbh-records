@@ -41,6 +41,7 @@ export type Database = {
     Tables: {
       app_users: {
         Row: {
+          can_payroll: boolean
           created_at: string
           created_by: string | null
           disabled_at: string | null
@@ -56,6 +57,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          can_payroll?: boolean
           created_at?: string
           created_by?: string | null
           disabled_at?: string | null
@@ -71,6 +73,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          can_payroll?: boolean
           created_at?: string
           created_by?: string | null
           disabled_at?: string | null
@@ -1554,6 +1557,7 @@ export type Database = {
           added_at: string
           added_by: string | null
           daily_rate: number | null
+          friday_bonus: number
           is_active: boolean
           monthly_amount: number | null
           note: string | null
@@ -1565,6 +1569,7 @@ export type Database = {
           added_at?: string
           added_by?: string | null
           daily_rate?: number | null
+          friday_bonus?: number
           is_active?: boolean
           monthly_amount?: number | null
           note?: string | null
@@ -1576,6 +1581,7 @@ export type Database = {
           added_at?: string
           added_by?: string | null
           daily_rate?: number | null
+          friday_bonus?: number
           is_active?: boolean
           monthly_amount?: number | null
           note?: string | null
@@ -3203,6 +3209,7 @@ export type Database = {
         Args: { p_on_date?: string }
         Returns: {
           daily_rate: number
+          day_worth: number
           full_name: string
           job_title: string
           marked_at: string
@@ -3216,6 +3223,7 @@ export type Database = {
         Args: { p_on_date?: string }
         Returns: {
           absent: number
+          is_friday: boolean
           not_marked: number
           people: number
           present: number
@@ -3269,6 +3277,7 @@ export type Database = {
         }[]
       }
       can_file_projects: { Args: never; Returns: boolean }
+      can_payroll: { Args: never; Returns: boolean }
       can_use_project: { Args: { p_project_id: string }; Returns: boolean }
       cancel_entry: {
         Args: { p_id: string; p_reason?: string }
@@ -3352,6 +3361,7 @@ export type Database = {
           p_role: Database["public"]["Enums"]["user_role"]
         }
         Returns: {
+          can_payroll: boolean
           created_at: string
           created_by: string | null
           disabled_at: string | null
@@ -3700,10 +3710,13 @@ export type Database = {
         Args: { p_month?: string }
         Returns: {
           advance_paid: number
+          bonus_days: number
+          bonus_total: number
           daily_rate: number
           days_marked: number
           days_present: number
           earned: number
+          friday_bonus: number
           full_name: string
           job_title: string
           monthly_amount: number
@@ -3771,6 +3784,7 @@ export type Database = {
       set_payroll: {
         Args: {
           p_amount?: number
+          p_friday_bonus?: number
           p_note?: string
           p_pay_kind?: Database["public"]["Enums"]["pay_kind"]
           p_person_id?: string
@@ -3778,6 +3792,10 @@ export type Database = {
           p_user_id?: string
         }
         Returns: string
+      }
+      set_payroll_right: {
+        Args: { p_can: boolean; p_user_id: string }
+        Returns: undefined
       }
       set_person_pin: {
         Args: { p_pin_hash: string; p_set_by: string; p_user_id: string }

@@ -38,13 +38,13 @@ function shiftDay(day: string, by: number): string {
  * for says exactly that, rather than quietly counting as a day off.
  */
 export default function AttendanceScreen() {
-  const { canManage } = useAuth();
+  const { canPayroll } = useAuth();
   const [day, setDay] = useState(todayInRiyadh());
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
 
-  const rows = useAttendanceDay(day, canManage);
-  const total = useAttendanceDayTotal(day, canManage);
+  const rows = useAttendanceDay(day, canPayroll);
+  const total = useAttendanceDayTotal(day, canPayroll);
   const mark = useMarkAttendance();
   const clear = useClearAttendance();
 
@@ -60,11 +60,11 @@ export default function AttendanceScreen() {
     [rows.data],
   );
 
-  if (!canManage) {
+  if (!canPayroll) {
     return (
       <Screen>
         <Header title="Attendance" back />
-        <Banner tone="error" message="Only an Admin or a Sub-admin can see attendance." />
+        <Banner tone="error" message="You have not been given the wages to look after." />
       </Screen>
     );
   }
@@ -144,25 +144,43 @@ export default function AttendanceScreen() {
 
       {/* ------------------------------------------------- the figures */}
       <View style={[styles.tiles, shadow.card]}>
-        <Tile label="In" value={String(t?.present ?? 0)} tone={colors.green} />
-        <Tile label="Out" value={String(t?.absent ?? 0)} tone={colors.red} />
+        <Tile label="Present" value={String(t?.present ?? 0)} tone={colors.green} />
+        <Tile label="Absent" value={String(t?.absent ?? 0)} tone={colors.red} />
         <Tile label="Not said" value={String(waiting)} tone={colors.textFaint} />
-        <Tile label="Day's wages" value={money(Number(t?.wages ?? 0))} tone={colors.navy} wide />
+        <Tile
+          label={t?.is_friday ? "Day's wages & bonuses" : "Day's wages"}
+          value={money(Number(t?.wages ?? 0))}
+          tone={colors.navy}
+          wide
+        />
       </View>
+
+      {t?.is_friday ? (
+        <View style={styles.friday}>
+          <Ionicons name="star" size={16} color={colors.amberDark} />
+          <Txt variant="caption" color={colors.amberDark} style={styles.flex}>
+            <Txt variant="caption" weight="bold" color={colors.amberDark}>
+              Friday.
+            </Txt>{' '}
+            It is the day off, so a monthly man marked present today earns his bonus on top of
+            his wage. A daily man earns his day, as he would any other.
+          </Txt>
+        </View>
+      ) : null}
 
       {error ? <Banner tone="error" message={error} /> : null}
 
       {waiting > 0 ? (
         <View style={styles.restRow}>
           <Button
-            label={`Mark the other ${waiting} in`}
+            label={`Mark the other ${waiting} present`}
             icon="checkmark-done-outline"
             variant="success"
             onPress={() => markRest(true)}
             style={styles.restButton}
           />
           <Button
-            label="All out"
+            label="All absent"
             icon="close-outline"
             variant="outline"
             onPress={() => markRest(false)}
@@ -204,7 +222,9 @@ export default function AttendanceScreen() {
             <>
               <SectionTitle title="Monthly staff" />
               <Txt variant="caption" color={colors.textFaint} style={styles.hint}>
-                Kept for the record. What they are paid does not change either way.
+                {t?.is_friday
+                  ? 'Today is a Friday, so whoever comes in earns his bonus on top of his wage.'
+                  : 'Kept for the record. What they are paid does not change either way.'}
               </Txt>
               <View style={styles.list}>
                 {monthly.map((row) => (
@@ -263,6 +283,7 @@ function PersonRow({
   onSay: (present: boolean) => void;
 }) {
   const rate = Number(row.daily_rate ?? 0);
+  const worth = Number(row.day_worth ?? 0);
 
   return (
     <View style={[styles.person, shadow.card, row.present === null && styles.personWaiting]}>
@@ -281,13 +302,33 @@ function PersonRow({
             {row.job_title ? `${row.job_title} · ` : ''}
             {row.pay_kind === 'daily' ? `${money(rate)} a day` : 'Monthly'}
           </Txt>
+          {worth > 0 ? (
+            <View style={styles.worthRow}>
+              <Ionicons
+                name={row.pay_kind === 'daily' ? 'cash-outline' : 'star'}
+                size={12}
+                color={row.present ? colors.green : colors.textFaint}
+              />
+              <Txt
+                variant="caption"
+                weight="semibold"
+                color={row.present ? colors.green : colors.textFaint}
+              >
+                {row.present
+                  ? `${money(worth)} earned`
+                  : row.pay_kind === 'daily'
+                    ? `${money(worth)} if present`
+                    : `${money(worth)} bonus if present`}
+              </Txt>
+            </View>
+          ) : null}
         </View>
       </View>
 
       <View style={styles.answers}>
         <Answer
           icon="checkmark"
-          label="In"
+          label="Present"
           tone={colors.green}
           chosen={row.present === true}
           busy={busy}
@@ -295,7 +336,7 @@ function PersonRow({
         />
         <Answer
           icon="close"
-          label="Out"
+          label="Absent"
           tone={colors.red}
           chosen={row.present === false}
           busy={busy}
@@ -390,6 +431,16 @@ const styles = StyleSheet.create({
   restButton: { flexGrow: 1, flexBasis: '44%' },
 
   hint: { marginTop: -4, marginBottom: 8 },
+  friday: {
+    flexDirection: 'row',
+    gap: 8,
+    alignItems: 'flex-start',
+    backgroundColor: colors.amberSoft,
+    borderRadius: radius.md,
+    padding: 12,
+    marginBottom: 12,
+  },
+  worthRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
   list: { gap: 9, marginBottom: 6 },
 
   person: {

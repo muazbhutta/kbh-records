@@ -131,6 +131,8 @@ export function useSetPayroll() {
       amount: number;
       /** A month's wage, or one day's. Defaults to a month's. */
       payKind?: PayKind;
+      /** What a worked Friday is worth to him. Monthly staff only. */
+      fridayBonus?: number;
       since?: string;
       note?: string;
     }): Promise<string> => {
@@ -139,6 +141,7 @@ export function useSetPayroll() {
         p_user_id: input.userId ?? undefined,
         p_amount: input.amount,
         p_pay_kind: input.payKind ?? 'monthly',
+        p_friday_bonus: input.fridayBonus ?? undefined,
         p_since: input.since ?? undefined,
         p_note: input.note ?? undefined,
       });
@@ -241,6 +244,7 @@ export function useAttendanceDayTotal(day: string, enabled = true) {
         absent: Number(row?.absent ?? 0),
         not_marked: Number(row?.not_marked ?? 0),
         wages: Number(row?.wages ?? 0),
+        is_friday: !!row?.is_friday,
       };
     },
   });
