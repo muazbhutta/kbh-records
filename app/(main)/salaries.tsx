@@ -62,14 +62,33 @@ export default function SalariesScreen() {
   const payments = useSalaryPayments(month, canManage);
   const wide = useIsWide();
 
+  // The two sorts of man are paid on different rules and read on
+  // different days: the office looks at the monthly staff once a month
+  // and at the daily men whenever the week's days are settled. Mixing
+  // them in one list made both harder to read than either.
+  const [show, setShow] = useState<'all' | 'monthly' | 'daily'>('all');
+  const ofKind = (l: SalaryLine) =>
+    show === 'all' || (show === 'daily' ? l.pay_kind === 'daily' : l.pay_kind !== 'daily');
+
   const onPayroll = useMemo(
-    () => (lines.data ?? []).filter((l) => l.on_payroll),
-    [lines.data],
+    () => (lines.data ?? []).filter((l) => l.on_payroll && ofKind(l)),
+    [lines.data, show],
   );
   const alsoPaid = useMemo(
-    () => (lines.data ?? []).filter((l) => !l.on_payroll),
-    [lines.data],
+    () => (lines.data ?? []).filter((l) => !l.on_payroll && ofKind(l)),
+    [lines.data, show],
   );
+
+  // The counts are of everybody, not of what is being shown, so the
+  // buttons say how many are behind each of them.
+  const counts = useMemo(() => {
+    const all = lines.data ?? [];
+    return {
+      all: all.length,
+      monthly: all.filter((l) => l.pay_kind !== 'daily').length,
+      daily: all.filter((l) => l.pay_kind === 'daily').length,
+    };
+  }, [lines.data]);
 
   /**
    * Every man's own handings-over, under his own name. A single list of
@@ -216,19 +235,56 @@ export default function SalariesScreen() {
       {/* ------------------------------------------------- the people */}
       <SectionTitle title="Who is on salary" />
 
+      <View style={styles.kindRow}>
+        <KindTab
+          label="Everyone"
+          count={counts.all}
+          chosen={show === 'all'}
+          onPress={() => setShow('all')}
+        />
+        <KindTab
+          icon="calendar-outline"
+          label="Employees"
+          count={counts.monthly}
+          chosen={show === 'monthly'}
+          onPress={() => setShow('monthly')}
+        />
+        <KindTab
+          icon="today-outline"
+          label="Dehaari"
+          count={counts.daily}
+          chosen={show === 'daily'}
+          onPress={() => setShow('daily')}
+        />
+      </View>
+
       {lines.isLoading ? (
         <Loading />
       ) : lines.error ? (
         <Banner tone="error" message={lines.error.message} />
       ) : onPayroll.length === 0 && alsoPaid.length === 0 ? (
-        <EmptyState
-          icon="people-outline"
-          title="Nobody is on salary yet"
-          message={
-            'Put somebody on below - a man already in the app, or a new one added right there. ' +
-            'Each person then gets their own line with Pay salary and Advance on it.'
-          }
-        />
+        // Nobody of THIS sort is not the same as nobody at all, and
+        // saying the wrong one sends the office looking for a fault.
+        counts.all > 0 ? (
+          <EmptyState
+            icon="people-outline"
+            title={show === 'daily' ? 'No daily men this month' : 'No monthly staff this month'}
+            message={
+              show === 'daily'
+                ? 'Nobody is on a daily wage. Put somebody on below and choose Daily.'
+                : 'Nobody is on a monthly wage. Put somebody on below and choose Monthly.'
+            }
+          />
+        ) : (
+          <EmptyState
+            icon="people-outline"
+            title="Nobody is on salary yet"
+            message={
+              'Put somebody on below - a man already in the app, or a new one added right there. ' +
+              'Each person then gets their own line with Pay salary and Advance on it.'
+            }
+          />
+        )
       ) : (
         <View style={styles.cards}>
           {onPayroll.map((line) => (
@@ -299,6 +355,47 @@ export default function SalariesScreen() {
         <RemovePaymentSheet payment={sheet.payment} onClose={() => setSheet(null)} />
       ) : null}
     </Screen>
+  );
+}
+
+/** One of the two sorts of man, or both at once. */
+function KindTab({
+  icon,
+  label,
+  count,
+  chosen,
+  onPress,
+}: {
+  icon?: keyof typeof Ionicons.glyphMap;
+  label: string;
+  count: number;
+  chosen: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityState={{ selected: chosen }}
+      accessibilityLabel={`${label}, ${count}`}
+      style={({ pressed }) => [
+        styles.kindTab,
+        chosen && styles.kindTabOn,
+        pressed && !chosen && styles.kindTabPressed,
+      ]}
+    >
+      {icon ? (
+        <Ionicons name={icon} size={15} color={chosen ? colors.white : colors.textMuted} />
+      ) : null}
+      <Txt variant="caption" weight="bold" color={chosen ? colors.white : colors.textMuted}>
+        {label}
+      </Txt>
+      <View style={[styles.kindCount, chosen && styles.kindCountOn]}>
+        <Txt variant="label" weight="bold" color={chosen ? colors.white : colors.textFaint}>
+          {count}
+        </Txt>
+      </View>
+    </Pressable>
   );
 }
 
@@ -556,6 +653,33 @@ const styles = StyleSheet.create({
   legend: { marginTop: 8, marginBottom: 6 },
 
   cards: { gap: 10 },
+
+  kindRow: { flexDirection: 'row', gap: 7, marginBottom: 12 },
+  kindTab: {
+    flexGrow: 1,
+    flexBasis: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    borderRadius: radius.md,
+    borderWidth: 1.5,
+    borderColor: colors.line,
+    backgroundColor: colors.card,
+  },
+  kindTabOn: { backgroundColor: colors.navy, borderColor: colors.navy },
+  kindTabPressed: { backgroundColor: colors.navyTint },
+  kindCount: {
+    minWidth: 20,
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    borderRadius: 9,
+    backgroundColor: colors.bg,
+    alignItems: 'center',
+  },
+  kindCountOn: { backgroundColor: 'rgba(255,255,255,0.18)' },
 
   attend: {
     flexDirection: 'row',
