@@ -729,6 +729,8 @@ export type SalaryLine = {
   payments: number;
   /** False for somebody paid this month who has since come off the payroll. */
   on_payroll: boolean;
+  /** Which of his own months this is: his first is 1. */
+  slip_no: number;
 };
 
 /** One man on one day, and whether he turned up. */

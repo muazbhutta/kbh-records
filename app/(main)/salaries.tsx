@@ -168,7 +168,12 @@ export default function SalariesScreen() {
         month,
         generatedBy: me?.full_name ?? 'Admin',
       });
-      await makeAndSharePdf(html, salarySlipFileName(month, oneName));
+      // One man's slip carries his own number; a file holding everybody's
+      // carries none, because it is not any one of them.
+      await makeAndSharePdf(
+        html,
+        salarySlipFileName(month, oneName, who.length === 1 ? who[0].slip_no : undefined),
+      );
 
       const earned = who.reduce((sum, l) => sum + Number(l.earned), 0);
       await logDownload.mutateAsync({

@@ -1,4 +1,4 @@
-import { amountOnly, formatDateTime, money, monthName, stampInRiyadh } from '@/lib/format';
+import { amountOnly, formatDateTime, money, monthName } from '@/lib/format';
 import { KBH_LOGO_DATA_URI } from '@/lib/reportLogo';
 import type { AttendanceSheetRow, SalaryLine, SalaryPayment } from '@/types';
 
@@ -258,7 +258,9 @@ function slipPage(slip: SalarySlip, meta: SalarySlipMeta): string {
     </div>
     <div class="right">
       <div class="title">Salary &amp; Attendance</div>
-      <div class="period">${escape(monthName(meta.month))}</div>
+      <div class="period">${escape(monthName(meta.month))}${
+        line.slip_no > 0 ? ` &middot; Slip #${String(line.slip_no).padStart(2, '0')}` : ''
+      }</div>
     </div>
   </div>
 
@@ -328,12 +330,16 @@ function slipPage(slip: SalarySlip, meta: SalarySlipMeta): string {
     </div>
   </div>
 
+  <!-- The company signs off the page, and the particulars sit under it. -->
   <div class="foot">
-    KBH Construction, Jeddah &middot; ${escape(line.full_name)} &middot; ${escape(
+    <div class="foot-name">KBH CONSTRUCTION &middot; Jeddah, Saudi Arabia</div>
+    <div class="foot-line bidi">${escape(line.full_name)} &middot; ${escape(
       monthName(meta.month),
-    )} &middot; Prepared by ${escape(meta.generatedBy)} &middot; Taken ${escape(
+    )}${
+      line.slip_no > 0 ? ` &middot; Slip #${String(line.slip_no).padStart(2, '0')}` : ''
+    } &middot; Prepared by ${escape(meta.generatedBy)} &middot; Taken ${escape(
       formatDateTime(new Date()),
-    )}
+    )}</div>
   </div>
 </section>`;
 }
@@ -540,8 +546,12 @@ export function buildSalarySlipsHtml(slips: SalarySlip[], meta: SalarySlipMeta):
   }
   .foot {
     margin-top: 10px; padding-top: 7px; border-top: 1px solid #EEF1F6;
-    color: #A3B0C0; font-size: 8px; text-align: center;
+    text-align: center;
   }
+  .foot-name {
+    font-size: 9.6px; font-weight: 700; letter-spacing: 1.1px; color: #0E2340;
+  }
+  .foot-line { font-size: 8px; color: #A3B0C0; margin-top: 2px; }
 
   /* On a phone the sheet stops pretending to be paper and just fits. */
   @media screen and (max-width: 640px) {
@@ -575,12 +585,32 @@ ${
 </html>`;
 }
 
-/** The file name: whose month it is, and when the copy was taken. */
-export function salarySlipFileName(month: string, who: string | null): string {
-  const name = who
-    ? who.replace(/[^\p{L}\p{N}]+/gu, '_').replace(/^_|_$/g, '')
-    : 'Everyone';
-  return `KBH_Salary_${name}_${month.slice(0, 7)}__${stampInRiyadh()}.pdf`;
+const SHORT_MONTH = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                     'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+/** "Oct_2026", which reads at a glance where "2026-10" has to be worked out. */
+export function monthSlug(month: string): string {
+  const [y, m] = month.split('-').map(Number);
+  return `${SHORT_MONTH[m - 1] ?? m}_${y}`;
+}
+
+/**
+ * The file name: whose slip it is, which month, and which of his.
+ *
+ *   KBH_Salary_Shehriyar_Oct_2026_Slip#01.pdf
+ *
+ * No time stamp. The month and the number name the slip, and the same
+ * slip taken twice should land on itself rather than beside itself.
+ */
+export function salarySlipFileName(
+  month: string,
+  who: string | null,
+  slipNo?: number,
+): string {
+  if (!who) return `KBH_Salary_Slips_${monthSlug(month)}.pdf`;
+  const name = who.replace(/[^\p{L}\p{N}]+/gu, '_').replace(/^_|_$/g, '');
+  const no = slipNo && slipNo > 0 ? `_Slip#${String(slipNo).padStart(2, '0')}` : '';
+  return `KBH_Salary_${name}_${monthSlug(month)}${no}.pdf`;
 }
 
 /** Cuts the month's register and payments down to one man's own. */

@@ -3738,6 +3738,7 @@ export type Database = {
           person_id: string
           remaining: number
           salary_paid: number
+          slip_no: number
         }[]
       }
       salary_month_payments: {
