@@ -52,14 +52,18 @@ export function PayMethodRow({
             >
               <Ionicons
                 name={opt.icon}
-                size={22}
+                size={20}
                 color={active ? colors.white : colors.navy}
               />
+              {/* "Bank transfer" came out as "Bank trans..." on a phone
+                  set to a larger type size. It shrinks now instead of
+                  losing its end. */}
               <Txt
                 variant="subtitle"
                 weight="semibold"
                 color={active ? colors.white : colors.navy}
                 numberOfLines={1}
+                style={styles.choiceLabel}
               >
                 {PAY_METHOD_LABEL[opt.key]}
               </Txt>
@@ -98,14 +102,15 @@ export function PayMethodTag({
 const styles = StyleSheet.create({
   wrap: { gap: 8 },
   row: { flexDirection: 'row', gap: 10 },
+  choiceLabel: { flexShrink: 1, minWidth: 0 },
   choice: {
     flex: 1,
     minHeight: 60,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    paddingHorizontal: 10,
+    gap: 7,
+    paddingHorizontal: 8,
     borderRadius: radius.md,
     borderWidth: 1.5,
     borderColor: colors.line,

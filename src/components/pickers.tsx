@@ -165,6 +165,7 @@ export function DateField({
           variant="caption"
           weight="semibold"
           color={active ? colors.white : colors.navy}
+          numberOfLines={1}
         >
           {text}
         </Txt>
@@ -196,7 +197,13 @@ export function DateField({
           ]}
         >
           <Ionicons name="calendar-outline" size={16} color={colors.navy} />
-          <Txt variant="caption" weight="semibold" color={colors.navy}>
+          <Txt
+            variant="caption"
+            weight="semibold"
+            color={colors.navy}
+            numberOfLines={1}
+            style={styles.flexShrink}
+          >
             {safeValue !== today && safeValue !== yesterday ? formatDate(safeValue) : 'Pick a date'}
           </Txt>
         </Pressable>
@@ -549,9 +556,14 @@ const styles = StyleSheet.create({
     paddingVertical: 0,
   },
 
-  dateRow: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
+  // One line, always. Left to wrap, "Pick a date" dropped onto a
+  // second row as soon as the day was a long one, so the same field
+  // looked different from one screen to the next.
+  dateRow: { flexDirection: 'row', gap: 8, flexWrap: 'nowrap' },
   quick: {
-    paddingHorizontal: 16,
+    flexShrink: 1,
+    minWidth: 0,
+    paddingHorizontal: 13,
     height: 44,
     borderRadius: radius.md,
     borderWidth: 1.5,
@@ -560,19 +572,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  flexShrink: { flexShrink: 1 },
   quickOn: { backgroundColor: colors.navy, borderColor: colors.navy },
   quickPressed: { backgroundColor: colors.navyTint },
   dateBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 7,
-    paddingHorizontal: 14,
+    paddingHorizontal: 12,
     height: 44,
     borderRadius: radius.md,
     borderWidth: 1.5,
     borderColor: colors.line,
     backgroundColor: colors.card,
     flexGrow: 1,
+    flexShrink: 1,
+    minWidth: 0,
     justifyContent: 'center',
   },
   dateBtnOn: { borderColor: colors.navy, backgroundColor: colors.navyTint },
