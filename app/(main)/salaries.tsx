@@ -7,6 +7,7 @@ import { Avatar, Badge, Banner, EmptyState, Loading, SectionTitle } from '@/comp
 import { ShareBar } from '@/components/Breakdown';
 import { CashCard } from '@/components/Money';
 import {
+  LeaveSheet,
   PayrollSheet,
   PaySheet,
   RemoveFromPayrollSheet,
@@ -52,7 +53,8 @@ export default function SalariesScreen() {
   const { canPayroll, person: me } = useAuth();
   const [month, setMonth] = useState(monthKey());
   const [sheet, setSheet] = useState<
-    | { kind: 'pay' | 'advance'; line: SalaryLine }
+    | { kind: 'pay' | 'advance' | 'kafalat'; line: SalaryLine }
+    | { kind: 'leave'; line: SalaryLine }
     | { kind: 'edit'; line: SalaryLine }
     | { kind: 'remove'; line: SalaryLine }
     | { kind: 'add' }
@@ -454,7 +456,8 @@ export default function SalariesScreen() {
               onPay={() => setSheet({ kind: 'pay', line })}
               onAdvance={() => setSheet({ kind: 'advance', line })}
               onEdit={() => setSheet({ kind: 'edit', line })}
-              onRemove={() => setSheet({ kind: 'remove', line })}
+              onKafalat={() => setSheet({ kind: 'kafalat', line })}
+              onLeave={() => setSheet({ kind: 'leave', line })}
               onSlip={() => makeSlips([line], line.person_id, line.full_name)}
               busy={making === line.person_id}
             />
@@ -493,16 +496,23 @@ export default function SalariesScreen() {
       ) : null}
 
       {/* ------------------------------------------------- the sheets */}
-      {sheet?.kind === 'pay' || sheet?.kind === 'advance' ? (
+      {sheet?.kind === 'pay' || sheet?.kind === 'advance' || sheet?.kind === 'kafalat' ? (
         <PaySheet
           line={sheet.line}
           month={month}
-          kind={sheet.kind === 'advance' ? 'advance' : 'salary'}
+          kind={sheet.kind === 'pay' ? 'salary' : sheet.kind}
           onClose={() => setSheet(null)}
         />
       ) : null}
+      {sheet?.kind === 'leave' ? (
+        <LeaveSheet line={sheet.line} onClose={() => setSheet(null)} />
+      ) : null}
       {sheet?.kind === 'edit' ? (
-        <PayrollSheet existing={sheet.line} onClose={() => setSheet(null)} />
+        <PayrollSheet
+          existing={sheet.line}
+          onClose={() => setSheet(null)}
+          onTakeOff={() => setSheet({ kind: 'remove', line: sheet.line })}
+        />
       ) : null}
       {sheet?.kind === 'add' ? (
         <PayrollSheet onClose={() => setSheet(null)} />
@@ -585,7 +595,8 @@ function SalaryCard({
   onPay,
   onAdvance,
   onEdit,
-  onRemove,
+  onKafalat,
+  onLeave,
   onSlip,
   busy = false,
 }: {
@@ -598,7 +609,10 @@ function SalaryCard({
   onPay?: () => void;
   onAdvance?: () => void;
   onEdit?: () => void;
-  onRemove?: () => void;
+  /** The company's own money, laid out for a man who is away. */
+  onKafalat?: () => void;
+  /** Going home, or coming back. */
+  onLeave?: () => void;
   /** His own month on his own page, for when one man asks for his. */
   onSlip?: () => void;
   busy?: boolean;
@@ -631,6 +645,9 @@ function SalaryCard({
               {line.full_name}
             </Txt>
             {done ? <Badge label="Paid" tone="green" style={styles.badgeMid} /> : null}
+            {line.on_leave_since ? (
+              <Badge label="On leave" tone="amber" style={styles.badgeMid} />
+            ) : null}
             {owesBack ? <Badge label="Took extra" tone="red" style={styles.badgeMid} /> : null}
             {past ? <Badge label="Off salary" tone="grey" style={styles.badgeMid} /> : null}
           </View>
@@ -702,6 +719,37 @@ function SalaryCard({
       ) : null}
 
       {/*
+        He is at home.
+
+        Loud, because it explains every empty figure under it, and it
+        is the way back: one tap when he turns up again, rather than a
+        seventh button on every card for a thing that happens twice a
+        year.
+      */}
+      {line.on_leave_since ? (
+        <Pressable
+          onPress={onLeave}
+          disabled={!onLeave}
+          accessibilityRole="button"
+          accessibilityLabel={`${line.full_name} is on leave. Mark him back.`}
+          style={({ pressed }) => [styles.away, pressed && onLeave && styles.awayPressed]}
+        >
+          <Ionicons name="home" size={15} color={colors.amberDark} />
+          <View style={styles.flex}>
+            <Txt variant="caption" weight="bold" color={colors.amberDark} numberOfLines={1}>
+              On leave since {formatDate(line.on_leave_since)}
+            </Txt>
+            <Txt variant="caption" color={colors.amberDark} numberOfLines={1}>
+              Earning nothing. Tap when he is back.
+            </Txt>
+          </View>
+          {onLeave ? (
+            <Ionicons name="chevron-forward" size={16} color={colors.amberDark} />
+          ) : null}
+        </Pressable>
+      ) : null}
+
+      {/*
         What last month left behind. Shown on the card, not only on the
         slip, because it is the figure that makes this month's total
         look wrong to anybody who adds up the wage and the bonus
@@ -723,6 +771,18 @@ function SalaryCard({
             {carried > 0
               ? `${money(carried)} brought from before`
               : `${money(Math.abs(carried))} taken extra before`}
+          </Txt>
+        </View>
+      ) : null}
+
+      {Number(line.kafalat_paid) > 0 ? (
+        <View style={styles.daysRow}>
+          <Ionicons name="shield-checkmark" size={14} color={colors.amberDark} />
+          <Txt variant="caption" weight="semibold" color={colors.amberDark} numberOfLines={1}>
+            {money(Number(line.kafalat_paid))} kafalat
+          </Txt>
+          <Txt variant="caption" color={colors.textFaint} numberOfLines={1}>
+            · paid by the company, he owes it back
           </Txt>
         </View>
       ) : null}
@@ -848,12 +908,23 @@ function SalaryCard({
           <Small icon="cash-outline" label="Pay" tone={colors.green} onPress={onPay} />
           <Small icon="time-outline" label="Advance" tone={colors.amberDark} onPress={onAdvance} />
           <Small
+            icon="shield-outline"
+            label="Kafalat"
+            tone={colors.amberDark}
+            onPress={onKafalat}
+          />
+          <Small
             icon="document-text-outline"
             label={busy ? 'Making…' : 'Slip'}
             onPress={onSlip}
           />
+          <Small
+            icon={line.on_leave_since ? 'home' : 'home-outline'}
+            label={line.on_leave_since ? 'Back' : 'Leave'}
+            tone={line.on_leave_since ? colors.amberDark : colors.navy}
+            onPress={onLeave}
+          />
           <Small icon="create-outline" label="Edit" onPress={onEdit} />
-          <Small icon="person-remove-outline" label="Remove" tone={colors.red} onPress={onRemove} />
         </View>
       ) : null}
     </View>
@@ -917,6 +988,18 @@ const styles = StyleSheet.create({
     backgroundColor: colors.card,
   },
   slipPressed: { backgroundColor: colors.navyTint },
+
+  // He is at home, and this is the way back.
+  away: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    borderRadius: radius.md,
+    backgroundColor: colors.amberSoft,
+  },
+  awayPressed: { opacity: 0.75 },
   slipBusy: { opacity: 0.6 },
   slipIcon: {
     width: 36,

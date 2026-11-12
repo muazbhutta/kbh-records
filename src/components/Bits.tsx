@@ -1,7 +1,8 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  Platform,
   StyleSheet,
   useWindowDimensions,
   View,
@@ -14,14 +15,63 @@ import { initials } from '@/lib/format';
 import { colors, radius, shadow } from '@/theme';
 
 /**
- * A dim layer for a dialog. The height is pinned to the window rather
- * than left to flex, because inside a long scrolling page a flexible
- * backdrop grows to the whole page and pushes the dialog off screen.
+ * What of the screen a person can actually see.
+ *
+ * On a phone, opening the keyboard does not make the page smaller: iOS
+ * leaves the page the size it was and slides a window over it. Anything
+ * pinned to the page - a dialog over a dim layer, for instance - slides
+ * with it, so touching the Note field on a tall sheet pushed the top of
+ * that sheet off the screen and showed the page underneath where the
+ * dim layer should have been.
+ *
+ * The browser will say where that window is, and how big, if asked. On
+ * a phone with no keyboard up, and everywhere that has no such window
+ * to speak of, this is just the size of the screen.
+ */
+export function useVisible(): { height: number; top: number } {
+  const { height } = useWindowDimensions();
+  const read = () => {
+    const vv = typeof window !== 'undefined' ? window.visualViewport : null;
+    return vv ? { height: vv.height, top: vv.offsetTop } : { height, top: 0 };
+  };
+
+  const [seen, setSeen] = useState(read);
+
+  useEffect(() => {
+    if (Platform.OS !== 'web') return;
+    const vv = typeof window !== 'undefined' ? window.visualViewport : null;
+    if (!vv) {
+      setSeen({ height, top: 0 });
+      return;
+    }
+    const update = () => setSeen({ height: vv.height, top: vv.offsetTop });
+    update();
+    vv.addEventListener('resize', update);
+    vv.addEventListener('scroll', update);
+    return () => {
+      vv.removeEventListener('resize', update);
+      vv.removeEventListener('scroll', update);
+    };
+  }, [height]);
+
+  return seen;
+}
+
+/**
+ * A dim layer for a dialog. It covers what the person can see and
+ * nothing else, so the dialog inside it sits in the middle of the
+ * screen whether or not the keyboard is up.
+ *
+ * The height is pinned rather than left to flex, because inside a long
+ * scrolling page a flexible backdrop grows to the whole page and pushes
+ * the dialog off screen.
  */
 export function useBackdrop(align: 'center' | 'bottom' = 'center'): ViewStyle {
-  const { height } = useWindowDimensions();
+  const seen = useVisible();
   return {
-    height,
+    height: seen.height,
+    // Slide the layer down to wherever the keyboard pushed the view.
+    transform: seen.top ? [{ translateY: seen.top }] : undefined,
     backgroundColor: 'rgba(11, 22, 40, 0.5)',
     alignItems: 'center',
     justifyContent: align === 'bottom' ? 'flex-end' : 'center',

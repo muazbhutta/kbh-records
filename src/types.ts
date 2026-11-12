@@ -738,6 +738,12 @@ export type SalaryLine = {
    * more than he earned and it comes off this month.
    */
   carried_in: number;
+  /** What the company laid out for his kafalat this month. */
+  kafalat_paid: number;
+  /** True if any day of this month was spent away. */
+  on_leave: boolean;
+  /** The day he went, when he is away now. */
+  on_leave_since: string | null;
 };
 
 /** One man on one day, and whether he turned up. */
@@ -799,7 +805,11 @@ export type SalaryPayment = {
   person_id: string;
   full_name: string;
   amount: number;
-  kind: 'salary' | 'advance';
+  /**
+   * salary: wages handed over. advance: cash drawn early. kafalat: the
+   * company paid his sponsorship, and he owes it back.
+   */
+  kind: 'salary' | 'advance' | 'kafalat';
   paid_on: string;
   method: PayMethod;
   note: string | null;

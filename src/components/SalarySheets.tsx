@@ -1,15 +1,8 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import React, { useEffect, useState } from 'react';
-import {
-  Modal,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  useWindowDimensions,
-  View,
-} from 'react-native';
+import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
-import { Banner, useBackdrop } from '@/components/Bits';
+import { Banner, useBackdrop, useVisible } from '@/components/Bits';
 import { Button } from '@/components/Button';
 import { Field } from '@/components/Field';
 import { PayMethodRow } from '@/components/PayMethodRow';
@@ -17,6 +10,8 @@ import { AmountField, DateField, PersonField } from '@/components/pickers';
 import { Txt } from '@/components/Txt';
 import {
   useAddSalaryPerson,
+  useCameBack,
+  useGoOnLeave,
   useRecordSalary,
   useRemoveFromPayroll,
   useRemoveSalaryPayment,
@@ -24,7 +19,7 @@ import {
   useSetPayroll,
 } from '@/api/salaries';
 import { errorMessage } from '@/lib/supabase';
-import { money, monthName, todayInRiyadh } from '@/lib/format';
+import { formatDate, money, monthName, todayInRiyadh } from '@/lib/format';
 import { colors, radius, shadow } from '@/theme';
 import type {
   PayKind,
@@ -57,7 +52,10 @@ function Sheet({
   children: React.ReactNode;
 }) {
   const backdrop = useBackdrop('center');
-  const { height } = useWindowDimensions();
+  // What is left of the screen with the keyboard up, not what the
+  // screen would be without it - otherwise the panel is sized for a
+  // phone that is no longer there and its foot sits under the keys.
+  const { height } = useVisible();
   return (
     <Modal visible transparent animationType="fade" onRequestClose={onClose}>
       <View style={backdrop}>
@@ -111,14 +109,22 @@ export function PaySheet({
 }: {
   line: SalaryLine;
   month: string;
-  kind: 'salary' | 'advance';
+  kind: 'salary' | 'advance' | 'kafalat';
   onClose: () => void;
 }) {
   const record = useRecordSalary();
   const advance = kind === 'advance';
+  /*
+   * The company's own money, laid out for a man who is away.
+   *
+   * It counts against him exactly as an advance does - the company is
+   * out of pocket either way - but it is never cash in his hand, and
+   * the sheet must not let anybody type it in as though it were.
+   */
+  const kafalat = kind === 'kafalat';
 
   const [amount, setAmount] = useState(
-    advance ? '' : line.remaining > 0 ? String(line.remaining) : '',
+    advance || kafalat ? '' : line.remaining > 0 ? String(line.remaining) : '',
   );
   const [paidOn, setPaidOn] = useState(todayInRiyadh());
   const [method, setMethod] = useState<PayMethod>('cash');
@@ -149,11 +155,20 @@ export function PaySheet({
 
   return (
     <Sheet
-      title={advance ? 'Advance' : 'Pay salary'}
+      title={kafalat ? 'Kafalat' : advance ? 'Advance' : 'Pay salary'}
       subtitle={`${line.full_name} · ${monthName(month)}`}
       onClose={onClose}
     >
-      {advance ? (
+      {kafalat ? (
+        <View style={[styles.note, styles.noteWarn]}>
+          <Ionicons name="shield-outline" size={15} color={colors.amberDark} />
+          <Txt variant="caption" color={colors.amberDark}>
+            What the company paid for his kafalat. He never sees this money, but he owes it
+            back, so it comes off what is due to him - the same as an advance, under its own
+            name.
+          </Txt>
+        </View>
+      ) : advance ? (
         <View style={styles.note}>
           <Ionicons name="information-circle-outline" size={15} color={colors.blue} />
           <Txt variant="caption" color={colors.blue}>
@@ -182,22 +197,34 @@ export function PaySheet({
         }}
       />
 
-      <DateField label="The day it was handed over" value={paidOn} onChange={setPaidOn} />
+      <DateField
+        label={kafalat ? 'The day the company paid it' : 'The day it was handed over'}
+        value={paidOn}
+        onChange={setPaidOn}
+      />
 
-      <PayMethodRow value={method} onChange={setMethod} label="HOW WAS IT GIVEN?" />
+      <PayMethodRow
+        value={method}
+        onChange={setMethod}
+        label={kafalat ? 'HOW DID THE COMPANY PAY IT?' : 'HOW WAS IT GIVEN?'}
+      />
 
       <Field
         label="Note (optional)"
         value={note}
         onChangeText={(v) => setNote(v.slice(0, 300))}
-        placeholder={advance ? 'Asked for it before Eid' : 'Short note'}
+        placeholder={
+          kafalat ? 'Iqama renewal, October' : advance ? 'Asked for it before Eid' : 'Short note'
+        }
         icon="chatbox-ellipses-outline"
       />
 
       {error ? <Banner tone="error" message={error} /> : null}
 
       <Button
-        label={advance ? 'Record the advance' : 'Record the payment'}
+        label={
+          kafalat ? 'Record the kafalat' : advance ? 'Record the advance' : 'Record the payment'
+        }
         icon="checkmark"
         size="lg"
         full
@@ -213,9 +240,19 @@ export function PaySheet({
 export function PayrollSheet({
   existing,
   onClose,
+  onTakeOff,
 }: {
   existing?: SalaryLine;
   onClose: () => void;
+  /**
+   * Taking him off the payroll altogether.
+   *
+   * It lives in here rather than on his card because it is the rarest
+   * thing the office does to a man and the only one it cannot undo by
+   * typing again. A card carrying it beside Pay and Advance put the
+   * two a thumb's width apart.
+   */
+  onTakeOff?: () => void;
 }) {
   const set = useSetPayroll();
   const candidates = useSalaryCandidates(!existing);
@@ -376,6 +413,29 @@ export function PayrollSheet({
         onPress={save}
       />
       <Button label="Cancel" variant="ghost" full onPress={onClose} />
+
+      {existing && onTakeOff ? (
+        <>
+          <View style={styles.rule} />
+          <Pressable
+            onPress={onTakeOff}
+            accessibilityRole="button"
+            accessibilityLabel={`Take ${existing.full_name} off the payroll`}
+            style={({ pressed }) => [styles.takeOff, pressed && styles.takeOffPressed]}
+          >
+            <Ionicons name="person-remove-outline" size={17} color={colors.red} />
+            <View style={styles.flex}>
+              <Txt variant="subtitle" weight="semibold" color={colors.red} numberOfLines={1}>
+                Take him off the payroll
+              </Txt>
+              <Txt variant="caption" color={colors.textMuted} numberOfLines={2}>
+                He stops earning from the day you choose. What he was paid stays on the books.
+              </Txt>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color={colors.textFaint} />
+          </Pressable>
+        </>
+      ) : null}
     </Sheet>
   );
 }
@@ -622,6 +682,20 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     padding: 11,
   },
+  noteWarn: { backgroundColor: colors.amberSoft },
+  rule: { height: 1, backgroundColor: colors.line, marginTop: 4 },
+  takeOff: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 11,
+    paddingHorizontal: 11,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.redSoft,
+    backgroundColor: colors.card,
+  },
+  takeOffPressed: { backgroundColor: colors.redSoft },
 });
 
 /**
@@ -685,6 +759,108 @@ export function RemovePaymentSheet({
         onPress={go}
       />
       <Button label="Leave it" variant="ghost" full onPress={onClose} />
+    </Sheet>
+  );
+}
+
+
+/**
+ * Going home, and coming back.
+ *
+ * A man away earns nothing - nobody is marking him, and the books
+ * already say so - but his months would otherwise be a run of empty
+ * registers nobody could explain. Writing down the day he went turns
+ * them into something a man can be shown: "ye mahina chhutti par
+ * guzra", and the kafalat the company went on paying underneath it.
+ *
+ * The day matters. He went on a date, not on the day somebody got
+ * round to typing it, and a month he half-worked is half his.
+ */
+export function LeaveSheet({
+  line,
+  onClose,
+}: {
+  line: SalaryLine;
+  onClose: () => void;
+}) {
+  const away = !!line.on_leave_since;
+  const go = useGoOnLeave();
+  const back = useCameBack();
+
+  const [day, setDay] = useState(todayInRiyadh());
+  const [note, setNote] = useState('');
+  const [error, setError] = useState<string | null>(null);
+
+  const save = async () => {
+    setError(null);
+    try {
+      if (away) {
+        await back.mutateAsync({ personId: line.person_id, onDate: day });
+      } else {
+        await go.mutateAsync({
+          personId: line.person_id,
+          wentOn: day,
+          note: note.trim() || undefined,
+        });
+      }
+      onClose();
+    } catch (err) {
+      setError(errorMessage(err));
+    }
+  };
+
+  return (
+    <Sheet
+      title={away ? 'He is back' : 'Send him on leave'}
+      subtitle={line.full_name}
+      onClose={onClose}
+    >
+      {away ? (
+        <View style={styles.note}>
+          <Ionicons name="airplane-outline" size={15} color={colors.blue} />
+          <Txt variant="caption" color={colors.blue}>
+            Away since {formatDate(line.on_leave_since)}. Marking him back puts him on the
+            attendance list again from the day he returned. The days he was away keep
+            whatever was written down for them.
+          </Txt>
+        </View>
+      ) : (
+        <View style={[styles.note, styles.noteWarn]}>
+          <Ionicons name="home-outline" size={15} color={colors.amberDark} />
+          <Txt variant="caption" color={colors.amberDark}>
+            While he is away nobody is asked to mark him, and he earns nothing. Whatever the
+            company pays for his kafalat meanwhile is recorded against him and comes off what
+            he is owed.
+          </Txt>
+        </View>
+      )}
+
+      <DateField
+        label={away ? 'The day he came back' : 'The day he went'}
+        value={day}
+        onChange={setDay}
+      />
+
+      {away ? null : (
+        <Field
+          label="Note (optional)"
+          value={note}
+          onChangeText={(v) => setNote(v.slice(0, 200))}
+          placeholder="Gaya ghar, 2 mahine"
+          icon="chatbox-ellipses-outline"
+        />
+      )}
+
+      {error ? <Banner tone="error" message={error} /> : null}
+
+      <Button
+        label={away ? 'He is back' : 'Send him on leave'}
+        icon={away ? 'arrow-undo' : 'home-outline'}
+        size="lg"
+        full
+        loading={go.isPending || back.isPending}
+        onPress={save}
+      />
     </Sheet>
   );
 }

@@ -1938,6 +1938,72 @@ export type Database = {
           },
         ]
       }
+      salary_leave: {
+        Row: {
+          came_back: string | null
+          id: number
+          marked_at: string
+          marked_by: string | null
+          note: string | null
+          person_id: string
+          went_on: string
+        }
+        Insert: {
+          came_back?: string | null
+          id?: never
+          marked_at?: string
+          marked_by?: string | null
+          note?: string | null
+          person_id: string
+          went_on: string
+        }
+        Update: {
+          came_back?: string | null
+          id?: never
+          marked_at?: string
+          marked_by?: string | null
+          note?: string | null
+          person_id?: string
+          went_on?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "salary_leave_marked_by_fkey"
+            columns: ["marked_by"]
+            isOneToOne: false
+            referencedRelation: "app_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "salary_leave_marked_by_fkey"
+            columns: ["marked_by"]
+            isOneToOne: false
+            referencedRelation: "people_list"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "salary_leave_marked_by_fkey"
+            columns: ["marked_by"]
+            isOneToOne: false
+            referencedRelation: "people_names"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "salary_leave_marked_by_fkey"
+            columns: ["marked_by"]
+            isOneToOne: false
+            referencedRelation: "team_summary"
+            referencedColumns: ["head_id"]
+          },
+          {
+            foreignKeyName: "salary_leave_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "salary_people"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       salary_payments: {
         Row: {
           amount: number
@@ -3288,6 +3354,10 @@ export type Database = {
           total: number
         }[]
       }
+      came_back: {
+        Args: { p_on_date?: string; p_person_id: string }
+        Returns: undefined
+      }
       can_file_projects: { Args: never; Returns: boolean }
       can_payroll: { Args: never; Returns: boolean }
       can_use_project: { Args: { p_project_id: string }; Returns: boolean }
@@ -3495,6 +3565,10 @@ export type Database = {
         Returns: undefined
       }
       forget_push_targets: { Args: { p_ids: number[] }; Returns: undefined }
+      go_on_leave: {
+        Args: { p_note?: string; p_person_id: string; p_went_on?: string }
+        Returns: number
+      }
       is_active_user: { Args: never; Returns: boolean }
       is_admin: { Args: never; Returns: boolean }
       is_head: { Args: never; Returns: boolean }
@@ -3732,7 +3806,10 @@ export type Database = {
           friday_bonus: number
           full_name: string
           job_title: string
+          kafalat_paid: number
           monthly_amount: number
+          on_leave: boolean
+          on_leave_since: string
           on_payroll: boolean
           pay_kind: string
           payments: number

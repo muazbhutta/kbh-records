@@ -177,7 +177,7 @@ export function useRecordSalary() {
       personId: string;
       month: string;
       amount: number;
-      kind: 'salary' | 'advance';
+      kind: 'salary' | 'advance' | 'kafalat';
       paidOn?: string;
       method?: 'cash' | 'transfer';
       note?: string;
@@ -228,6 +228,36 @@ export function useAttendanceDay(day: string, enabled = true) {
       if (error) throw new Error(error.message);
       return (data ?? []) as AttendanceRow[];
     },
+  });
+}
+
+/** Send a man home, and mark him back when he returns. */
+export function useGoOnLeave() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: { personId: string; wentOn: string; note?: string }) => {
+      const { error } = await supabase.rpc('go_on_leave', {
+        p_person_id: input.personId,
+        p_went_on: input.wentOn,
+        p_note: input.note,
+      });
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => refreshTheBooks(qc),
+  });
+}
+
+export function useCameBack() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: { personId: string; onDate: string }) => {
+      const { error } = await supabase.rpc('came_back', {
+        p_person_id: input.personId,
+        p_on_date: input.onDate,
+      });
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => refreshTheBooks(qc),
   });
 }
 
