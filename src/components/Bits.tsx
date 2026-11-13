@@ -71,8 +71,70 @@ export function useVisible(): { height: number; top: number } {
  * dialog still sits in the middle of the screen and does not scroll at
  * all.
  */
+/**
+ * Keep whatever is being typed in where it can be seen.
+ *
+ * Touching a field near the foot of a dialog opens the keyboard, and
+ * what is left of the screen is suddenly half what it was. The field
+ * is then somewhere below it, and the person has to scroll back to
+ * the very thing they just touched - which is not something anybody
+ * should have to do twice.
+ *
+ * The browser does this by itself on an ordinary page. Inside a panel
+ * that has been moved and resized under it, it does not, so it is
+ * done here: find the box that scrolls above the field, and nudge it
+ * until the field is inside it.
+ *
+ * Nothing is centred or animated. The smallest move that brings it
+ * back is the one that leaves the rest of the dialog where the eye
+ * last saw it.
+ */
+function useKeepTypingInView(visibleHeight: number) {
+  useEffect(() => {
+    if (Platform.OS !== 'web' || typeof document === 'undefined') return;
+
+    const bring = () => {
+      const el = document.activeElement as HTMLElement | null;
+      if (!el || (el.tagName !== 'INPUT' && el.tagName !== 'TEXTAREA')) return;
+
+      let box: HTMLElement | null = el.parentElement;
+      while (box) {
+        const style = window.getComputedStyle(box);
+        const scrolls =
+          box.scrollHeight > box.clientHeight + 1 &&
+          (style.overflowY === 'auto' || style.overflowY === 'scroll');
+        if (scrolls) break;
+        box = box.parentElement;
+      }
+      if (!box) return;
+
+      const field = el.getBoundingClientRect();
+      const inside = box.getBoundingClientRect();
+      const room = 14;
+      if (field.bottom > inside.bottom - room) {
+        box.scrollTop += field.bottom - (inside.bottom - room);
+      } else if (field.top < inside.top + room) {
+        box.scrollTop -= inside.top + room - field.top;
+      }
+    };
+
+    // On focus, after the keyboard has finished coming up - the screen
+    // is still the old size while it slides.
+    const onFocus = () => window.setTimeout(bring, 340);
+    document.addEventListener('focusin', onFocus);
+    // And again whenever the room changes under a field already being
+    // typed in: the keyboard switching to numbers is a second shrink.
+    const soon = window.setTimeout(bring, 60);
+    return () => {
+      document.removeEventListener('focusin', onFocus);
+      window.clearTimeout(soon);
+    };
+  }, [visibleHeight]);
+}
+
 export function useBackdropScroll(): { style: ViewStyle; content: ViewStyle } {
   const seen = useVisible();
+  useKeepTypingInView(seen.height);
   return {
     style: {
       height: seen.height,
