@@ -652,7 +652,6 @@ function SalaryCard({
             <Txt variant="subtitle" weight="semibold" numberOfLines={1}>
               {line.full_name}
             </Txt>
-            {done ? <Badge label="Paid" tone="green" style={styles.badgeMid} /> : null}
             {past ? <Badge label="Off salary" tone="grey" style={styles.badgeMid} /> : null}
           </View>
           <Txt variant="caption" color={colors.textMuted} numberOfLines={2}>
@@ -700,26 +699,21 @@ function SalaryCard({
       {/* Fridays he came in, which is the only thing that moves a
           monthly man's figure off his wage. Shown even at nought, so
           the line is not a surprise the month it appears. */}
-      {!daily ? (
+      {/*
+        Only when he worked one. A line reading "0 Fridays worked -
+        none this month" on every card is a line nobody reads twice,
+        and there were three of them on a screen of six men.
+      */}
+      {!daily && line.bonus_days > 0 ? (
         <View style={styles.daysRow}>
-          <Ionicons
-            name="star"
-            size={13}
-            color={line.bonus_days > 0 ? colors.amberDark : colors.textFaint}
-          />
-          <Txt
-            variant="caption"
-            weight="semibold"
-            color={line.bonus_days > 0 ? colors.amberDark : colors.textFaint}
-          >
+          <Ionicons name="star" size={13} color={colors.amberDark} />
+          <Txt variant="caption" weight="semibold" color={colors.amberDark}>
             {line.bonus_days} {line.bonus_days === 1 ? 'Friday' : 'Fridays'} worked
           </Txt>
           <Txt variant="caption" color={colors.textFaint} numberOfLines={1}>
-            {line.bonus_days === 0
-              ? '· none this month'
-              : Number(line.bonus_total) > 0
-                ? `· ${money(Number(line.bonus_total))} on top`
-                : '· not priced yet'}
+            {Number(line.bonus_total) > 0
+              ? `· ${money(Number(line.bonus_total))} on top`
+              : '· not priced yet'}
           </Txt>
         </View>
       ) : null}
@@ -762,8 +756,10 @@ function SalaryCard({
             <Txt variant="caption" weight="bold" color={colors.amberDark} numberOfLines={1}>
               Off salary since {formatDate(line.on_leave_since)}
             </Txt>
-            <Txt variant="caption" color={colors.amberDark} numberOfLines={1}>
-              Earning nothing. Tap when he is back.
+            <Txt variant="caption" color={colors.amberDark} numberOfLines={2}>
+              {earned > 0
+                ? 'Counted by his days here. Tap when he is back.'
+                : 'Earning nothing. Tap when he is back.'}
             </Txt>
           </View>
           {onLeave ? (
@@ -845,6 +841,15 @@ function SalaryCard({
                 : `${money(left)} left`}
           </Txt>
         </View>
+      ) : owesBack ? (
+        /*
+         * Nothing earned, and money owed. There was no bar to draw and
+         * so nothing was drawn at all: the card showed a red figure
+         * with not a word to say which way it pointed.
+         */
+        <Txt variant="caption" weight="semibold" color={colors.red} numberOfLines={1}>
+          {money(Math.abs(left))} to come off next month
+        </Txt>
       ) : daily ? (
         <Txt variant="caption" color={colors.amberDark} numberOfLines={1}>
           No days marked yet this month.
