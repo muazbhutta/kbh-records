@@ -3803,6 +3803,15 @@ export type Database = {
           on_payroll: boolean
         }[]
       }
+      salary_leave_month: {
+        Args: { p_month?: string }
+        Returns: {
+          came_back: string
+          note: string
+          person_id: string
+          went_on: string
+        }[]
+      }
       salary_month: {
         Args: { p_month?: string }
         Returns: {

@@ -752,6 +752,19 @@ export type SalaryLine = {
 /** The four things an entry against a man's month can be. */
 export type PayKindChoice = 'salary' | 'advance' | 'kafalat' | 'owing';
 
+/**
+ * A stretch a man spent at home, clipped to the month it was asked for.
+ *
+ * came_back is null while he is still away, which on a sheet means to
+ * the end of that month.
+ */
+export type LeaveStretch = {
+  person_id: string;
+  went_on: string;
+  came_back: string | null;
+  note: string | null;
+};
+
 /** One man on one day, and whether he turned up. */
 export type AttendanceRow = {
   person_id: string;

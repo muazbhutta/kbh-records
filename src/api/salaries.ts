@@ -6,6 +6,7 @@ import type {
   AttendanceDayTotal,
   AttendanceRow,
   AttendanceSheetRow,
+  LeaveStretch,
   PayKind,
   PayMethod,
   SalaryCandidate,
@@ -289,6 +290,25 @@ export function useSetDayWorth() {
       if (error) throw new Error(error.message);
     },
     onSuccess: () => refreshTheBooks(qc),
+  });
+}
+
+/**
+ * Who was at home, and between which days.
+ *
+ * A sheet needs the stretches themselves, not just today's state: a
+ * month he has since come back from would otherwise arrive with
+ * nothing to say about the days he was gone.
+ */
+export function useLeaveMonth(month: string, enabled = true) {
+  return useQuery({
+    queryKey: ['salaries', 'leave', month],
+    enabled,
+    queryFn: async (): Promise<LeaveStretch[]> => {
+      const { data, error } = await supabase.rpc('salary_leave_month', { p_month: month });
+      if (error) throw new Error(error.message);
+      return (data ?? []) as LeaveStretch[];
+    },
   });
 }
 

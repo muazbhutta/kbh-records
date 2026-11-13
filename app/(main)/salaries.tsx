@@ -19,6 +19,7 @@ import {
   monthKey,
   useAttendanceDayTotal,
   useAttendanceSheet,
+  useLeaveMonth,
   useSalaryMonth,
   useSalaryMonthTotal,
   useSalaryPayments,
@@ -66,6 +67,9 @@ export default function SalariesScreen() {
   const router = useRouter();
   const lines = useSalaryMonth(month, canPayroll);
   const register = useAttendanceSheet(month, canPayroll);
+  // Who was at home, and between which days - so a slip can say so
+  // against the days nobody marked, instead of "nobody said".
+  const leave = useLeaveMonth(month, canPayroll);
   const logDownload = useLogDownload();
   const [making, setMaking] = useState<string | null>(null);
   const [made, setMade] = useState<string | null>(null);
@@ -161,12 +165,15 @@ export default function SalariesScreen() {
     setMade(null);
     setFailed(null);
 
-    if (register.isLoading || payments.isLoading) {
+    if (register.isLoading || payments.isLoading || leave.isLoading) {
       setFailed('The month is still loading. Try again in a moment.');
       return;
     }
-    if (register.error || payments.error) {
-      setFailed((register.error ?? payments.error)?.message ?? 'The month could not be read.');
+    if (register.error || payments.error || leave.error) {
+      setFailed(
+        (register.error ?? payments.error ?? leave.error)?.message ??
+          'The month could not be read.',
+      );
       return;
     }
 
@@ -174,7 +181,8 @@ export default function SalariesScreen() {
     try {
       const days = register.data ?? [];
       const paid = payments.data ?? [];
-      const slips = who.map((line) => slipFor(line, days, paid));
+      const gone = leave.data ?? [];
+      const slips = who.map((line) => slipFor(line, days, paid, gone));
 
       const html = buildSalarySlipsHtml(slips, {
         month,

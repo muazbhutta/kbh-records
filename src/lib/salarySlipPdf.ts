@@ -1,6 +1,11 @@
 import { amountOnly, formatDate, formatDateTime, money, monthName } from '@/lib/format';
 import { KBH_LOGO_DATA_URI } from '@/lib/reportLogo';
-import type { AttendanceSheetRow, SalaryLine, SalaryPayment } from '@/types';
+import type {
+  AttendanceSheetRow,
+  LeaveStretch,
+  SalaryLine,
+  SalaryPayment,
+} from '@/types';
 
 /**
  * One man, one month, one sheet.
@@ -30,13 +35,22 @@ export type SalarySlipMeta = {
   logoDataUri?: string | null;
 };
 
-/** One man's month, gathered from the three things the database knows. */
+/** One man's month, gathered from the four things the database knows. */
 export type SalarySlip = {
   line: SalaryLine;
   /** His own marked days, in date order. */
   days: AttendanceSheetRow[];
   /** His own advances and salary payments, in date order. */
   payments: SalaryPayment[];
+  /**
+   * The stretches he spent at home, clipped to this month.
+   *
+   * Without them a day nobody marked reads "Likha nahi" - nobody said -
+   * whether he was absent without explanation or sitting at home with
+   * the office's blessing. Seventeen of those in a row is a sheet that
+   * looks like an office which gave up halfway through the month.
+   */
+  away: LeaveStretch[];
 };
 
 const escape = (value: unknown): string =>
@@ -298,11 +312,19 @@ function slipPage(slip: SalarySlip, meta: SalarySlipMeta): string {
     const worth = a?.present ? Number(a.rate ?? (daily ? line.daily_rate : 0)) : 0;
     const bonus = !daily && dow === 5 && worth > 0;
 
-    const mark = !a
-      ? '<span class="m none">Likha nahi</span>'
-      : a.present
+    // A day he was at home. Said even when somebody marked him anyway,
+    // because the two together are the whole truth about the day.
+    const atHome = slip.away.some(
+      (l) => date >= l.went_on && (l.came_back === null || date <= l.came_back),
+    );
+
+    const mark = a
+      ? a.present
         ? '<span class="m in">Hazir</span>'
-        : '<span class="m out">Chhutti</span>';
+        : '<span class="m out">Chhutti</span>'
+      : atHome
+        ? '<span class="m away">Chhutti par</span>'
+        : '<span class="m none">Likha nahi</span>';
 
     const took = here
       .map(
@@ -327,7 +349,7 @@ function slipPage(slip: SalarySlip, meta: SalarySlipMeta): string {
       )
       .join('');
 
-    return `<tr class="${bonus ? 'fri' : ''}${a ? '' : ' quiet'}">
+    return `<tr class="${bonus ? 'fri' : ''}${a ? '' : atHome ? ' home' : ' quiet'}">
       <td class="dt"><b>${Number(date.slice(8))}</b> <span class="dw">${DAY_NAMES[dow]}</span></td>
       <td>${mark}${bonus ? '<span class="fri-tag">&#9733; Juma bonus</span>' : ''}</td>
       <td class="num small">${worth > 0 ? escape(amountOnly(worth)) : ''}</td>
@@ -589,6 +611,13 @@ export function buildSalarySlipsHtml(slips: SalarySlip[], meta: SalarySlipMeta):
   .reg th { padding: 4px 5px; font-size: 7.6px; }
   /* A day nobody answered for is there, but it does not shout. */
   .reg .quiet td { color: #AAB6C4; background: #FDFDFE; }
+  /*
+   * A day at home reads as a day accounted for, not a gap. Faint, but
+   * in the colour the rest of the sheet uses for being away, so a run
+   * of them down the register is plainly one thing and not a hole.
+   */
+  .reg .home td { background: #FFFCF4; }
+  .reg .home .dt b, .reg .home .dw { color: #B99A52; }
   .reg .dt { white-space: nowrap; font-variant-numeric: tabular-nums; }
   .reg .dt b { font-size: 10.5px; }
   .reg .dw { color: #8A99AB; font-size: 8.6px; }
@@ -601,6 +630,8 @@ export function buildSalarySlipsHtml(slips: SalarySlip[], meta: SalarySlipMeta):
   .m.in { color: #157347; }
   .m.out { color: #B3261E; }
   .m.none { color: #C4CCD6; }
+  /* At home, by arrangement - not a day anybody forgot. */
+  .m.away { color: #A8730B; }
 
   /* A worked Friday is the one line on the sheet that has to catch the
      eye, because it is the only thing that moves a monthly man's figure
@@ -759,14 +790,16 @@ export function salarySlipFileName(
   return `KBH_Salary_${name}_${monthSlug(month)}${no}.pdf`;
 }
 
-/** Cuts the month's register and payments down to one man's own. */
+/** Cuts the month's register, payments and leave down to one man's own. */
 export function slipFor(
   line: SalaryLine,
   days: AttendanceSheetRow[],
   payments: SalaryPayment[],
+  away: LeaveStretch[] = [],
 ): SalarySlip {
   return {
     line,
+    away: away.filter((l) => l.person_id === line.person_id),
     days: days
       .filter((d) => d.person_id === line.person_id)
       .sort((a, b) => a.on_date.localeCompare(b.on_date)),
