@@ -365,8 +365,13 @@ function PersonRow({
                   <Ionicons name="checkmark" size={15} color={colors.white} />
                 </Pressable>
               ) : (
-                <Txt variant="caption" color={colors.textFaint} numberOfLines={1}>
-                  {worth > 0 ? 'on top of his wage' : 'type what it is worth'}
+                <Txt
+                  variant="caption"
+                  color={colors.textFaint}
+                  numberOfLines={1}
+                  style={styles.priceHint}
+                >
+                  {worth > 0 ? 'on top of wage' : 'what is it worth?'}
                 </Txt>
               )}
             </View>
@@ -516,8 +521,11 @@ const styles = StyleSheet.create({
     gap: 6,
     marginTop: 3,
   },
+  priceHint: { flexShrink: 1, minWidth: 0 },
   priceInput: {
-    minWidth: 62,
+    width: 78,
+    flexGrow: 0,
+    flexShrink: 0,
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: radius.sm,

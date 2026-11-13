@@ -76,6 +76,20 @@ export function useBackdropScroll(): { style: ViewStyle; content: ViewStyle } {
   return {
     style: {
       height: seen.height,
+      /*
+       * And it must be that height and no other.
+       *
+       * A scrolling view carries flexGrow 1 of its own, and inside the
+       * dialog's own box that beat the height outright: the layer slid
+       * down with the keyboard as it should, stayed the full height of
+       * the phone, and centred the panel in a stretch of screen that
+       * was underneath the keys. Which is exactly what it looked like
+       * from the outside - the dialog going "inside" the screen.
+       */
+      flexGrow: 0,
+      flexShrink: 0,
+      flexBasis: 'auto',
+      maxHeight: seen.height,
       transform: seen.top ? [{ translateY: seen.top }] : undefined,
       backgroundColor: 'rgba(11, 22, 40, 0.5)',
     },
@@ -102,6 +116,11 @@ export function useBackdrop(align: 'center' | 'bottom' = 'center'): ViewStyle {
   const seen = useVisible();
   return {
     height: seen.height,
+    // The same again: height, and nothing allowed to stretch it.
+    flexGrow: 0,
+    flexShrink: 0,
+    flexBasis: 'auto',
+    maxHeight: seen.height,
     // Slide the layer down to wherever the keyboard pushed the view.
     transform: seen.top ? [{ translateY: seen.top }] : undefined,
     backgroundColor: 'rgba(11, 22, 40, 0.5)',
