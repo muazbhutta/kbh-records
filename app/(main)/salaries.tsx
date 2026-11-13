@@ -700,7 +700,7 @@ function SalaryCard({
       {/* Fridays he came in, which is the only thing that moves a
           monthly man's figure off his wage. Shown even at nought, so
           the line is not a surprise the month it appears. */}
-      {!daily && Number(line.friday_bonus) > 0 ? (
+      {!daily ? (
         <View style={styles.daysRow}>
           <Ionicons
             name="star"
@@ -715,9 +715,11 @@ function SalaryCard({
             {line.bonus_days} {line.bonus_days === 1 ? 'Friday' : 'Fridays'} worked
           </Txt>
           <Txt variant="caption" color={colors.textFaint} numberOfLines={1}>
-            {line.bonus_days > 0
-              ? `· ${money(Number(line.monthly_amount))} + ${money(Number(line.bonus_total))} bonus`
-              : `· ${money(Number(line.friday_bonus))} each`}
+            {line.bonus_days === 0
+              ? '· none this month'
+              : Number(line.bonus_total) > 0
+                ? `· ${money(Number(line.bonus_total))} on top`
+                : '· not priced yet'}
           </Txt>
         </View>
       ) : null}

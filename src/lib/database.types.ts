@@ -3872,6 +3872,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      set_day_worth: {
+        Args: { p_amount: number; p_on_date: string; p_person_id: string }
+        Returns: undefined
+      }
       set_entry_project: {
         Args: { p_entry_id: string; p_project_id?: string }
         Returns: undefined

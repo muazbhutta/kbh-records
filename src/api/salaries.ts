@@ -133,8 +133,6 @@ export function useSetPayroll() {
       amount: number;
       /** A month's wage, or one day's. Defaults to a month's. */
       payKind?: PayKind;
-      /** What a worked Friday is worth to him. Monthly staff only. */
-      fridayBonus?: number;
       since?: string;
       note?: string;
     }): Promise<string> => {
@@ -143,7 +141,13 @@ export function useSetPayroll() {
         p_user_id: input.userId ?? undefined,
         p_amount: input.amount,
         p_pay_kind: input.payKind ?? 'monthly',
-        p_friday_bonus: input.fridayBonus ?? undefined,
+        /*
+         * Nought, always. A worked Friday is counted and shown; what
+         * it is worth is the office's business and not the book's.
+         * Sent rather than left out, because the database still
+         * defaults the old figure when nothing is said.
+         */
+        p_friday_bonus: 0,
         p_since: input.since ?? undefined,
         p_note: input.note ?? undefined,
       });
@@ -258,6 +262,29 @@ export function useEditSalaryPayment() {
         p_note: input.note,
         p_kind: input.kind,
         p_method: input.method,
+      });
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => refreshTheBooks(qc),
+  });
+}
+
+/**
+ * What one marked day is worth.
+ *
+ * A daily man's day is his wage and is set when he is marked. A
+ * monthly man's Friday is worth nothing until the office says what it
+ * is worth, on the day, and it can be changed afterwards - there is no
+ * rate anywhere to assume.
+ */
+export function useSetDayWorth() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: { personId: string; day: string; amount: number }) => {
+      const { error } = await supabase.rpc('set_day_worth', {
+        p_person_id: input.personId,
+        p_on_date: input.day,
+        p_amount: input.amount,
       });
       if (error) throw new Error(error.message);
     },

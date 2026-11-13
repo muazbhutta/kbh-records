@@ -58,6 +58,38 @@ export function useVisible(): { height: number; top: number } {
 }
 
 /**
+ * The same dim layer, for a dialog that scrolls.
+ *
+ * A panel with its own little scrolling window inside it reads badly:
+ * touch a field near the foot and the top of the panel - its name, the
+ * question it is asking - slides away inside a box, and what is left
+ * looks like a different dialog with fields missing. Scrolling the
+ * whole panel instead is what a page does, which is what a hand
+ * expects.
+ *
+ * The content grows and is centred while it is short, so a small
+ * dialog still sits in the middle of the screen and does not scroll at
+ * all.
+ */
+export function useBackdropScroll(): { style: ViewStyle; content: ViewStyle } {
+  const seen = useVisible();
+  return {
+    style: {
+      height: seen.height,
+      transform: seen.top ? [{ translateY: seen.top }] : undefined,
+      backgroundColor: 'rgba(11, 22, 40, 0.5)',
+    },
+    content: {
+      flexGrow: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: 20,
+      paddingVertical: 20,
+    },
+  };
+}
+
+/**
  * A dim layer for a dialog. It covers what the person can see and
  * nothing else, so the dialog inside it sits in the middle of the
  * screen whether or not the keyboard is up.

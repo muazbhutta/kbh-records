@@ -149,10 +149,17 @@ function statement(slip: SalarySlip, month: string): string {
           : `${monthName(month)} - is mahine hazri nahi lagi`,
       value: wage,
     });
-    if (Number(line.friday_bonus) > 0) {
+    /*
+     * The Fridays, at what each was priced at on the day.
+     *
+     * There is no rate behind this: somebody typed a figure against
+     * each Friday he came in on, which is why the note counts the
+     * days rather than naming a rate they were all worth.
+     */
+    if (Number(line.bonus_total) > 0) {
       rows.push({
         label: 'Juma bonus',
-        note: `${line.bonus_days} Juma kaam kiya, har Juma ${money(Number(line.friday_bonus))}`,
+        note: `${line.bonus_days} Juma kaam kiya`,
         value: Number(line.bonus_total),
         tone: 'bonus',
       });

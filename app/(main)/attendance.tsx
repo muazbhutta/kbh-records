@@ -1,6 +1,6 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import React, { useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, TextInput, View } from 'react-native';
 
 import { Avatar, Badge, Banner, EmptyState, Loading, SectionTitle } from '@/components/Bits';
 import { Button } from '@/components/Button';
@@ -12,6 +12,7 @@ import {
   useAttendanceDayTotal,
   useClearAttendance,
   useMarkAttendance,
+  useSetDayWorth,
 } from '@/api/salaries';
 import { useAuth } from '@/auth/AuthProvider';
 import { formatDate, money, todayInRiyadh } from '@/lib/format';
@@ -46,6 +47,7 @@ export default function AttendanceScreen() {
   const rows = useAttendanceDay(day, canPayroll);
   const total = useAttendanceDayTotal(day, canPayroll);
   const mark = useMarkAttendance();
+  const price = useSetDayWorth();
   const clear = useClearAttendance();
 
   const today = todayInRiyadh();
@@ -232,7 +234,7 @@ export default function AttendanceScreen() {
               <SectionTitle title="Monthly staff" />
               <Txt variant="caption" color={colors.textFaint} style={styles.hint}>
                 {t?.is_friday
-                  ? 'Today is a Friday, so whoever comes in earns his bonus on top of his wage.'
+                  ? 'A Friday. Mark whoever came in, then type what the day is worth to him - there is no set rate, and you can change it later.'
                   : 'Kept for the record. What they are paid does not change either way.'}
               </Txt>
               <View style={styles.list}>
@@ -242,6 +244,12 @@ export default function AttendanceScreen() {
                     row={row}
                     busy={busy === row.person_id}
                     onSay={(present) => say(row, present)}
+                    onPrice={
+                      t?.is_friday
+                        ? (amount) =>
+                            price.mutate({ personId: row.person_id, day, amount })
+                        : undefined
+                    }
                   />
                 ))}
               </View>
@@ -286,13 +294,31 @@ function PersonRow({
   row,
   busy,
   onSay,
+  onPrice,
 }: {
   row: AttendanceRow;
   busy: boolean;
+  /**
+   * What this Friday is worth to him, said by hand.
+   *
+   * Only for a monthly man on a Friday he came in on. There is no rate
+   * anywhere to fall back on: the owner prices the day, and can price
+   * it again tomorrow.
+   */
+  onPrice?: (amount: number) => void;
   onSay: (present: boolean) => void;
 }) {
   const rate = Number(row.daily_rate ?? 0);
   const worth = Number(row.day_worth ?? 0);
+  const [typing, setTyping] = useState<string | null>(null);
+
+  const price = () => {
+    if (!onPrice) return;
+    const v = Number(typing);
+    if (!Number.isFinite(v) || v < 0) return;
+    onPrice(Math.round(v * 100) / 100);
+    setTyping(null);
+  };
 
   return (
     <View style={[styles.person, shadow.card, row.present === null && styles.personWaiting]}>
@@ -311,7 +337,40 @@ function PersonRow({
             {row.job_title ? `${row.job_title} · ` : ''}
             {row.pay_kind === 'daily' ? `${money(rate)} a day` : 'Monthly'}
           </Txt>
-          {worth > 0 ? (
+          {onPrice && row.present ? (
+            <View style={styles.priceRow}>
+              <Ionicons name="star" size={13} color={colors.amberDark} />
+              <Txt variant="caption" weight="semibold" color={colors.amberDark}>
+                Juma
+              </Txt>
+              <TextInput
+                value={typing ?? (worth > 0 ? String(worth) : '')}
+                onChangeText={(v: string) => setTyping(v.replace(/[^0-9.]/g, '').slice(0, 9))}
+                onBlur={price}
+                onSubmitEditing={price}
+                keyboardType="decimal-pad"
+                placeholder="0"
+                placeholderTextColor={colors.textFaint}
+                returnKeyType="done"
+                accessibilityLabel={`What this Friday is worth to ${row.full_name}`}
+                style={styles.priceInput}
+              />
+              {typing !== null && typing !== String(worth) ? (
+                <Pressable
+                  onPress={price}
+                  accessibilityRole="button"
+                  accessibilityLabel="Save it"
+                  style={({ pressed }) => [styles.priceSave, pressed && styles.pricePressed]}
+                >
+                  <Ionicons name="checkmark" size={15} color={colors.white} />
+                </Pressable>
+              ) : (
+                <Txt variant="caption" color={colors.textFaint} numberOfLines={1}>
+                  {worth > 0 ? 'on top of his wage' : 'type what it is worth'}
+                </Txt>
+              )}
+            </View>
+          ) : worth > 0 ? (
             <View style={styles.worthRow}>
               <Ionicons
                 name={row.pay_kind === 'daily' ? 'cash-outline' : 'star'}
@@ -450,6 +509,34 @@ const styles = StyleSheet.create({
     padding: 12,
     marginBottom: 12,
   },
+  // A Friday being priced, by hand, on the day.
+  priceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 3,
+  },
+  priceInput: {
+    minWidth: 62,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: radius.sm,
+    borderWidth: 1.5,
+    borderColor: colors.amberSoft,
+    backgroundColor: colors.amberSoft,
+    color: colors.amberDark,
+    fontWeight: '700',
+    fontSize: 13,
+  },
+  priceSave: {
+    width: 26,
+    height: 26,
+    borderRadius: radius.sm,
+    backgroundColor: colors.amberDark,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pricePressed: { opacity: 0.8 },
   worthRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
   list: { gap: 9, marginBottom: 6 },
 

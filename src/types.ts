@@ -718,8 +718,9 @@ export type SalaryLine = {
   friday_bonus: number;
   days_present: number;
   days_marked: number;
-  /** Fridays he came in, and what they came to. Monthly staff only. */
+  /** Fridays he came in. Monthly staff only. */
   bonus_days: number;
+  /** What those Fridays were priced at, one by one, on the day. */
   bonus_total: number;
   /** What the month has earned him, whichever way he is paid. */
   earned: number;

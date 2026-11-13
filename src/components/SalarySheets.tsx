@@ -2,7 +2,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import React, { useEffect, useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
-import { Banner, useBackdrop, useVisible } from '@/components/Bits';
+import { Banner, useBackdropScroll } from '@/components/Bits';
 import { Button } from '@/components/Button';
 import { Field } from '@/components/Field';
 import { PayMethodRow } from '@/components/PayMethodRow';
@@ -53,22 +53,23 @@ function Sheet({
   onClose: () => void;
   children: React.ReactNode;
 }) {
-  const backdrop = useBackdrop('center');
-  // What is left of the screen with the keyboard up, not what the
-  // screen would be without it - otherwise the panel is sized for a
-  // phone that is no longer there and its foot sits under the keys.
-  const { height } = useVisible();
+  const backdrop = useBackdropScroll();
   return (
     <Modal visible transparent animationType="fade" onRequestClose={onClose}>
-      <View style={backdrop}>
-        {/*
-          The panel is as tall as it needs to be, up to most of the
-          screen, and then it scrolls. Adding a new man opened a panel
-          taller than a phone and the button at the foot of it could
-          not be reached at all - worse with the keyboard up, which is
-          exactly when it is being used.
-        */}
-        <View style={[styles.sheet, { maxHeight: height * 0.86 }, shadow.raised]}>
+      {/*
+        The whole panel scrolls, inside the dim layer, rather than
+        having a scrolling window of its own. A panel that scrolled
+        inside itself took its own name and question out of sight the
+        moment a field near the foot was touched, and what was left
+        looked like a dialog with its top half missing.
+      */}
+      <ScrollView
+        style={backdrop.style}
+        contentContainerStyle={backdrop.content}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={[styles.sheet, shadow.raised]}>
           <View style={styles.head}>
             <View style={styles.flex}>
               <Txt variant="heading">{title}</Txt>
@@ -87,17 +88,9 @@ function Sheet({
               <Ionicons name="close" size={22} color={colors.textMuted} />
             </Pressable>
           </View>
-          <ScrollView
-            style={styles.body}
-            contentContainerStyle={styles.bodyInner}
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}
-            bounces={false}
-          >
-            {children}
-          </ScrollView>
+          <View style={styles.bodyInner}>{children}</View>
         </View>
-      </View>
+      </ScrollView>
     </Modal>
   );
 }
@@ -111,7 +104,17 @@ function Sheet({
  * every turn, so a fifth is a line in a table and not a hunt through
  * the sheet.
  */
-export const PAY_KINDS: PayKindChoice[] = ['salary', 'advance', 'kafalat', 'owing'];
+/*
+ * The three the office offers.
+ *
+ * Kafalat is not among them any more - it was asked for and then not
+ * wanted - but it stays in the table below, because entries already
+ * written down as kafalat have to go on being named, on the card, in
+ * the register and on the sheet. It appears in the chooser again only
+ * when one of those is being put right, so the chip under the cursor
+ * is the kind the entry actually is.
+ */
+export const PAY_KINDS: PayKindChoice[] = ['salary', 'advance', 'owing'];
 
 const PAY_KIND: Record<
   PayKindChoice,
@@ -261,7 +264,7 @@ export function PaySheet({
         WHAT IS THIS?
       </Txt>
       <View style={styles.payKinds}>
-        {PAY_KINDS.map((k) => (
+        {(PAY_KINDS.includes(chosen) ? PAY_KINDS : [...PAY_KINDS, chosen]).map((k) => (
           <Pressable
             key={k}
             onPress={() => {
@@ -408,9 +411,6 @@ export function PayrollSheet({
     return held > 0 ? String(held) : '';
   });
   const [payKind, setPayKind] = useState<PayKind>(existing?.pay_kind ?? 'monthly');
-  const [bonus, setBonus] = useState(
-    existing ? String(existing.friday_bonus ?? 150) : '150',
-  );
   const [since, setSince] = useState(todayInRiyadh());
   const [error, setError] = useState<string | null>(null);
 
@@ -440,7 +440,6 @@ export function PayrollSheet({
         userId: asUser ? personId : null,
         amount: value,
         payKind,
-        fridayBonus: payKind === 'monthly' ? Number(bonus || 0) : 0,
         since,
       });
       onClose();
@@ -524,23 +523,22 @@ export function PayrollSheet({
           : "A month's salary. What is already paid for past months does not change."}
       </Txt>
 
-      {/* Only a monthly man can earn it: a daily one is paid for the
-          day, Friday or not, and already has been. */}
+      {/*
+        Friday used to carry a figure here, set per man and added to
+        his month. The office does not want a rate - it wants to know
+        how many Fridays he worked and to decide for itself what that
+        is worth. The count is still kept and still shown; only the
+        money has gone.
+      */}
       {payKind === 'monthly' ? (
-        <>
-          <Field
-            label="Friday bonus"
-            value={bonus}
-            onChangeText={(v) => setBonus(v.replace(/[^0-9.]/g, '').slice(0, 9))}
-            placeholder="150"
-            icon="star-outline"
-            keyboardType="decimal-pad"
-          />
-          <Txt variant="caption" color={colors.textMuted}>
-            Friday is the day off. Mark him present on one and this is added to his month, on
-            top of his wage. Leave it empty for none.
+        <View style={styles.note}>
+          <Ionicons name="star-outline" size={15} color={colors.blue} />
+          <Txt variant="caption" color={colors.blue}>
+            Friday is the day off. Mark him present on one and it is counted on his card and
+            on his slip, so you can see how many he worked. It adds nothing to his wage by
+            itself.
           </Txt>
-        </>
+        </View>
       ) : null}
 
       <DateField label="From when" value={since} onChange={setSince} />
@@ -779,9 +777,7 @@ const styles = StyleSheet.create({
     padding: 20,
     gap: 12,
   },
-  // The head stays put and the rest of the panel scrolls under it, so
-  // the title and the close never go out of reach.
-  body: { flexShrink: 1 },
+
   bodyInner: { gap: 12, paddingBottom: 2 },
   head: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 },
   flex: { flex: 1, gap: 2 },
