@@ -141,10 +141,17 @@ function statement(slip: SalarySlip, month: string): string {
      * in front of the man it is handed to.
      */
     const wage = earned - Number(line.bonus_total);
+    /*
+     * A month he was off salary in is counted by his days, so the
+     * figure is not the figure he is on. The line has to say which
+     * days, or it reads as a mistake.
+     */
+    const inMonth = daysOfMonth(month).length;
     rows.push({
       label: 'Mahane ki tankhwah',
-      note:
-        wage > 0
+      note: line.on_leave
+        ? `${line.days_present} din kaam kiya, ${inMonth} mein se - off salary tha`
+        : wage > 0
           ? monthName(month)
           : `${monthName(month)} - is mahine hazri nahi lagi`,
       value: wage,
@@ -412,9 +419,9 @@ function slipPage(slip: SalarySlip, meta: SalarySlipMeta): string {
             line.on_leave_since
               ? `Ghar gaye: ${escape(formatDate(line.on_leave_since))}. Abhi wapas nahi aaye.`
               : 'Is mahine ke kuch ya saare din chhutti par the.'
-          } Chhutti ke dinon ki tankhwah nahi banti${
+          } Is mahine ki tankhwah un dinon par bani hai jab aap kaam par the${
             Number(line.kafalat_paid) > 0
-              ? ', magar kafalat company deti rahi hai - wo neeche likhi hai'
+              ? ', aur kafalat company deti rahi hai - wo neeche likhi hai'
               : ''
           }.</span>
         </div>`

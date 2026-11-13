@@ -732,6 +732,23 @@ function SalaryCard({
         seventh button on every card for a thing that happens twice a
         year.
       */}
+      {/*
+        A month he was off salary in is counted by his days, so the
+        figure above is not the figure he is on. Said here, under his
+        name, because otherwise it reads as a mistake.
+      */}
+      {!daily && line.on_leave && earned > 0 ? (
+        <View style={styles.daysRow}>
+          <Ionicons name="calculator-outline" size={14} color={colors.blue} />
+          <Txt variant="caption" weight="semibold" color={colors.blue} numberOfLines={1}>
+            {line.days_present} {line.days_present === 1 ? 'day' : 'days'} counted
+          </Txt>
+          <Txt variant="caption" color={colors.textFaint} numberOfLines={1}>
+            · off salary part of this month
+          </Txt>
+        </View>
+      ) : null}
+
       {line.on_leave_since ? (
         <Pressable
           onPress={onLeave}
