@@ -209,13 +209,17 @@ export function PaySheet({
   /** Money he already owed - from before the app, or from anywhere else. */
   const owing = chosen === 'owing';
 
-  const [amount, setAmount] = useState(
-    existing
-      ? String(Number(existing.amount))
-      : kind === 'salary' && line.remaining > 0
-        ? String(line.remaining)
-        : '',
-  );
+  /*
+   * Empty, always, unless an entry is being put right.
+   *
+   * This used to open with whatever was still owed already typed in,
+   * from when the button said "Pay salary" and meant only that. One
+   * button now covers four kinds, and a figure the office did not type
+   * is a figure nobody checked: press Record without looking and the
+   * books have a payment that never happened. The amount owed is still
+   * written above the box, to be read and not assumed.
+   */
+  const [amount, setAmount] = useState(existing ? String(Number(existing.amount)) : '');
   const [paidOn, setPaidOn] = useState(existing?.paid_on ?? todayInRiyadh());
   const [method, setMethod] = useState<PayMethod>(existing?.method ?? 'cash');
   const [note, setNote] = useState(existing?.note ?? '');
