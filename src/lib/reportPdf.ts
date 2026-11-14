@@ -490,21 +490,44 @@ async function printHtmlInBrowser(html: string, fileName: string): Promise<strin
   // dialog is open, and is put back the moment it closes. The person
   // sees "KBH Records" again; in between, the Save box is filled in.
   const previousTitle = document.title;
+  let putBack = false;
   const restore = () => {
+    if (putBack) return;
+    putBack = true;
     document.title = previousTitle;
+    window.removeEventListener('afterprint', restore);
+    document.removeEventListener('visibilitychange', whenLookedAtAgain);
   };
+  /*
+   * A phone hands the sheet to another screen - the share sheet, the
+   * print preview - and comes back when the person is done with it.
+   * Coming back is the signal that the name has been taken.
+   */
+  function whenLookedAtAgain() {
+    if (document.visibilityState === 'visible') restore();
+  }
+
   document.title = title;
-  window.addEventListener('afterprint', restore, { once: true });
+  window.addEventListener('afterprint', restore);
+  document.addEventListener('visibilitychange', whenLookedAtAgain);
 
   win.focus();
-  try {
-    win.print();
-  } finally {
-    // print() blocks while the dialog is up in most browsers, so by here
-    // it is usually done. afterprint covers the ones where it is not,
-    // and a timer covers a browser that fires neither.
-    setTimeout(restore, 1000);
-  }
+  win.print();
+
+  /*
+   * No second-long timer here any more.
+   *
+   * print() blocks while the dialog is up on a desktop, so a second
+   * was always enough there. On a phone it returns at once and the
+   * share sheet opens after it - so the title went back to "KBH
+   * Records" while the person was still looking at the Save box, and
+   * that is the name every slip came out with.
+   *
+   * afterprint or coming back to the app puts it right now. The long
+   * timer is only so the title cannot be left stuck on a browser that
+   * fires neither.
+   */
+  setTimeout(restore, 120_000);
 
   // The print window is handed the frame's document, so the frame has to
   // stay alive until the person is finished with it.
