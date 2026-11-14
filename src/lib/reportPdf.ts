@@ -445,7 +445,16 @@ export function buildReportHtml(rows: ReportRow[], meta: ReportMeta): string {
  * frame is printed. "Save as PDF" in the print window saves it, and the
  * frame's title becomes the suggested file name.
  */
+/**
+ * The title handed back by a print that has not finished giving it back.
+ *
+ * Two slips in a row would otherwise have the second one note down the
+ * first one's name as "the app's title" and put that back afterwards.
+ */
+let titleStillOwed: (() => void) | null = null;
+
 async function printHtmlInBrowser(html: string, fileName: string): Promise<string> {
+  titleStillOwed?.();
   const title = fileName.replace(/\.pdf$/i, '');
   const titled = html.replace(/<title>[\s\S]*?<\/title>/i, `<title>${title}</title>`);
 
@@ -487,28 +496,59 @@ async function printHtmlInBrowser(html: string, fileName: string): Promise<strin
   // empty, and every report had to be named by hand.
   //
   // So the app's own title becomes the file name for as long as the
-  // dialog is open, and is put back the moment it closes. The person
-  // sees "KBH Records" again; in between, the Save box is filled in.
+  // dialog is open, and is put back once it has closed. The person sees
+  // "KBH Records" again; in between, the Save box is filled in.
+  /*
+   * An iPhone writes the address of the site into the foot of the sheet,
+   * and the slip's own `@page { margin: 0 }` does not stop it - that rule
+   * lives in the hidden frame, while the margins the phone lays out come
+   * from the page in the address bar. So the app's own document is lent
+   * the same rule while the dialog is open: no margin, and nowhere to
+   * write the address.
+   *
+   * It is taken away again afterwards, because a person who prints the
+   * app's own screen should still get a sheet with margins on it.
+   */
+  const pageRule = document.createElement('style');
+  pageRule.textContent = '@page { size: 210mm 297mm; margin: 0; }';
+  document.head.appendChild(pageRule);
+
   const previousTitle = document.title;
   let putBack = false;
   const restore = () => {
     if (putBack) return;
     putBack = true;
+    titleStillOwed = null;
     document.title = previousTitle;
-    window.removeEventListener('afterprint', restore);
+    pageRule.remove();
+    window.removeEventListener('afterprint', restoreSoon);
     document.removeEventListener('visibilitychange', whenLookedAtAgain);
   };
+  titleStillOwed = restore;
+
+  /*
+   * Giving the title back a few seconds late costs nothing - nobody is
+   * reading the tab while a Save dialog is open. Giving it back early
+   * costs the file its name, and that is what an iPhone does: WebKit has
+   * been known to call afterprint as the print sheet *opens*, so the
+   * title went back to "KBH Records" before the phone had written the
+   * file, and the phone fell back to naming it after the address of the
+   * site - kbh-records.
+   *
+   * So every signal that says "done" is believed, just not in a hurry.
+   */
+  const restoreSoon = () => setTimeout(restore, 4000);
   /*
    * A phone hands the sheet to another screen - the share sheet, the
    * print preview - and comes back when the person is done with it.
    * Coming back is the signal that the name has been taken.
    */
   function whenLookedAtAgain() {
-    if (document.visibilityState === 'visible') restore();
+    if (document.visibilityState === 'visible') restoreSoon();
   }
 
   document.title = title;
-  window.addEventListener('afterprint', restore);
+  window.addEventListener('afterprint', restoreSoon);
   document.addEventListener('visibilitychange', whenLookedAtAgain);
 
   win.focus();
