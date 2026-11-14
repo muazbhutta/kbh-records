@@ -27,7 +27,7 @@ import {
 import { useLogDownload } from '@/api/reports';
 import { useAuth } from '@/auth/AuthProvider';
 import { formatDate, money, monthName, shiftMonth, todayInRiyadh } from '@/lib/format';
-import { makeAndSharePdf } from '@/lib/reportPdf';
+import { makeAndShareSlipPdf } from '@/lib/slipPdf';
 import { buildSalarySlipsHtml, salarySlipFileName, slipFor } from '@/lib/salarySlipPdf';
 import { colors, radius, shadow } from '@/theme';
 import type { SalaryLine, SalaryPayment } from '@/types';
@@ -188,9 +188,15 @@ export default function SalariesScreen() {
         month,
         generatedBy: me?.full_name ?? 'Admin',
       });
-      // One man's slip carries his own number; a file holding everybody's
-      // carries none, because it is not any one of them.
-      await makeAndSharePdf(
+      /*
+       * One man's slip carries his own number; a file holding
+       * everybody's carries none, because it is not any one of them.
+       *
+       * And it is bound here rather than printed by the phone, so that
+       * no browser writes its own address across the foot of a wage
+       * slip. See slipPdf.
+       */
+      const how = await makeAndShareSlipPdf(
         html,
         salarySlipFileName(month, oneName, who.length === 1 ? who[0].slip_no : undefined),
       );
@@ -209,11 +215,24 @@ export default function SalariesScreen() {
       const what_ = oneName
         ? `${oneName}'s slip for ${monthName(month)} is ready.`
         : `${who.length} ${who.length === 1 ? 'slip' : 'slips'} for ${monthName(month)}, one page each.`;
+      /*
+       * What actually happened to it.
+       *
+       * This used to say "choose Save as PDF in the window that just
+       * opened", which was true while the printing was the browser's.
+       * Nothing opens now - the file is made here and handed straight
+       * over - and a message describing a window that is not there is
+       * worse than none.
+       */
       setMade(
         `${what_} ${
-          Platform.OS === 'web'
-            ? 'Choose "Save as PDF" in the window that just opened.'
-            : 'Saved to this phone - pick where to send it.'
+          how === 'shared'
+            ? 'Pick where to send it.'
+            : how === 'cancelled'
+              ? 'Nothing was saved.'
+              : Platform.OS === 'web'
+                ? 'Saved to this device.'
+                : 'Saved to this phone - pick where to send it.'
         }`,
       );
     } catch (e) {
