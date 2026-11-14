@@ -110,6 +110,14 @@ function statement(slip: SalarySlip, month: string): string {
   const carried = Number(line.carried_in);
   const kafalat = Number(line.kafalat_paid);
   const owing = Number(line.owing_added);
+  /*
+   * What the company owed him from before, written down by hand.
+   *
+   * The only hand-written figure that goes the other way, so it sits
+   * with the earnings above the line and not with the deductions
+   * below it.
+   */
+  const backpay = Number(line.backpay_added);
   const left = Number(line.remaining);
 
   const rows: { label: string; note: string; value: number; tone?: string }[] = [];
@@ -187,6 +195,22 @@ function statement(slip: SalarySlip, month: string): string {
     }
   }
 
+  /*
+   * Old money the company owed him.
+   *
+   * Last of the plus rows, because it is not this month's work: it is
+   * the company settling something older, and reading it after the
+   * month's own figures is how a man would ask about it.
+   */
+  if (backpay > 0.005) {
+    rows.push({
+      label: 'Purana baqi',
+      note: 'Company ne aap ko purana paisa dena tha',
+      value: backpay,
+      tone: 'back',
+    });
+  }
+
   const lines = rows
     .map(
       (r) => `<tr class="${r.tone ?? ''}">
@@ -214,7 +238,7 @@ function statement(slip: SalarySlip, month: string): string {
             ? 'Pichhle mahine ka milakar'
             : 'Is mahine ki kul kamai'
         }</span></td>
-        <td class="num strong">${escape(amountOnly(carried + earned))}</td>
+        <td class="num strong">${escape(amountOnly(carried + earned + backpay))}</td>
       </tr>
       <tr class="less">
         <td class="s-l">Advance liya<span class="s-n">${
@@ -335,7 +359,9 @@ function slipPage(slip: SalarySlip, meta: SalarySlipMeta): string {
               ? 'Kafalat'
               : pay.kind === 'owing'
                 ? 'Pehle ka hisaab'
-                : 'Tankhwah'
+                : pay.kind === 'backpay'
+                  ? 'Purana baqi'
+                  : 'Tankhwah'
         } ${escape(amountOnly(Number(pay.amount)))}</span><span class="why bidi">${escape(
           pay.note ||
             (pay.kind === 'advance'
@@ -344,7 +370,9 @@ function slipPage(slip: SalarySlip, meta: SalarySlipMeta): string {
                 ? 'Company ne aap ki taraf se di'
                 : pay.kind === 'owing'
                   ? 'Pehle se jo dena tha'
-                  : 'Mahine ki tankhwah'),
+                  : pay.kind === 'backpay'
+                    ? 'Company ne aap ko purana paisa dena tha'
+                    : 'Mahine ki tankhwah'),
         )}${pay.entered_by_name ? ` &middot; likha: ${escape(pay.entered_by_name)}` : ''}</span></div>`,
       )
       .join('');
@@ -654,6 +682,7 @@ export function buildSalarySlipsHtml(slips: SalarySlip[], meta: SalarySlipMeta):
   .took.advance { background: #FFF5DF; color: #A8730B; }
   .took.kafalat { background: #E6F1F7; color: #0B6493; }
   .took.owing { background: #FDEEEC; color: #B3261E; }
+  .took.backpay { background: #E8EDF4; color: #0E2340; }
   .took.salary { background: #E7F6EE; color: #157347; }
 
   .empty {
@@ -683,6 +712,12 @@ export function buildSalarySlipsHtml(slips: SalarySlip[], meta: SalarySlipMeta):
   /* The company's money, not his - named, so no one reads it as cash. */
   .state tr.kaf td { background: #FFF9EC; }
   .state tr.kaf .s-l { color: #A8730B; }
+  /*
+   * The one hand-written figure that goes his way, in the company's
+   * own navy so it cannot be mistaken for a month's wage.
+   */
+  .state tr.back td { background: #EEF2F8; }
+  .state tr.back .s-l, .state tr.back .num { color: #0E2340; }
 
   /* A month at home, said once and plainly, above the empty register. */
   .leave {

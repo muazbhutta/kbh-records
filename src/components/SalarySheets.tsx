@@ -105,7 +105,11 @@ function Sheet({
  * the sheet.
  */
 /*
- * The three the office offers.
+ * The four the office offers.
+ *
+ * The last two are the two halves of an old account, and a company
+ * that kept no books until now has both: money a man walked in owing,
+ * and money he walked in owed.
  *
  * Kafalat is not among them any more - it was asked for and then not
  * wanted - but it stays in the table below, because entries already
@@ -114,7 +118,7 @@ function Sheet({
  * when one of those is being put right, so the chip under the cursor
  * is the kind the entry actually is.
  */
-export const PAY_KINDS: PayKindChoice[] = ['salary', 'advance', 'owing'];
+export const PAY_KINDS: PayKindChoice[] = ['salary', 'advance', 'owing', 'backpay'];
 
 const PAY_KIND: Record<
   PayKindChoice,
@@ -169,6 +173,16 @@ const PAY_KIND: Record<
     tone: colors.red,
     soft: colors.redSoft,
   },
+  backpay: {
+    short: 'Back pay',
+    title: 'What the company owes him',
+    button: 'Write it down',
+    day: 'From when',
+    hint: 'Purani tankhwah, app se pehle ki',
+    icon: 'business-outline',
+    tone: colors.navy,
+    soft: colors.navyTint,
+  },
 };
 
 /** Handing salary over, or writing down what he owes. */
@@ -208,6 +222,13 @@ export function PaySheet({
   const kafalat = chosen === 'kafalat';
   /** Money he already owed - from before the app, or from anywhere else. */
   const owing = chosen === 'owing';
+  /**
+   * Money the company already owed him.
+   *
+   * The other half of an old account. Like owing, nothing is handed
+   * over as it is written: it simply joins what he is owed.
+   */
+  const backpay = chosen === 'backpay';
 
   /*
    * Empty, always, unless an entry is being put right.
@@ -301,7 +322,16 @@ export function PaySheet({
         ))}
       </View>
 
-      {owing ? (
+      {backpay ? (
+        <View style={[styles.note, styles.noteDeep]}>
+          <Ionicons name="business-outline" size={15} color={colors.navy} />
+          <Txt variant="caption" color={colors.navy}>
+            Money the company already owes him - wages from before this app, or a
+            settlement promised and never paid. No cash changes hands now; it is simply
+            written down, and is added to what he is owed.
+          </Txt>
+        </View>
+      ) : owing ? (
         <View style={[styles.note, styles.noteBad]}>
           <Ionicons name="alert-circle-outline" size={15} color={colors.red} />
           <Txt variant="caption" color={colors.red}>
@@ -354,8 +384,8 @@ export function PaySheet({
         onChange={setPaidOn}
       />
 
-      {/* An old debt was not handed over at all, so there is no "how". */}
-      {owing ? null : (
+      {/* Neither half of an old account was handed over, so there is no "how". */}
+      {owing || backpay ? null : (
         <PayMethodRow
           value={method}
           onChange={setMethod}
@@ -828,6 +858,7 @@ const styles = StyleSheet.create({
   },
   noteWarn: { backgroundColor: colors.amberSoft },
   noteBad: { backgroundColor: colors.redSoft },
+  noteDeep: { backgroundColor: colors.navyTint },
   payKinds: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   payKind: {
     flexGrow: 1,

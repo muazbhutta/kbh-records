@@ -814,6 +814,19 @@ function SalaryCard({
         </View>
       ) : null}
 
+      {/* The other half of an old account: what the company owes him. */}
+      {Number(line.backpay_added) > 0 ? (
+        <View style={styles.daysRow}>
+          <Ionicons name="business" size={14} color={colors.navy} />
+          <Txt variant="caption" weight="semibold" color={colors.navy} numberOfLines={1}>
+            {money(Number(line.backpay_added))} back pay
+          </Txt>
+          <Txt variant="caption" color={colors.textFaint} numberOfLines={1}>
+            · written down this month
+          </Txt>
+        </View>
+      ) : null}
+
       {Number(line.kafalat_paid) > 0 ? (
         <View style={styles.daysRow}>
           <Ionicons name="shield-checkmark" size={14} color={colors.amberDark} />

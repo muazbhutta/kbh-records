@@ -8,6 +8,7 @@ import type {
   AttendanceSheetRow,
   LeaveStretch,
   PayKind,
+  PayKindChoice,
   PayMethod,
   SalaryCandidate,
   SalaryLine,
@@ -183,7 +184,7 @@ export function useRecordSalary() {
       personId: string;
       month: string;
       amount: number;
-      kind: 'salary' | 'advance' | 'kafalat' | 'owing';
+      kind: PayKindChoice;
       paidOn?: string;
       method?: 'cash' | 'transfer';
       note?: string;

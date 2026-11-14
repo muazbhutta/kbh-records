@@ -3816,6 +3816,7 @@ export type Database = {
         Args: { p_month?: string }
         Returns: {
           advance_paid: number
+          backpay_added: number
           bonus_days: number
           bonus_total: number
           carried_in: number

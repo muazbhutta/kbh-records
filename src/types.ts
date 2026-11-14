@@ -747,10 +747,17 @@ export type SalaryLine = {
   on_leave_since: string | null;
   /** Money he already owed, written down by hand against this month. */
   owing_added: number;
+  /**
+   * Money the company already owed him, written down by hand.
+   *
+   * The mirror of owing_added: no cash changed hands when it was
+   * written, it simply joins what he is owed.
+   */
+  backpay_added: number;
 };
 
 /** The four things an entry against a man's month can be. */
-export type PayKindChoice = 'salary' | 'advance' | 'kafalat' | 'owing';
+export type PayKindChoice = 'salary' | 'advance' | 'kafalat' | 'owing' | 'backpay';
 
 /**
  * A stretch a man spent at home, clipped to the month it was asked for.
@@ -826,9 +833,10 @@ export type SalaryPayment = {
   amount: number;
   /**
    * salary: wages handed over. advance: cash drawn early. kafalat: the
-   * company paid his sponsorship, and he owes it back.
+   * company paid his sponsorship, and he owes it back. owing: money he
+   * already owed. backpay: money the company already owed him.
    */
-  kind: 'salary' | 'advance' | 'kafalat' | 'owing';
+  kind: PayKindChoice;
   paid_on: string;
   method: PayMethod;
   note: string | null;
