@@ -17,6 +17,24 @@ export const MAX_AREA = 0.97;
 /** How much of its own bounding box the blob must fill to count as a sheet of paper. */
 export const MIN_SOLIDITY = 0.55;
 
+/*
+ * And it has to be shaped like a sheet of paper.
+ *
+ * Area and solidity between them let a ribbon through: a band of light
+ * across a page is a perfect rectangle, so it fills its own box
+ * completely, and a band a tenth of the height of a photograph is still
+ * a tenth of its area - both checks pass, and the bill is cropped down
+ * to a strip with the total nowhere on it. That is what was happening
+ * to bills on lined paper.
+ *
+ * Wide is the suspicious direction. A4 on its side is 1.41 to 1 and an
+ * invoice held crooked is not much worse, so three is already generous.
+ * Tall is not: a till receipt really is a long narrow thing, and six to
+ * one is an ordinary one.
+ */
+export const MAX_WIDE = 3;
+export const MAX_TALL = 6;
+
 export type Blob = { x0: number; y0: number; x1: number; y1: number; count: number };
 
 /**

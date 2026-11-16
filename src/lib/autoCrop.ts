@@ -4,6 +4,8 @@ import {
   largestBlob,
   paperMask,
   MAX_AREA,
+  MAX_TALL,
+  MAX_WIDE,
   MIN_AREA,
   MIN_SOLIDITY,
 } from '@/lib/paperFinder';
@@ -88,8 +90,14 @@ export function paperInImage(image: HTMLImageElement): Box | null {
     const area = ((blob.x1 - blob.x0 + 1) * (blob.y1 - blob.y0 + 1)) / (w * h);
     if (area < MIN_AREA || area > MAX_AREA) return null;
 
-    const boxArea = (blob.x1 - blob.x0 + 1) * (blob.y1 - blob.y0 + 1);
+    const boxW = blob.x1 - blob.x0 + 1;
+    const boxH = blob.y1 - blob.y0 + 1;
+    const boxArea = boxW * boxH;
     if (blob.count / boxArea < MIN_SOLIDITY) return null;
+
+    // A sheet of paper, not a ribbon. A band of light across a page
+    // passes every other check there is.
+    if (boxW / boxH > MAX_WIDE || boxH / boxW > MAX_TALL) return null;
 
     // Back to the full-size picture, with a margin, kept inside the frame.
     const back = full.width / w;
