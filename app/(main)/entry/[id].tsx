@@ -12,12 +12,13 @@ import { Field } from '@/components/Field';
 import { HistoryRow } from '@/components/History';
 import { TypeFlags, TypeTag } from '@/components/ExpenseType';
 import { PayMethodTag } from '@/components/PayMethodRow';
+import { RefuseModal } from '@/components/RefuseModal';
 import { ExpenseTypeAdmin } from '@/components/ExpenseTypeAdmin';
 import { Money } from '@/components/Money';
 import { Header, Screen } from '@/components/Screen';
 import { Txt } from '@/components/Txt';
 import { useDeleteEntry, useRowHistory } from '@/api/control';
-import { useCancelEntry, useUncancelEntry } from '@/api/expenseType';
+import { useUncancelEntry } from '@/api/expenseType';
 import { useEntryRefusal } from '@/api/refusals';
 import { useEntry, useEntryPhotos } from '@/api/entries';
 import { useAuth } from '@/auth/AuthProvider';
@@ -407,85 +408,6 @@ It is out of the books. Record it again, correctly, if it still stands.`}
         }}
       />
     </Screen>
-  );
-}
-
-/**
- * Refusing an entry, which always costs a sentence.
- *
- * The reason is not optional here and is not optional in the database
- * either - cancel_entry turns away a blank one. A man told his work was
- * thrown out and not told why has been given nothing he can act on.
- */
-function RefuseModal({
-  visible,
-  entryId,
-  label,
-  onClose,
-}: {
-  visible: boolean;
-  entryId: string;
-  label: string;
-  onClose: () => void;
-}) {
-  const refuse = useCancelEntry();
-  const backdrop = useBackdrop('center');
-  const [reason, setReason] = useState('');
-  const [error, setError] = useState<string | null>(null);
-
-  const confirm = async () => {
-    setError(null);
-    try {
-      await refuse.mutateAsync({ id: entryId, reason: reason.trim() });
-      setReason('');
-      onClose();
-    } catch (err) {
-      setError(errorMessage(err));
-    }
-  };
-
-  return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <View style={backdrop}>
-        <View style={[styles.modal, shadow.raised]}>
-          <View style={styles.modalHead}>
-            <Txt variant="heading">Refuse this entry?</Txt>
-            <Pressable onPress={onClose} hitSlop={10} accessibilityRole="button" accessibilityLabel="Close">
-              <Ionicons name="close" size={22} color={colors.textMuted} />
-            </Pressable>
-          </View>
-
-          <Txt variant="subtitle" weight="semibold">
-            {label}
-          </Txt>
-          <Txt variant="caption" color={colors.textMuted}>
-            It stops counting in the balances straight away, and the person who recorded it is
-            shown your reason on their own screen and on their phone.
-          </Txt>
-
-          <Field
-            label="Why is it being refused?"
-            value={reason}
-            onChangeText={(v) => setReason(v.slice(0, 200))}
-            placeholder="The bill photo is not readable - take it again"
-            icon="chatbox-ellipses-outline"
-          />
-
-          {error ? <Banner tone="error" message={error} /> : null}
-
-          <Button
-            label="Refuse It"
-            icon="close-circle"
-            variant="danger"
-            size="lg"
-            full
-            loading={refuse.isPending}
-            onPress={confirm}
-          />
-          <Button label="Leave It Alone" variant="ghost" full onPress={onClose} />
-        </View>
-      </View>
-    </Modal>
   );
 }
 

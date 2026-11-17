@@ -5,6 +5,7 @@ import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 
 import { Avatar, Badge, Banner, Card, Loading } from '@/components/Bits';
 import { BillImage, PhotoViewer } from '@/components/BillPhotos';
+import { RefuseModal } from '@/components/RefuseModal';
 import { Txt } from '@/components/Txt';
 import {
   useDecideChange,
@@ -32,6 +33,8 @@ import type { ExpenseKind, Ticket, WaitingChange } from '@/types';
  */
 export function Tickets() {
   const router = useRouter();
+  /** The entry being refused, while the reason is being written. */
+  const [refusing, setRefusing] = useState<Ticket | null>(null);
   const { data, isLoading, error } = useOpenTickets();
   const changes = useWaitingChanges();
   const settle = useSettleTicket();
@@ -96,10 +99,34 @@ export function Tickets() {
             const url = await signedUrl(path);
             if (url) setViewing(url);
           }}
+          onRefuse={() => setRefusing(t)}
         />
       ))}
 
       <PhotoViewer uri={viewing} onClose={() => setViewing(null)} />
+
+      {/*
+        Refusing happens here, where the entries are actually gone
+        through one after another, and not only on the entry's own
+        screen. The same dialog either way, so the reason is asked for
+        in the same words and a blank one is turned away the same way.
+      */}
+      {refusing ? (
+        <RefuseModal
+          visible
+          entryId={refusing.entry_id}
+          label={`${money(Number(refusing.amount))}${
+            refusing.category_name ? ` · ${refusing.category_name}` : ''
+          }${refusing.person_name ? ` · ${refusing.person_name}` : ''}`}
+          onClose={() => setRefusing(null)}
+          onRefused={() => {
+            // Refused is looked at. Leaving the ticket open would ask
+            // the office to deal a second time with something it has
+            // just finished dealing with.
+            clear(refusing.id);
+          }}
+        />
+      ) : null}
     </View>
   );
 }
@@ -110,12 +137,14 @@ function TicketCard({
   onOpen,
   onClear,
   onViewBill,
+  onRefuse,
 }: {
   ticket: Ticket;
   busy: boolean;
   onOpen: () => void;
   onClear: (type?: ExpenseKind) => void;
   onViewBill: (path: string) => void;
+  onRefuse: () => void;
 }) {
   const edit = ticket.kind === 'edit';
   // The real photograph, as on every other screen. The list is long, so
@@ -281,6 +310,26 @@ function TicketCard({
           </Txt>
         </Pressable>
       )}
+
+      {/*
+        And the other answer, under both of them.
+        
+        Every card gets it, not only the ones still being asked what
+        kind of paper they are: an entry can be wrong for any reason at
+        all, and the office should not have to open it to say so.
+      */}
+      <Pressable
+        onPress={onRefuse}
+        disabled={busy}
+        accessibilityRole="button"
+        accessibilityLabel={`Refuse this entry, ${money(Number(ticket.amount))}`}
+        style={({ pressed }) => [styles.refuse, pressed && styles.refusePressed]}
+      >
+        <Ionicons name="close-circle-outline" size={17} color={colors.red} />
+        <Txt variant="caption" weight="semibold" color={colors.red}>
+          Refuse Entry
+        </Txt>
+      </Pressable>
     </View>
   );
 }
@@ -554,6 +603,23 @@ const styles = StyleSheet.create({
     backgroundColor: colors.greenSoft,
   },
   okPressed: { backgroundColor: colors.green, borderColor: colors.green },
+  /*
+   * The same shape as "Looks right", in the colour of the other
+   * answer. Full width under the choices, because it is the one thing
+   * on the card that cannot be undone by pressing it again.
+   */
+  refuse: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 7,
+    height: 42,
+    borderRadius: radius.md,
+    borderWidth: 1.5,
+    borderColor: colors.redSoft,
+    backgroundColor: colors.redSoft,
+  },
+  refusePressed: { backgroundColor: colors.red, borderColor: colors.red },
   okWide: { flex: 2 },
   answers: { flexDirection: 'row', gap: 8 },
   no: {
