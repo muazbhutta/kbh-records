@@ -448,6 +448,7 @@ export type Database = {
           bill_date: string
           bill_scan_state: Database["public"]["Enums"]["bill_scan_state"]
           cancel_reason: string | null
+          cancel_seen_at: string | null
           cancelled_at: string | null
           cancelled_by: string | null
           category_id: string | null
@@ -486,6 +487,7 @@ export type Database = {
           bill_date: string
           bill_scan_state?: Database["public"]["Enums"]["bill_scan_state"]
           cancel_reason?: string | null
+          cancel_seen_at?: string | null
           cancelled_at?: string | null
           cancelled_by?: string | null
           category_id?: string | null
@@ -524,6 +526,7 @@ export type Database = {
           bill_date?: string
           bill_scan_state?: Database["public"]["Enums"]["bill_scan_state"]
           cancel_reason?: string | null
+          cancel_seen_at?: string | null
           cancelled_at?: string | null
           cancelled_by?: string | null
           category_id?: string | null
@@ -3513,6 +3516,16 @@ export type Database = {
         }
         Returns: number
       }
+      entry_refusal: {
+        Args: { p_id: string }
+        Returns: {
+          is_refused: boolean
+          reason: string
+          refused_at: string
+          refused_by: string
+          seen_at: string
+        }[]
+      }
       expense_report: {
         Args: {
           p_category_id?: string
@@ -3616,9 +3629,28 @@ export type Database = {
         }
         Returns: undefined
       }
+      mark_refusal_seen: { Args: { p_id: string }; Returns: string }
       mark_ticket_seen: { Args: { p_id: number }; Returns: undefined }
       my_people: { Args: never; Returns: string[] }
       my_project_ids: { Args: never; Returns: string[] }
+      my_refused_count: { Args: never; Returns: number }
+      my_refused_entries: {
+        Args: { p_limit?: number }
+        Returns: {
+          amount: number
+          bill_date: string
+          category_name: string
+          entry_type: string
+          id: string
+          note: string
+          person_name: string
+          reason: string
+          refused_at: string
+          refused_by: string
+          seen_at: string
+          system_id: string
+        }[]
+      }
       my_team_ids: { Args: never; Returns: string[] }
       next_expense_id: { Args: { p_year: number }; Returns: string }
       open_ticket_count: { Args: never; Returns: number }
@@ -3695,6 +3727,16 @@ export type Database = {
       }
       push_targets: {
         Args: never
+        Returns: {
+          auth: string
+          endpoint: string
+          full_name: string
+          id: number
+          p256dh: string
+        }[]
+      }
+      push_targets_for: {
+        Args: { p_person: string }
         Returns: {
           auth: string
           endpoint: string

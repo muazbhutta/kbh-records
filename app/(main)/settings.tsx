@@ -127,7 +127,16 @@ export default function SettingsScreen() {
         </>
       ) : null}
 
-      {canManage ? <PushSwitch /> : null}
+      {/*
+        Everybody, not only the office.
+        
+        It was behind canManage because the office was the only one
+        anything was ever sent to. A man is now told when an entry of
+        his is refused, so the switch is his as well - and a setting
+        somebody cannot reach is a setting they are told to go and
+        change and cannot find.
+      */}
+      <PushSwitch />
 
       <SectionTitle title="About" />
       <Card padded={false} style={styles.aboutCard}>

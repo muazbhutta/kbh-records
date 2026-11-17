@@ -17,6 +17,8 @@ import { Money } from '@/components/Money';
 import { Header, Screen } from '@/components/Screen';
 import { Txt } from '@/components/Txt';
 import { useDeleteEntry, useRowHistory } from '@/api/control';
+import { useCancelEntry, useUncancelEntry } from '@/api/expenseType';
+import { useEntryRefusal } from '@/api/refusals';
 import { useEntry, useEntryPhotos } from '@/api/entries';
 import { useAuth } from '@/auth/AuthProvider';
 import { formatDate, formatDateTime, money } from '@/lib/format';
@@ -46,6 +48,10 @@ export default function EntryScreen() {
 
   const [viewing, setViewing] = useState<string | null>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [refuseOpen, setRefuseOpen] = useState(false);
+  const refusal = useEntryRefusal(id);
+  const refused = refusal.data?.is_refused === true;
+  const allowBack = useUncancelEntry();
   const [fileError, setFileError] = useState<string | null>(null);
   const setProject = useSetEntryProject();
   const [showHistory, setShowHistory] = useState(false);
@@ -96,6 +102,22 @@ export default function EntryScreen() {
           tone="info"
           title="Sent to the office"
           message="This entry has not changed yet. It changes when the office approves what you asked for."
+        />
+      ) : null}
+
+      {/*
+        The refusal, where the entry is - not only on his home screen.
+        A man who follows the link from that card must find the same
+        thing waiting at the other end of it.
+      */}
+      {refused ? (
+        <Banner
+          tone="error"
+          title="This entry was not accepted"
+          message={`${refusal.data?.reason ?? ''}${
+            refusal.data?.refused_by ? ` — ${refusal.data.refused_by}` : ''
+          }
+It is out of the books. Record it again, correctly, if it still stands.`}
         />
       ) : null}
 
@@ -279,6 +301,38 @@ export default function EntryScreen() {
               full
               onPress={() => router.push(`/entry/edit?id=${entry.id}&person=${entry.person_id}`)}
             />
+            {/*
+              Refusing is not deleting. A delete is the office tidying
+              up after itself; a refusal is the office answering the man
+              who recorded it, which is why it insists on a reason and
+              why he is told.
+            */}
+            {refused ? (
+              <Button
+                label="Accept It After All"
+                icon="arrow-undo-outline"
+                variant="navy"
+                size="lg"
+                full
+                loading={allowBack.isPending}
+                onPress={() => allowBack.mutate(entry.id)}
+              />
+            ) : (
+              <Button
+                label="Refuse Entry"
+                icon="close-circle-outline"
+                variant="danger"
+                size="lg"
+                full
+                onPress={() => setRefuseOpen(true)}
+              />
+            )}
+            <Txt variant="caption" color={colors.textFaint} center style={styles.note}>
+              {refused
+                ? 'It is out of the books and the person who recorded it has been told why.'
+                : 'Refusing takes it out of the books and tells the person who recorded it why.'}
+            </Txt>
+
             <Button
               label="Delete Entry"
               icon="trash-outline"
@@ -334,6 +388,13 @@ export default function EntryScreen() {
         caption={`${lineTitle(entry)} · ${money(entry.amount)} · ${formatDate(entry.bill_date)}`}
       />
 
+      <RefuseModal
+        visible={refuseOpen}
+        entryId={entry.id}
+        label={`${lineTitle(entry)} · ${money(entry.amount)}`}
+        onClose={() => setRefuseOpen(false)}
+      />
+
       <DeleteModal
         visible={deleteOpen}
         entryId={entry.id}
@@ -345,6 +406,85 @@ export default function EntryScreen() {
         }}
       />
     </Screen>
+  );
+}
+
+/**
+ * Refusing an entry, which always costs a sentence.
+ *
+ * The reason is not optional here and is not optional in the database
+ * either - cancel_entry turns away a blank one. A man told his work was
+ * thrown out and not told why has been given nothing he can act on.
+ */
+function RefuseModal({
+  visible,
+  entryId,
+  label,
+  onClose,
+}: {
+  visible: boolean;
+  entryId: string;
+  label: string;
+  onClose: () => void;
+}) {
+  const refuse = useCancelEntry();
+  const backdrop = useBackdrop('center');
+  const [reason, setReason] = useState('');
+  const [error, setError] = useState<string | null>(null);
+
+  const confirm = async () => {
+    setError(null);
+    try {
+      await refuse.mutateAsync({ id: entryId, reason: reason.trim() });
+      setReason('');
+      onClose();
+    } catch (err) {
+      setError(errorMessage(err));
+    }
+  };
+
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <View style={backdrop}>
+        <View style={[styles.modal, shadow.raised]}>
+          <View style={styles.modalHead}>
+            <Txt variant="heading">Refuse this entry?</Txt>
+            <Pressable onPress={onClose} hitSlop={10} accessibilityRole="button" accessibilityLabel="Close">
+              <Ionicons name="close" size={22} color={colors.textMuted} />
+            </Pressable>
+          </View>
+
+          <Txt variant="subtitle" weight="semibold">
+            {label}
+          </Txt>
+          <Txt variant="caption" color={colors.textMuted}>
+            It stops counting in the balances straight away, and the person who recorded it is
+            shown your reason on their own screen and on their phone.
+          </Txt>
+
+          <Field
+            label="Why is it being refused?"
+            value={reason}
+            onChangeText={(v) => setReason(v.slice(0, 200))}
+            placeholder="The bill photo is not readable - take it again"
+            icon="chatbox-ellipses-outline"
+          />
+
+          {error ? <Banner tone="error" message={error} /> : null}
+
+          <Button
+            label="Refuse It"
+            icon="close-circle"
+            variant="danger"
+            size="lg"
+            full
+            loading={refuse.isPending}
+            onPress={confirm}
+          />
+          <Button label="Leave It Alone" variant="ghost" full onPress={onClose} />
+        </View>
+      </View>
+    </Modal>
   );
 }
 

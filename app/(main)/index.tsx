@@ -9,6 +9,8 @@ import { CashCard, Money } from '@/components/Money';
 import { Header, Screen } from '@/components/Screen';
 import { Txt } from '@/components/Txt';
 import { Dashboard } from '@/components/Dashboard';
+import { NotifyNudge } from '@/components/NotifyNudge';
+import { RefusedEntries } from '@/components/RefusedEntries';
 import { useRecentEntries, useTotals } from '@/api/entries';
 import { useAttendanceDayTotal } from '@/api/salaries';
 import { useMyTeam } from '@/api/team';
@@ -28,6 +30,7 @@ export default function HomeScreen() {
         subtitle={person?.is_owner ? 'Owner · Admin' : (ROLE_LABEL[person?.role ?? ''] ?? '')}
         right={<LogoutButton />}
       />
+      <NotifyNudge />
       {canManage ? <Dashboard /> : <EmployeeHome />}
     </Screen>
   );
@@ -44,6 +47,16 @@ function EmployeeHome() {
 
   return (
     <>
+      {/*
+        Before anything else of his own.
+        
+        The office can refuse an entry and say why, and until now the
+        reason had nowhere to go. It goes here, above his cash, because
+        a man finding out a fortnight later that his work was thrown
+        out is the failure this is meant to prevent.
+      */}
+      <RefusedEntries />
+
       {isLoading || !totals ? (
         <Card style={styles.cashSkeleton}>
           <Loading />

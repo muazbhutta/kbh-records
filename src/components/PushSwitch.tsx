@@ -4,6 +4,7 @@ import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 
 import { Banner, Card, SectionTitle } from '@/components/Bits';
 import { Txt } from '@/components/Txt';
+import { useAuth } from '@/auth/AuthProvider';
 import {
   pushState,
   refreshPushSubscription,
@@ -15,21 +16,26 @@ import {
 import { colors, radius } from '@/theme';
 
 /**
- * Being told on the phone when something is recorded or corrected.
+ * Being told on the phone.
  *
- * Only the office is sent these, so only the office is offered the
- * switch. It is per browser: the same man can have it on for the phone
- * in his pocket and off for the computer on his desk.
+ * It used to be the office's alone, because the office was the only
+ * one sent anything. Now a man is told when an entry of his is refused,
+ * so he is offered the switch too - and the words change with who is
+ * reading them, because "every entry and every correction" means
+ * nothing to somebody who is only sent his own.
  *
- * The notification is a nudge and says so. The Waiting for you list on
- * the home screen is the record, and it is there whether a phone buzzed
- * or not.
+ * It is per browser: the same man can have it on for the phone in his
+ * pocket and off for the computer on his desk.
+ *
+ * The notification is a nudge and says so. The lists on the home screen
+ * are the record, and they are there whether a phone buzzed or not.
  */
 export function PushSwitch() {
   const [state, setState] = useState<PushState | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const missing = whatIsMissing();
+  const { canManage } = useAuth();
 
   useEffect(() => {
     let alive = true;
@@ -113,7 +119,11 @@ export function PushSwitch() {
               disabled={busy}
               accessibilityRole="switch"
               accessibilityState={{ checked: state === 'on' }}
-              accessibilityLabel="Tell me on this phone when something is recorded"
+              accessibilityLabel={
+                canManage
+                  ? 'Tell me on this phone when something is recorded'
+                  : 'Tell me on this phone when the office answers one of my entries'
+              }
               style={({ pressed }) => [styles.row, pressed && styles.pressed]}
             >
               <View
@@ -131,7 +141,9 @@ export function PushSwitch() {
                 </Txt>
                 <Txt variant="caption" color={colors.textMuted}>
                   {state === 'on'
-                    ? 'On for this browser. Every entry and every correction.'
+                    ? canManage
+                      ? 'On for this browser. Every entry and every correction.'
+                      : 'On for this browser. You are told if an entry of yours is not accepted.'
                     : 'Off. Turn it on to be told without opening the app.'}
                 </Txt>
               </View>

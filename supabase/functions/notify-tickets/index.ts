@@ -36,6 +36,22 @@ webpush.setVapidDetails(
 
 type Target = { id: number; endpoint: string; p256dh: string; auth: string };
 
+/**
+ * The other direction.
+ *
+ * A ticket goes to the office about a man's entry. A refusal goes to
+ * the man about the office's answer, and to him alone - so it is the
+ * one parcel here that names who it is for.
+ */
+type Refusal = {
+  entry_id: string;
+  person_id: string;
+  reason: string | null;
+  amount: string | number | null;
+  refused_by: string | null;
+  category_name: string | null;
+};
+
 type Ticket = {
   id: number;
   entry_id: string;
@@ -88,10 +104,13 @@ Deno.serve(async (req) => {
     return new Response('No', { status: 401 });
   }
 
-  let ticket: Ticket;
+  let ticket: Ticket | undefined;
+  let refusal: Refusal | undefined;
   try {
-    ticket = (await req.json()).ticket;
-    if (!ticket?.id) throw new Error('no ticket');
+    const parcel = await req.json();
+    ticket = parcel.ticket;
+    refusal = parcel.refusal;
+    if (!ticket?.id && !refusal?.entry_id) throw new Error('nothing in it');
   } catch {
     return new Response('Nothing to send', { status: 400 });
   }
@@ -104,7 +123,10 @@ Deno.serve(async (req) => {
   // function rather than built here out of an embedded join and a filter
   // across it: that version returned nothing, and nothing looks exactly
   // like "there was nobody to tell".
-  const { data: subs, error } = await db.rpc('push_targets');
+  // A refusal concerns one man. Everything else is the office's.
+  const { data: subs, error } = refusal
+    ? await db.rpc('push_targets_for', { p_person: refusal.person_id })
+    : await db.rpc('push_targets');
 
   if (error) {
     console.error('could not read the subscriptions', error.message);
@@ -123,6 +145,19 @@ Deno.serve(async (req) => {
   // If it cannot be read the notification still goes: a missing figure
   // is a far smaller failure than a missing notification.
   const waiting = await (async (): Promise<number | undefined> => {
+    // His own unread refusals, when it is his. The office's badge is
+    // the office's and must not be put on his phone.
+    if (refusal) {
+      const mine = await db
+        .from('entries')
+        .select('id')
+        .eq('entered_by', refusal.person_id)
+        .eq('is_cancelled', true)
+        .eq('is_deleted', false)
+        .is('cancel_seen_at', null);
+      return mine.error || !mine.data ? undefined : mine.data.length;
+    }
+
     const open = await db.from('entry_tickets').select('entry_id').is('seen_at', null);
     if (open.error || !open.data) return undefined;
     if (open.data.length === 0) return 0;
@@ -135,13 +170,21 @@ Deno.serve(async (req) => {
     return open.data.filter((t) => alive.has(t.entry_id)).length;
   })();
 
-  const { title, body } = wording(ticket);
+  const { title, body } = refusal
+    ? {
+        title: 'An entry of yours was not accepted',
+        body: `${money(refusal.amount)}${
+          refusal.category_name ? ` · ${refusal.category_name}` : ''
+        }${refusal.reason ? ` — "${refusal.reason}"` : ''}`,
+      }
+    : wording(ticket!);
+
   const payload = JSON.stringify({
     title,
     body,
-    tag: `ticket-${ticket.id}`,
-    entryId: ticket.entry_id,
-    personId: ticket.person_name,
+    tag: refusal ? `refusal-${refusal.entry_id}` : `ticket-${ticket!.id}`,
+    entryId: refusal ? refusal.entry_id : ticket!.entry_id,
+    personId: refusal ? undefined : ticket!.person_name,
     count: typeof waiting === 'number' ? waiting : undefined,
   });
 

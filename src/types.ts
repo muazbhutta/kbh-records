@@ -825,6 +825,39 @@ export type SalaryMonthTotal = {
   people: number;
 };
 
+/**
+ * An entry the office refused, as the man who recorded it is shown it.
+ *
+ * His own only - my_refused_entries asks for entries he entered. The
+ * reason is never null: cancel_entry will not take a refusal without
+ * one, because a man told his work was thrown out and not told why has
+ * been given nothing to act on.
+ */
+export type RefusedEntry = {
+  id: string;
+  amount: number;
+  entry_type: string;
+  bill_date: string | null;
+  note: string | null;
+  system_id: string | null;
+  category_name: string | null;
+  person_name: string | null;
+  reason: string;
+  refused_at: string | null;
+  refused_by: string | null;
+  /** Null while he still has to look at it. */
+  seen_at: string | null;
+};
+
+/** Whether one entry was refused, and why. */
+export type EntryRefusal = {
+  is_refused: boolean;
+  reason: string | null;
+  refused_at: string | null;
+  refused_by: string | null;
+  seen_at: string | null;
+};
+
 /** Money actually handed over. */
 export type SalaryPayment = {
   id: number;
