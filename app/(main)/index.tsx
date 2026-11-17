@@ -47,16 +47,6 @@ function EmployeeHome() {
 
   return (
     <>
-      {/*
-        Before anything else of his own.
-        
-        The office can refuse an entry and say why, and until now the
-        reason had nowhere to go. It goes here, above his cash, because
-        a man finding out a fortnight later that his work was thrown
-        out is the failure this is meant to prevent.
-      */}
-      <RefusedEntries />
-
       {isLoading || !totals ? (
         <Card style={styles.cashSkeleton}>
           <Loading />
@@ -103,6 +93,16 @@ function EmployeeHome() {
         </View>
         <Ionicons name="add-circle" size={24} color={colors.white} />
       </Pressable>
+
+      {/*
+        What the office said about his entries.
+        
+        Under the two things he opens the app for - what he is holding,
+        and recording what he spent - and above everything else. It sat
+        at the very top at first, which put an answer about last week's
+        work in front of the money in his pocket.
+      */}
+      <RefusedEntries />
 
       {/*
         The wages, where the man who was handed them will look for
