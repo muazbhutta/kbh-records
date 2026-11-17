@@ -110,7 +110,7 @@ export default function DeletedScreen() {
                 <Ionicons name="trash-outline" size={14} color={colors.red} />
                 <Txt variant="caption" color={colors.red} style={styles.deleteText}>
                   Deleted by {e.deleted_by_name ?? 'someone'} on {formatDateTime(e.deleted_at)}
-                  {e.delete_reason ? ` — ${e.delete_reason}` : ''}
+                  {e.delete_reason ? `: ${e.delete_reason}` : ''}
                 </Txt>
               </View>
 

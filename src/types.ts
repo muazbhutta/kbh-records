@@ -417,7 +417,7 @@ export type TypeFlag =
 export const FLAG_LABEL: Record<string, string> = {
   type_check: 'Type check',
   amount_differs: 'Amount differs from bill',
-  old_entry_check: 'Old entry — check type',
+  old_entry_check: 'Old entry, check type',
   suspected_duplicate: 'Suspected duplicate',
   type_changed: 'Type changed',
 };

@@ -117,7 +117,7 @@ export default function CashWithPeopleScreen() {
           <View style={styles.owedNote}>
             <Ionicons name="alert-circle" size={15} color={colors.red} />
             <Txt variant="caption" color={colors.red}>
-              {money(owedTotal)} back in total — they spent more than was handed over
+              {money(owedTotal)} back in total. They spent more than was handed over.
             </Txt>
           </View>
           <Card padded={false} style={breakdownStyles.list}>

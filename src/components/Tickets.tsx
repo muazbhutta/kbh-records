@@ -181,11 +181,11 @@ function TicketCard({
               </Txt>
               <Txt variant="caption" color={colors.textMuted} numberOfLines={1}>
                 <Txt variant="caption" color={colors.red}>
-                  {v.from ?? '—'}
+                  {v.from ?? '(nothing)'}
                 </Txt>
                 {'  →  '}
                 <Txt variant="caption" weight="semibold" color={colors.green}>
-                  {v.to ?? '—'}
+                  {v.to ?? '(nothing)'}
                 </Txt>
               </Txt>
             </View>
@@ -375,15 +375,15 @@ function ChangeCard({
   if (change.new_category && change.new_category !== change.old_category) {
     rows.push({
       label: 'What for',
-      from: change.old_category ?? '—',
+      from: change.old_category ?? '(nothing)',
       to: change.new_category,
     });
   }
   if (change.clear_note || (change.new_note && change.new_note !== change.old_note)) {
     rows.push({
       label: 'Note',
-      from: change.old_note || '—',
-      to: change.clear_note ? '—' : (change.new_note ?? '—'),
+      from: change.old_note || '(nothing)',
+      to: change.clear_note ? '(nothing)' : (change.new_note ?? '(nothing)'),
     });
   }
 

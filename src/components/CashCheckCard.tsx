@@ -277,7 +277,7 @@ export function CashCheckModal({
                   message={
                     preview < 0
                       ? `Short: ${money(Math.abs(preview))}`
-                      : `Extra: ${money(preview)} — an entry may be missing.`
+                      : `Extra: ${money(preview)}. An entry may be missing.`
                   }
                 />
               ) : valid ? (

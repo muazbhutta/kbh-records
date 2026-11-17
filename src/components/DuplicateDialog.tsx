@@ -10,7 +10,7 @@ import { colors, radius, shadow } from '@/theme';
 import type { DuplicateWarning } from '@/types';
 
 /**
- * "This bill photo was already used on 14 Oct by Rana — SAR 120.
+ * "This bill photo was already used on 14 Oct by Rana, SAR 120.
  *  Save anyway?"  Nothing is blocked: the owner decides, and the entry is
  *  flagged for admins either way.
  */
@@ -50,7 +50,7 @@ export function DuplicateDialog({
                 warning?.photo_match === 'exact'
                   ? 'This exact photo'
                   : 'A photo of this same bill'
-              } was already used on ${formatDate(photo.bill_date)} by ${photo.person_name} — ${money(
+              } was already used on ${formatDate(photo.bill_date)} by ${photo.person_name}, ${money(
                 Number(photo.amount),
               )}${photo.system_id ? ` (${photo.system_id})` : ''}.`}
             />

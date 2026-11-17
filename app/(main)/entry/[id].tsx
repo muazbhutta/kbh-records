@@ -115,7 +115,8 @@ export default function EntryScreen() {
           tone="error"
           title="This entry was not accepted"
           message={`${refusal.data?.reason ?? ''}${
-            refusal.data?.refused_by ? ` — ${refusal.data.refused_by}` : ''
+            refusal.data?.refused_by ? `
+Refused by ${refusal.data.refused_by}.` : ''
           }
 It is out of the books. Record it again, correctly, if it still stands.`}
         />

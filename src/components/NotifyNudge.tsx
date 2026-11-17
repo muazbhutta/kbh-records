@@ -134,7 +134,7 @@ export function NotifyNudge() {
 
       <Pressable onPress={dismiss} accessibilityRole="button">
         <Txt variant="caption" color={colors.textFaint} center>
-          Not now — you can turn it on any time in Settings
+          Not now. You can turn it on any time in Settings.
         </Txt>
       </Pressable>
     </Card>

@@ -101,7 +101,7 @@ export function PushSwitch() {
             <Txt variant="caption" color={colors.textMuted}>
               On an iPhone, notifications only work once KBH Records is on the home screen. Open
               this in Safari, tap Share, then <Txt variant="caption" weight="semibold">Add to Home
-              Screen</Txt> — and turn this on from there.
+              Screen</Txt>, then turn this on from there.
             </Txt>
           </View>
         ) : state === 'blocked' ? (

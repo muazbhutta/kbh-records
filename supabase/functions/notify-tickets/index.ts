@@ -79,14 +79,14 @@ function wording(t: Ticket): { title: string; body: string } {
   if (t.kind === 'request') {
     return {
       title: `${who} is asking to change an entry`,
-      body: `${money(t.amount)}${what}${t.reason ? ` — "${t.reason}"` : ''} · waiting for you`,
+      body: `${money(t.amount)}${what}${t.reason ? `: "${t.reason}"` : ''} · waiting for you`,
     };
   }
 
   if (t.kind === 'edit') {
     return {
       title: `${who} corrected an entry`,
-      body: `${money(t.amount)}${what}${t.reason ? ` — "${t.reason}"` : ''}`,
+      body: `${money(t.amount)}${what}${t.reason ? `: "${t.reason}"` : ''}`,
     };
   }
   return {
@@ -175,7 +175,7 @@ Deno.serve(async (req) => {
         title: 'An entry of yours was not accepted',
         body: `${money(refusal.amount)}${
           refusal.category_name ? ` · ${refusal.category_name}` : ''
-        }${refusal.reason ? ` — "${refusal.reason}"` : ''}`,
+        }${refusal.reason ? `: "${refusal.reason}"` : ''}`,
       }
     : wording(ticket!);
 
