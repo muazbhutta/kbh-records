@@ -83,9 +83,15 @@ export function Tickets() {
         sharper thing than an entry nobody has glanced at yet.
       */}
       {waiting.map((c) => (
-        <ChangeCard key={`c${c.id}`} change={c} onOpenEntry={() =>
-          router.push(`/entry/${c.entry_id}`)
-        } />
+        <ChangeCard
+          key={`c${c.id}`}
+          change={c}
+          onOpenEntry={() => router.push(`/entry/${c.entry_id}`)}
+          onViewBill={async (path) => {
+            const url = await signedUrl(path);
+            if (url) setViewing(url);
+          }}
+        />
       ))}
 
       {tickets.map((t) => (
@@ -386,9 +392,11 @@ function TypeChoice({
 function ChangeCard({
   change,
   onOpenEntry,
+  onViewBill,
 }: {
   change: WaitingChange;
   onOpenEntry: () => void;
+  onViewBill: (path: string) => void;
 }) {
   const decide = useDecideChange();
   const [error, setError] = useState<string | null>(null);
@@ -405,6 +413,8 @@ function ChangeCard({
       },
     );
   };
+
+  const bill = change.storage_path ?? change.thumb_path;
 
   const rows: { label: string; from: string; to: string }[] = [];
   if (change.new_amount !== null && Number(change.new_amount) !== Number(change.old_amount)) {
@@ -455,6 +465,26 @@ function ChangeCard({
         </View>
         <Ionicons name="chevron-forward" size={18} color={colors.textFaint} />
       </Pressable>
+
+      {/*
+        The bill, above his reason.
+        
+        The card carried a count of photographs and not the photograph,
+        which on a correction that is entirely about the photograph left
+        the office answering a question it could not see. It reads top
+        to bottom now: here is the paper, and here is what he says about
+        it.
+      */}
+      {bill ? (
+        <BillImage
+          path={bill}
+          thumb={change.thumb_path}
+          style={styles.bill}
+          contentFit="cover"
+          lazy
+          onPress={() => onViewBill(bill)}
+        />
+      ) : null}
 
       <View style={styles.why}>
         <Txt variant="caption" color={colors.text}>

@@ -1,7 +1,7 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 import { Banner, Card, Loading } from '@/components/Bits';
 import { Button } from '@/components/Button';
@@ -12,8 +12,8 @@ import { Txt } from '@/components/Txt';
 import { useUpdateEntry } from '@/api/control';
 import { useRequestChange } from '@/api/tickets';
 import { useEntryRefusal } from '@/api/refusals';
-import { useAddEntryPhotos, useEntryPhotos } from '@/api/entries';
-import { PhotoPicker } from '@/components/BillPhotos';
+import { useAddEntryPhotos, useEntryPhotos, useRemoveEntryPhoto } from '@/api/entries';
+import { BillImage, PhotoPicker } from '@/components/BillPhotos';
 import {
   MAX_PHOTOS,
   PhotoCancelled,
@@ -25,7 +25,7 @@ import { useCategories, useEntry, usePeopleNames } from '@/api/entries';
 import { useAuth } from '@/auth/AuthProvider';
 import { money, todayInRiyadh } from '@/lib/format';
 import { errorMessage } from '@/lib/supabase';
-import { colors } from '@/theme';
+import { colors, radius } from '@/theme';
 import { ENTRY_TYPE_LABEL } from '@/types';
 
 /**
@@ -44,6 +44,7 @@ export default function EditEntryScreen() {
   const askForChange = useRequestChange();
   const refusal = useEntryRefusal(id);
   const addPhotos = useAddEntryPhotos();
+  const dropPhoto = useRemoveEntryPhoto();
   const already = useEntryPhotos(id);
 
   /*
@@ -291,6 +292,50 @@ Put it right and send it back. It returns to the books when the office accepts i
         </Card>
 
         <Card>
+          {/*
+            What is on it now, each with a way to take it off.
+            
+            A bill refused for its photograph is usually refused because
+            that photograph is no good, and leaving it beside the clear
+            one left the entry carrying two. Taking it off here takes it
+            off the entry; the picture itself is kept, so what the
+            office objected to can still be found.
+          */}
+          {(already.data?.length ?? 0) > 0 ? (
+            <View style={styles.group}>
+              <Txt variant="label" color={colors.textMuted}>
+                ON THIS ENTRY NOW
+              </Txt>
+              <View style={styles.oldPhotos}>
+                {(already.data ?? []).map((photo) => (
+                  <View key={photo.id} style={styles.oldPhoto}>
+                    <BillImage
+                      path={photo.storage_path}
+                      thumb={photo.thumb_path}
+                      style={styles.oldThumb}
+                      contentFit="cover"
+                      lazy
+                    />
+                    <Pressable
+                      onPress={() => dropPhoto.mutate(photo.id)}
+                      disabled={dropPhoto.isPending}
+                      hitSlop={8}
+                      accessibilityRole="button"
+                      accessibilityLabel="Take this photo off the entry"
+                      style={styles.oldDrop}
+                    >
+                      <Ionicons name="close" size={14} color={colors.white} />
+                    </Pressable>
+                  </View>
+                ))}
+              </View>
+              <Txt variant="caption" color={colors.textFaint}>
+                Taking one off removes it from this entry. It is kept, so the office can still
+                look at it later.
+              </Txt>
+            </View>
+          ) : null}
+
           <PhotoPicker
             photos={newPhotos}
             onRemove={(key) => setNewPhotos((c) => c.filter((p) => p.key !== key))}
@@ -300,7 +345,7 @@ Put it right and send it back. It returns to the books when the office accepts i
             error={photoError}
             hint={
               (already.data?.length ?? 0) > 0
-                ? `${already.data?.length} already on this entry. A new one is added beside them, never over them.`
+                ? 'Take off whichever is no good above, and add a clearer one here.'
                 : 'Nothing is on this entry yet.'
             }
           />
@@ -345,5 +390,22 @@ Put it right and send it back. It returns to the books when the office accepts i
 const styles = StyleSheet.create({
   form: { gap: 12, paddingBottom: 12, marginTop: 12 },
   group: { gap: 16 },
+  oldPhotos: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  oldPhoto: { position: 'relative' },
+  oldThumb: { width: 86, height: 86, borderRadius: radius.md, backgroundColor: colors.navyTint },
+  /* Sitting on the corner of the picture it takes off. */
+  oldDrop: {
+    position: 'absolute',
+    top: -6,
+    right: -6,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.red,
+    borderWidth: 2,
+    borderColor: colors.card,
+  },
   tellRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8 },
 });

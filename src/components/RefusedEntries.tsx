@@ -85,6 +85,26 @@ function RefusedCard({ row }: { row: RefusedEntry }) {
         <Ionicons name="chevron-forward" size={18} color={colors.textFaint} />
       </Pressable>
 
+      {/*
+        What the office said about his correction, when it turned one
+        down.
+        
+        Above the original reason, because it is the newer answer and
+        the one he has not heard yet. The first reason stays underneath
+        it: it is still true, and still why the entry is out of the
+        books.
+      */}
+      {row.turned_down ? (
+        <View style={[styles.why, styles.again]}>
+          <Txt variant="caption" weight="semibold" color={colors.amberDark}>
+            Your correction was not accepted either
+          </Txt>
+          <Txt variant="body" color={colors.text}>
+            {row.turned_down}
+          </Txt>
+        </View>
+      ) : null}
+
       {/* The reason, which is the whole point of the card. */}
       <View style={styles.why}>
         <Txt variant="caption" weight="semibold" color={colors.red}>
@@ -145,4 +165,6 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     padding: 11,
   },
+  /* The newer answer, in its own colour so the two do not read as one. */
+  again: { backgroundColor: colors.amberSoft },
 });

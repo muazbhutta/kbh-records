@@ -50,6 +50,8 @@ type Refusal = {
   amount: string | number | null;
   refused_by: string | null;
   category_name: string | null;
+  /** True when it is the office turning down his correction, not the first word. */
+  again?: boolean;
 };
 
 type Ticket = {
@@ -172,7 +174,13 @@ Deno.serve(async (req) => {
 
   const { title, body } = refusal
     ? {
-        title: 'An entry of yours was not accepted',
+        // The second word is not the first word. A man who has already
+        // been told, and has already sent a correction back, needs to
+        // know which of the two this is before he reads a syllable of
+        // it.
+        title: refusal.again
+          ? 'Your correction was not accepted'
+          : 'An entry of yours was not accepted',
         body: `${money(refusal.amount)}${
           refusal.category_name ? ` · ${refusal.category_name}` : ''
         }${refusal.reason ? `: "${refusal.reason}"` : ''}`,

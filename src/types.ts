@@ -682,6 +682,9 @@ export type WaitingChange = {
   new_note: string | null;
   clear_note: boolean;
   photo_count: number;
+  /** The bill itself, so the office can look at what it is answering. */
+  thumb_path: string | null;
+  storage_path: string | null;
 };
 
 // -------------------------------------------------------- the salaries
@@ -851,6 +854,8 @@ export type RefusedEntry = {
   seen_at: string | null;
   /** True while a correction of his is sitting with the office. */
   asked: boolean;
+  /** What the office said if it turned his last correction down. */
+  turned_down: string | null;
 };
 
 /** Whether one entry was refused, and why. */

@@ -334,6 +334,25 @@ export function useAddEntryPhotos() {
   });
 }
 
+/**
+ * Takes a photograph off an entry.
+ *
+ * Off the entry, not out of the world: the row is moved aside and the
+ * file is left where it is, so a picture the office objected to can
+ * still be found. Nobody has to look at it on the entry any more,
+ * which is the whole of what was being asked for.
+ */
+export function useRemoveEntryPhoto() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (photoId: string): Promise<void> => {
+      const { error } = await supabase.rpc('remove_entry_photo', { p_id: photoId });
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => refreshTheBooks(qc),
+  });
+}
+
 export function useCreateEntry() {
   const qc = useQueryClient();
 
