@@ -12,6 +12,15 @@ import { Txt } from '@/components/Txt';
 import { useUpdateEntry } from '@/api/control';
 import { useRequestChange } from '@/api/tickets';
 import { useEntryRefusal } from '@/api/refusals';
+import { useAddEntryPhotos, useEntryPhotos } from '@/api/entries';
+import { PhotoPicker } from '@/components/BillPhotos';
+import {
+  MAX_PHOTOS,
+  PhotoCancelled,
+  pickPhotos,
+  takePhoto,
+  type LocalPhoto,
+} from '@/lib/photos';
 import { useCategories, useEntry, usePeopleNames } from '@/api/entries';
 import { useAuth } from '@/auth/AuthProvider';
 import { money, todayInRiyadh } from '@/lib/format';
@@ -34,6 +43,37 @@ export default function EditEntryScreen() {
   const updateEntry = useUpdateEntry();
   const askForChange = useRequestChange();
   const refusal = useEntryRefusal(id);
+  const addPhotos = useAddEntryPhotos();
+  const already = useEntryPhotos(id);
+
+  /*
+   * Another photograph of the same bill.
+   *
+   * Most refusals are about the paper rather than the figures - it is
+   * dark, or the total is off the edge - and until now the one thing a
+   * man could not do on this screen was the thing he was asked to do.
+   *
+   * These are added, never swapped: the picture the office objected to
+   * stays beside the new one. The database keeps the same rule.
+   */
+  const [newPhotos, setNewPhotos] = useState<LocalPhoto[]>([]);
+  const [photoBusy, setPhotoBusy] = useState(false);
+  const [photoError, setPhotoError] = useState<string | null>(null);
+
+  const room = MAX_PHOTOS - (already.data?.length ?? 0) - newPhotos.length;
+
+  const pick = async (source: 'camera' | 'gallery') => {
+    setPhotoError(null);
+    setPhotoBusy(true);
+    try {
+      const picked = source === 'camera' ? [await takePhoto()] : await pickPhotos(room);
+      setNewPhotos((current) => [...current, ...picked].slice(0, Math.max(0, room)));
+    } catch (err) {
+      if (!(err instanceof PhotoCancelled)) setPhotoError(errorMessage(err));
+    } finally {
+      setPhotoBusy(false);
+    }
+  };
 
   const [amount, setAmount] = useState('');
   const [billDate, setBillDate] = useState(todayInRiyadh());
@@ -107,6 +147,17 @@ export default function EditEntryScreen() {
     }
 
     try {
+      /*
+       * The photographs go first, and go whichever way the rest of it
+       * travels. A picture moves no money - it is what the figures are
+       * evidenced by - so it needs nobody's approval, and the office
+       * should be looking at the new one while it answers the request.
+       */
+      if (newPhotos.length > 0 && me?.id) {
+        await addPhotos.mutateAsync({ entryId: entry.id, photos: newPhotos, uploaderId: me.id });
+        setNewPhotos([]);
+      }
+
       // The office edits. Everybody else asks, and the books do not move
       // until somebody with the authority has looked at both figures.
       if (canManage) {
@@ -236,6 +287,22 @@ Put it right and send it back. It returns to the books when the office accepts i
             onChangeText={(v) => setNote(v.slice(0, 300))}
             placeholder="Short note"
             icon="chatbox-ellipses-outline"
+          />
+        </Card>
+
+        <Card>
+          <PhotoPicker
+            photos={newPhotos}
+            onRemove={(key) => setNewPhotos((c) => c.filter((p) => p.key !== key))}
+            onCamera={() => pick('camera')}
+            onGallery={() => pick('gallery')}
+            busy={photoBusy}
+            error={photoError}
+            hint={
+              (already.data?.length ?? 0) > 0
+                ? `${already.data?.length} already on this entry. A new one is added beside them, never over them.`
+                : 'Nothing is on this entry yet.'
+            }
           />
         </Card>
 

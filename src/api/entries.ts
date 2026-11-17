@@ -282,6 +282,44 @@ function friendlyDbError(message: string): string {
   return message;
 }
 
+/**
+ * Another photograph of a bill already in the books.
+ *
+ * Never a replacement. The one the office objected to stays where it
+ * is and the new one joins it, so whoever looks later sees both. The
+ * database keeps the same rule, so no screen can change its mind
+ * about it.
+ */
+export function useAddEntryPhotos() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: {
+      entryId: string;
+      photos: LocalPhoto[];
+      uploaderId: string;
+    }): Promise<number> => {
+      if (input.photos.length === 0) return 0;
+      const uploaded = await uploadPhotos(input.photos, input.uploaderId);
+
+      const { data, error } = await supabase.rpc('add_entry_photos', {
+        p_entry_id: input.entryId,
+        p_photos: uploaded as unknown as Json,
+      });
+
+      if (error) {
+        // Nothing was written to the books, so nothing should be left
+        // sitting in the bucket either.
+        await removeUploaded(
+          uploaded.flatMap((x) => [x.storage_path, x.thumb_path].filter(Boolean) as string[]),
+        );
+        throw new Error(error.message);
+      }
+      return Number(data ?? 0);
+    },
+    onSuccess: () => refreshTheBooks(qc),
+  });
+}
+
 export function useCreateEntry() {
   const qc = useQueryClient();
 
