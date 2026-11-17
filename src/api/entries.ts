@@ -97,12 +97,26 @@ export function useRecentEntries(filter: FeedFilter, limit = 8, enabled = true) 
   });
 }
 
+/**
+ * One entry, for the screen that shows it and the one that corrects it.
+ *
+ * Read from entry_feed_any rather than entry_feed, which is the same
+ * ledger with the refused entries left in. The ledger proper drops
+ * them, rightly - a refused entry must never land in a balance - and
+ * that left these two screens with nothing in their hands when the man
+ * followed the link from the notice telling him to go and fix it. The
+ * screen then said "you can only correct your own entries", which was
+ * the only thing it knew how to say about an entry it did not have.
+ *
+ * Nothing else reads it. Lists, totals and reports go on reading the
+ * ledger.
+ */
 export function useEntry(id: string | undefined, personId?: string) {
   return useQuery({
     queryKey: ['entry', id, personId ?? 'any'],
     enabled: !!id,
     queryFn: async (): Promise<FeedEntry | null> => {
-      let q = supabase.from('entry_feed').select(FEED_COLUMNS).eq('id', id!);
+      let q = supabase.from('entry_feed_any').select(FEED_COLUMNS).eq('id', id!);
       if (personId) q = q.eq('person_id', personId);
       const { data, error } = await q.limit(1);
       if (error) throw new Error(error.message);
