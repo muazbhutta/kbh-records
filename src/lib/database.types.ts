@@ -2794,7 +2794,154 @@ export type Database = {
           },
         ]
       }
+      entry_feed_any: {
+        Row: {
+          amount: number | null
+          bill_date: string | null
+          bill_scan_state: Database["public"]["Enums"]["bill_scan_state"] | null
+          category_icon: string | null
+          category_id: string | null
+          category_name: string | null
+          counterparty_id: string | null
+          counterparty_name: string | null
+          duplicate_photo: boolean | null
+          entered_at: string | null
+          entered_by: string | null
+          entered_by_name: string | null
+          entered_for_someone_else: boolean | null
+          expense_type: Database["public"]["Enums"]["expense_kind"] | null
+          id: string | null
+          line_type: string | null
+          note: string | null
+          other_person_id: string | null
+          other_person_name: string | null
+          owner_id: string | null
+          owner_name: string | null
+          pay_method: Database["public"]["Enums"]["pay_method"] | null
+          person_id: string | null
+          photo_count: number | null
+          project_id: string | null
+          project_name: string | null
+          signed_amount: number | null
+          system_id: string | null
+          thumb_path: string | null
+          type: Database["public"]["Enums"]["entry_type"] | null
+          type_flags: string[] | null
+          type_source: Database["public"]["Enums"]["type_source"] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "entries_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "expense_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entries_counterparty_id_fkey"
+            columns: ["counterparty_id"]
+            isOneToOne: false
+            referencedRelation: "app_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entries_counterparty_id_fkey"
+            columns: ["counterparty_id"]
+            isOneToOne: false
+            referencedRelation: "people_list"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entries_counterparty_id_fkey"
+            columns: ["counterparty_id"]
+            isOneToOne: false
+            referencedRelation: "people_names"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entries_counterparty_id_fkey"
+            columns: ["counterparty_id"]
+            isOneToOne: false
+            referencedRelation: "team_summary"
+            referencedColumns: ["head_id"]
+          },
+          {
+            foreignKeyName: "entries_entered_by_fkey"
+            columns: ["entered_by"]
+            isOneToOne: false
+            referencedRelation: "app_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entries_entered_by_fkey"
+            columns: ["entered_by"]
+            isOneToOne: false
+            referencedRelation: "people_list"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entries_entered_by_fkey"
+            columns: ["entered_by"]
+            isOneToOne: false
+            referencedRelation: "people_names"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entries_entered_by_fkey"
+            columns: ["entered_by"]
+            isOneToOne: false
+            referencedRelation: "team_summary"
+            referencedColumns: ["head_id"]
+          },
+          {
+            foreignKeyName: "entries_person_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "app_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entries_person_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "people_list"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entries_person_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "people_names"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entries_person_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "team_summary"
+            referencedColumns: ["head_id"]
+          },
+          {
+            foreignKeyName: "entries_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       entry_lines: {
+        Row: {
+          entry_id: string | null
+          line_type: string | null
+          other_person_id: string | null
+          pay_method: Database["public"]["Enums"]["pay_method"] | null
+          person_id: string | null
+          signed_amount: number | null
+        }
+        Relationships: []
+      }
+      entry_lines_any: {
         Row: {
           entry_id: string | null
           line_type: string | null
