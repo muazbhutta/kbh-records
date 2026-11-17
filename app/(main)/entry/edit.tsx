@@ -11,6 +11,7 @@ import { Header, Screen } from '@/components/Screen';
 import { Txt } from '@/components/Txt';
 import { useUpdateEntry } from '@/api/control';
 import { useRequestChange } from '@/api/tickets';
+import { useEntryRefusal } from '@/api/refusals';
 import { useCategories, useEntry, usePeopleNames } from '@/api/entries';
 import { useAuth } from '@/auth/AuthProvider';
 import { money, todayInRiyadh } from '@/lib/format';
@@ -32,6 +33,7 @@ export default function EditEntryScreen() {
   const { data: categories = [] } = useCategories();
   const updateEntry = useUpdateEntry();
   const askForChange = useRequestChange();
+  const refusal = useEntryRefusal(id);
 
   const [amount, setAmount] = useState('');
   const [billDate, setBillDate] = useState(todayInRiyadh());
@@ -162,6 +164,25 @@ export default function EditEntryScreen() {
         subtitle={`${ENTRY_TYPE_LABEL[entry.type]} · was ${money(Number(entry.amount))}`}
         back
       />
+
+      {/*
+        The reason it came back, where he can read it while he types.
+        
+        A man sent here from the card on his home screen is here to fix
+        one particular thing, and asking him to remember what it was
+        while he works is how the same entry gets refused twice.
+      */}
+      {refusal.data?.is_refused ? (
+        <Banner
+          tone="error"
+          title="This entry was not accepted"
+          message={`${refusal.data.reason ?? ''}${
+            refusal.data.refused_by ? `
+Refused by ${refusal.data.refused_by}.` : ''
+          }
+Put it right and send it back. It returns to the books when the office accepts it.`}
+        />
+      ) : null}
 
       <Banner
         tone="info"

@@ -841,12 +841,16 @@ export type RefusedEntry = {
   note: string | null;
   system_id: string | null;
   category_name: string | null;
+  /** Whose entry it is, which is who the edit screen expects. */
+  person_id: string;
   person_name: string | null;
   reason: string;
   refused_at: string | null;
   refused_by: string | null;
   /** Null while he still has to look at it. */
   seen_at: string | null;
+  /** True while a correction of his is sitting with the office. */
+  asked: boolean;
 };
 
 /** Whether one entry was refused, and why. */

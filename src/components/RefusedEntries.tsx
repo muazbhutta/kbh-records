@@ -20,9 +20,17 @@ import type { RefusedEntry } from '@/types';
  * one thing worse than having work refused is finding out a fortnight
  * later.
  *
- * Only the ones he has not read yet. Once he says he has seen it the
- * card goes, and the entry stays where it was, refused and out of the
- * books, in his list of entries like any other.
+ * Only the ones he has not read yet. The card goes when he says he has
+ * seen it, and it goes when he sends a correction, because sending one
+ * is dealing with it - the database takes the mark off at the same
+ * moment it files the request.
+ *
+ * Two answers, then. He can put right whatever was wrong with it and
+ * send it back, which is what he will want nine times in ten; or he can
+ * say he has read it and leave it alone. Correcting it does not put it
+ * back in the books by itself - the office refused it and the office
+ * decides - it asks the office to look again, and the books move when
+ * they say so.
  */
 export function RefusedEntries() {
   const { data = [], isLoading } = useMyRefusals(20);
@@ -92,13 +100,26 @@ function RefusedCard({ row }: { row: RefusedEntry }) {
       </View>
 
       <Txt variant="caption" color={colors.textFaint}>
-        This entry is out of the books. Record it again, correctly, if it still stands.
+        {row.asked
+          ? 'A correction is already with the office. It comes back into the books when they accept it.'
+          : 'This entry is out of the books. Put right what was wrong and send it back, and the office will look again.'}
       </Txt>
+
+      {row.asked ? null : (
+        <Button
+          label="Fix This Entry"
+          icon="create-outline"
+          variant="navy"
+          size="lg"
+          full
+          onPress={() => router.push(`/entry/edit?id=${row.id}&person=${row.person_id}`)}
+        />
+      )}
 
       <Button
         label="Got it"
         icon="checkmark"
-        variant="navy"
+        variant="ghost"
         full
         loading={seen.isPending}
         onPress={() => seen.mutate(row.id)}
