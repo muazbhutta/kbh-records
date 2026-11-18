@@ -1,6 +1,24 @@
 import { QueryClient } from '@tanstack/react-query';
 
 /**
+ * How often the app asks again by itself, while somebody is looking.
+ *
+ * Two seconds was asked for and is not what is set here, because the
+ * arithmetic does not survive it: a screen with three or four lists on
+ * it, asked again every two seconds, is around 200MB a day for one
+ * person on one phone, and the free tier carries 5GB a month for
+ * everybody together. It would be gone inside a week.
+ *
+ * Fifteen seconds reads as "it keeps itself up to date" to anybody
+ * using it. Nobody records an expense and then watches another phone
+ * for proof inside a quarter of a minute. Pulling the screen down
+ * still asks at once, and so does coming back to the app.
+ *
+ * One number, here, if it should be something else.
+ */
+const ASK_AGAIN_EVERY_MS = 15_000;
+
+/**
  * One shared cache. Lists stay usable while they refetch in the
  * background, which is what makes the app feel instant on a weak site
  * connection.
@@ -20,6 +38,16 @@ export function makeQueryClient() {
         // actually old enough to be worth a request.
         refetchOnWindowFocus: true,
         refetchOnReconnect: true,
+        /*
+         * And on its own, while the app is being looked at.
+         *
+         * Nothing here updated by itself: the office refused an entry
+         * on one phone and the man holding the other saw nothing until
+         * he closed the app and opened it again. This is what stops
+         * that. Foreground only, because refetchIntervalInBackground
+         * is left off, so a phone in a pocket asks for nothing.
+         */
+        refetchInterval: ASK_AGAIN_EVERY_MS,
       },
       mutations: {
         retry: 0,

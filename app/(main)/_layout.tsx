@@ -11,6 +11,7 @@ import { Txt } from '@/components/Txt';
 import { useOpenTicketCount } from '@/api/tickets';
 import { useAuth } from '@/auth/AuthProvider';
 import { showBadge } from '@/lib/appBadge';
+import { useKeepFresh } from '@/lib/keepFresh';
 import { ROLE_LABEL } from '@/lib/format';
 import { colors, radius } from '@/theme';
 
@@ -75,6 +76,9 @@ const SETTINGS: NavItem = {
 };
 
 export default function MainLayout() {
+  // Coming back to the app brings the books with it. See keepFresh.
+  useKeepFresh();
+
   const { canManage, person } = useAuth();
   const wide = useIsWide();
   const insets = useSafeAreaInsets();
