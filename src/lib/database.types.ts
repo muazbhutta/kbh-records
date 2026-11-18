@@ -1047,6 +1047,132 @@ export type Database = {
           },
         ]
       }
+      entry_photos_removed: {
+        Row: {
+          bytes: number | null
+          created_at: string | null
+          entry_id: string
+          height: number | null
+          id: string
+          phash: string | null
+          position: number | null
+          removed_at: string
+          removed_by: string | null
+          sha256: string | null
+          storage_path: string
+          thumb_path: string | null
+          width: number | null
+        }
+        Insert: {
+          bytes?: number | null
+          created_at?: string | null
+          entry_id: string
+          height?: number | null
+          id: string
+          phash?: string | null
+          position?: number | null
+          removed_at?: string
+          removed_by?: string | null
+          sha256?: string | null
+          storage_path: string
+          thumb_path?: string | null
+          width?: number | null
+        }
+        Update: {
+          bytes?: number | null
+          created_at?: string | null
+          entry_id?: string
+          height?: number | null
+          id?: string
+          phash?: string | null
+          position?: number | null
+          removed_at?: string
+          removed_by?: string | null
+          sha256?: string | null
+          storage_path?: string
+          thumb_path?: string | null
+          width?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "entry_photos_removed_entry_id_fkey"
+            columns: ["entry_id"]
+            isOneToOne: false
+            referencedRelation: "cancelled_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entry_photos_removed_entry_id_fkey"
+            columns: ["entry_id"]
+            isOneToOne: false
+            referencedRelation: "deleted_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entry_photos_removed_entry_id_fkey"
+            columns: ["entry_id"]
+            isOneToOne: false
+            referencedRelation: "entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entry_photos_removed_entry_id_fkey"
+            columns: ["entry_id"]
+            isOneToOne: false
+            referencedRelation: "expenses_to_check"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entry_photos_removed_entry_id_fkey"
+            columns: ["entry_id"]
+            isOneToOne: false
+            referencedRelation: "invoice_details"
+            referencedColumns: ["entry_id"]
+          },
+          {
+            foreignKeyName: "entry_photos_removed_entry_id_fkey"
+            columns: ["entry_id"]
+            isOneToOne: false
+            referencedRelation: "suspected_duplicates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entry_photos_removed_entry_id_fkey"
+            columns: ["entry_id"]
+            isOneToOne: false
+            referencedRelation: "suspected_duplicates"
+            referencedColumns: ["other_id"]
+          },
+          {
+            foreignKeyName: "entry_photos_removed_removed_by_fkey"
+            columns: ["removed_by"]
+            isOneToOne: false
+            referencedRelation: "app_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entry_photos_removed_removed_by_fkey"
+            columns: ["removed_by"]
+            isOneToOne: false
+            referencedRelation: "people_list"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entry_photos_removed_removed_by_fkey"
+            columns: ["removed_by"]
+            isOneToOne: false
+            referencedRelation: "people_names"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entry_photos_removed_removed_by_fkey"
+            columns: ["removed_by"]
+            isOneToOne: false
+            referencedRelation: "team_summary"
+            referencedColumns: ["head_id"]
+          },
+        ]
+      }
       entry_tickets: {
         Row: {
           actor_id: string | null
@@ -3802,6 +3928,7 @@ export type Database = {
           refused_by: string
           seen_at: string
           system_id: string
+          turned_down: string
         }[]
       }
       my_team_ids: { Args: never; Returns: string[] }
@@ -3914,6 +4041,7 @@ export type Database = {
         }
         Returns: number
       }
+      remove_entry_photo: { Args: { p_id: string }; Returns: string }
       remove_from_payroll: { Args: { p_person_id: string }; Returns: string }
       remove_from_project: {
         Args: { p_person_id: string; p_project_id: string }
@@ -4171,7 +4299,9 @@ export type Database = {
           person_name: string
           photo_count: number
           reason: string
+          storage_path: string
           system_id: string
+          thumb_path: string
         }[]
       }
     }
